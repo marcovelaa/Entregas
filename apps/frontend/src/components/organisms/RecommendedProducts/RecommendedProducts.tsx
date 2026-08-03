@@ -12,7 +12,7 @@ export default async function RecommendedProducts() {
     const res = await fetch(`${API_URL}/productos?visibilidad=publica&limit=50`, { next: { revalidate: 0 } });
     const data = await res.json();
     // Safety net: skip combos the backend marked as sold out or expired
-    let allProducts = (data.data || []).filter((p: any) => p.estado_venta !== 'VENCIDO' && p.estado_venta !== 'AGOTADO');
+    const allProducts = (data.data || []).filter((p: { estado_venta?: string }) => p.estado_venta !== 'VENCIDO' && p.estado_venta !== 'AGOTADO');
     // Prioritize products marked as destacado_portada or combos, then newest
     allProducts.sort((a: any, b: any) => {
       const aDest = a.atributos?.presentacion_visual?.destacado_portada ? 1 : 0;
