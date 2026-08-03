@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { IVentaRepository, VentaCreateData } from '../../domain/repositories/venta.repository.interface';
+
+const MODOS_VIGENCIA = new Set(['RANGO_FECHAS', 'FECHA_HORA', 'MIXTO']);
 
 @Injectable()
 export class PrismaVentaRepository implements IVentaRepository {
@@ -68,6 +70,36 @@ export class PrismaVentaRepository implements IVentaRepository {
             },
           },
         });
+
+        if (productoInfo?.tipo_producto === 'COMBO') {
+          // Vigencia enforcement (2.7): combo must be inside its active window
+          const now = new Date();
+          if (
+            MODOS_VIGENCIA.has(productoInfo.modo_venta) &&
+            ((productoInfo.vigencia_inicio && now < productoInfo.vigencia_inicio) ||
+              (productoInfo.vigencia_fin && now > productoInfo.vigencia_fin))
+          ) {
+            throw new ConflictException(`El combo ${productoInfo.nombre} no está en vigencia`);
+          }
+
+          // Cupo enforcement (2.7/D5): conditional atomic update kills the POS race.
+          // If cupo_usado + cantidad would exceed cupo_maximo, the row does not match
+          // and count is 0 -> 409. The increment is the reservation and rolls back
+          // with this transaction if the venta creation fails later.
+          if (productoInfo.cupo_maximo != null) {
+            const cupoReservado = await tx.producto.updateMany({
+              where: {
+                id: prodId,
+                cupo_maximo: { not: null },
+                cupo_usado: { lte: productoInfo.cupo_maximo - d.cantidad },
+              },
+              data: { cupo_usado: { increment: d.cantidad } },
+            });
+            if (cupoReservado.count === 0) {
+              throw new ConflictException(`Cupo agotado para el combo ${productoInfo.nombre}`);
+            }
+          }
+        }
 
         if (productoInfo?.tipo_producto === 'COMBO' && productoInfo.componentes_combo.length > 0) {
           // Atomic deduction for each component in the combo recipe
@@ -256,6 +288,21 @@ export class PrismaVentaRepository implements IVentaRepository {
           },
         });
 
+        if (productoInfo?.tipo_producto === 'COMBO') {
+          // Cupo release (2.8): free the reserved cupo, clamped at 0 so it never goes negative.
+          // First try a plain decrement; if there is not enough usage, clamp to 0.
+          const cupoLiberado = await tx.producto.updateMany({
+            where: { id: prodId, cupo_maximo: { not: null }, cupo_usado: { gte: d.cantidad } },
+            data: { cupo_usado: { decrement: d.cantidad } },
+          });
+          if (cupoLiberado.count === 0) {
+            await tx.producto.updateMany({
+              where: { id: prodId, cupo_maximo: { not: null }, cupo_usado: { gt: 0 } },
+              data: { cupo_usado: 0 },
+            });
+          }
+        }
+
         if (productoInfo?.tipo_producto === 'COMBO' && productoInfo.componentes_combo.length > 0) {
           for (const comp of productoInfo.componentes_combo) {
             const unitsToReturn = d.cantidad * comp.cantidad;
@@ -345,6 +392,15 @@ export class PrismaVentaRepository implements IVentaRepository {
             componentes_combo: true,
           },
         });
+
+        if (productoInfo?.tipo_producto === 'COMBO') {
+          // Cupo restore (2.8, Open Q1): a reverted sale restores its cupo WITHOUT
+          // cap validation — the cap may have been lowered after the sale.
+          await tx.producto.updateMany({
+            where: { id: prodId, cupo_maximo: { not: null } },
+            data: { cupo_usado: { increment: d.cantidad } },
+          });
+        }
 
         if (productoInfo?.tipo_producto === 'COMBO' && productoInfo.componentes_combo.length > 0) {
           for (const comp of productoInfo.componentes_combo) {
