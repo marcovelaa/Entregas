@@ -48,7 +48,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       .finally(() => setLoading(false));
 
     // Fetch related products (e.g. Materiales Escolares or general products)
-    fetch(`${API_URL}/productos?limit=8`)
+    fetch(`${API_URL}/productos?visibilidad=publica&limit=8`)
       .then(res => res.json())
       .then((resData: any) => {
         const list = Array.isArray(resData) ? resData : (resData.data || []);
@@ -136,6 +136,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   // Combo calculations
   const isCombo = realProduct?.tipo_producto === 'COMBO';
   const comboComponentes = isCombo ? (realProduct?.componentes_combo || []) : [];
+  const stockVendible = isCombo ? (realProduct?.stock_vendible ?? 0) : null;
+  const estadoVenta = isCombo ? (realProduct?.estado_venta ?? null) : null;
+  const compraBloqueada = stockVendible !== null && stockVendible <= 0;
+  const disponibilidadTexto = !isCombo
+    ? 'Disponible en stock'
+    : estadoVenta === 'ACTIVO'
+    ? 'Disponible'
+    : estadoVenta === 'AGOTADO'
+    ? 'Agotado'
+    : 'Vencido';
   let componentesSubtotal = 0;
   comboComponentes.forEach((c: any) => {
     const compPrice = Number(c.componente_producto?.precio_base) || 0;
@@ -234,8 +244,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
             
-            <div className={styles.availability}>
-              Disponible en stock
+            <div className={`${styles.availability} ${compraBloqueada ? styles.availabilityAlert : ''}`}>
+              {disponibilidadTexto}
             </div>
 
             {realProduct?.descripcion ? (
@@ -438,7 +448,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <button 
                 className={styles.primaryAddBtn}
-                disabled={(realProduct?.variantes?.length > 0 && !selectedVariante) || (selectedVariante && selectedVariante.empaques?.length > 0 && !selectedEmpaque)}
+                disabled={compraBloqueada || (realProduct?.variantes?.length > 0 && !selectedVariante) || (selectedVariante && selectedVariante.empaques?.length > 0 && !selectedEmpaque)}
                 onClick={() => {
                   const item = {
                     id: selectedEmpaque ? `${id}-${selectedVariante?.id}-${selectedEmpaque.id}` : (selectedVariante ? `${id}-${selectedVariante.id}` : id),

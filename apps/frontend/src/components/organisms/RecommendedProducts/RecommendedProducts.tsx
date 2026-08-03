@@ -2,15 +2,17 @@ import React from 'react';
 import Link from 'next/link';
 import styles from './RecommendedProducts.module.css';
 import { ProductCard } from '../../molecules/ProductCard/ProductCard';
+import { daysUntilLocal, parseUtcOrLocal } from '@/lib/combo-rules';
 
 export default async function RecommendedProducts() {
   // Fetch real products from backend
   let products = [];
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    const res = await fetch(`${API_URL}/productos?limit=50`, { next: { revalidate: 0 } });
+    const res = await fetch(`${API_URL}/productos?visibilidad=publica&limit=50`, { next: { revalidate: 0 } });
     const data = await res.json();
-    const allProducts = data.data || [];
+    // Safety net: skip combos the backend marked as sold out or expired
+    let allProducts = (data.data || []).filter((p: any) => p.estado_venta !== 'VENCIDO' && p.estado_venta !== 'AGOTADO');
     // Prioritize products marked as destacado_portada or combos, then newest
     allProducts.sort((a: any, b: any) => {
       const aDest = a.atributos?.presentacion_visual?.destacado_portada ? 1 : 0;
@@ -77,6 +79,14 @@ export default async function RecommendedProducts() {
               ? (p.imagenes[0].url.startsWith('http') ? p.imagenes[0].url : `http://localhost:3001${p.imagenes[0].url}`)
               : undefined;
 
+            let urgencyLabel: string | undefined;
+            if (isCombo && (!p.estado_venta || p.estado_venta === 'ACTIVO') && p.vigencia_fin) {
+              const dias = daysUntilLocal(parseUtcOrLocal(p.vigencia_fin), new Date());
+              if (dias >= 1 && dias <= 3) {
+                urgencyLabel = dias === 1 ? 'Termina en 1 día' : `Termina en ${dias} días`;
+              }
+            }
+
             return (
               <ProductCard 
                 key={p.id}
@@ -89,11 +99,11 @@ export default async function RecommendedProducts() {
                 tipo_producto={p.tipo_producto}
                 badge={badgeLabel}
                 badgeStyle={badgeStyle}
+                urgencyLabel={urgencyLabel}
                 precioOriginal={tieneAhorro ? compsSubtotal : undefined}
                 componentes={mappedComponents}
                 componentesImagenes={componentImages}
                 modoImagen={pv?.modo_imagen || 'GRID_AUTO'}
-                mostrarDesglose={pv?.mostrar_desglose_ecommerce ?? true}
               />
             );
           })

@@ -329,6 +329,17 @@
 .primaryAddBtn:active {
   transform: translateY(0);
 }
+.primaryAddBtn:disabled {
+  background: #cbd5e1;
+  color: #f1f5f9;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+.primaryAddBtn:disabled:hover {
+  background: #cbd5e1;
+  transform: none;
+}
 
 .oldPrice {
   text-decoration: line-through;
@@ -342,6 +353,10 @@
   font-size: 0.9rem;
   color: #475569;
   font-weight: 400;
+}
+.availabilityAlert {
+  color: #dc2626;
+  font-weight: 600;
 }
 .divider {
   border: 0;

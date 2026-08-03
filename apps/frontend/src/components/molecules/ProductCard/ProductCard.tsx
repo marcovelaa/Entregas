@@ -15,6 +15,7 @@ export interface ProductCardProps {
   imageUrl?: string;
   badge?: string;
   badgeStyle?: 'emerald' | 'blue' | 'indigo' | 'amber' | 'slate' | 'red' | 'none' | string;
+  urgencyLabel?: string;
   tipo_producto?: string;
   precioOriginal?: number;
   componentes?: Array<{ nombre: string; cantidad: number; imagen_url?: string }>;
@@ -31,6 +32,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   imageUrl,
   badge,
   badgeStyle = 'emerald',
+  urgencyLabel,
   tipo_producto,
   precioOriginal,
   componentes = [],
@@ -120,6 +122,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </button>
 
         {showBadge && <span className={`${styles.badge} ${badgeClass}`}>{badge}</span>}
+
+        {urgencyLabel && <span className={`${styles.badge} ${styles.badgeUrgency}`}>{urgencyLabel}</span>}
 
         {useGrid ? (
           <div className={`${styles.imageGridContainer} ${gridClass}`}>
