@@ -1,0 +1,19 @@
+.appContainer {
+  display: flex;
+  min-height: 100vh;
+}
+
+.mainContent {
+  flex: 1;
+  margin-left: var(--current-sidebar-width, 250px);
+  background-color: var(--bg-color);
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.pageContent {
+  padding: 2rem;
+  flex: 1;
+}

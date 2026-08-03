@@ -1,0 +1,328 @@
+.pageWrapper {
+  background-color: var(--bg-subtle, #f8fafc);
+  min-height: 100vh;
+  padding-bottom: 5rem;
+}
+
+/* Banner diferenciado para Textos Escolares */
+.heroBanner {
+  background-color: #064e3b; /* Emerald 900 */
+  background-image: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.06) 0%, transparent 40%),
+                    radial-gradient(circle at 80% 20%, rgba(52, 211, 153, 0.1) 0%, transparent 40%);
+  color: white;
+  padding: 4rem 5%;
+}
+
+.heroContent {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.heroBadge {
+  display: inline-block;
+  background-color: rgba(52, 211, 153, 0.15);
+  color: #a7f3d0;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+}
+
+.heroTitle {
+  font-family: var(--font-heading, inherit);
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 1rem;
+  line-height: 1.1;
+}
+
+.heroSubtitle {
+  font-size: 1.2rem;
+  color: #a7f3d0;
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+/* --- TABS NIVEL (NUEVO) --- */
+.levelTabsContainer {
+  background-color: white;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.tabsInner {
+  margin: 0 auto;
+  padding: 0 5%;
+  display: flex;
+  gap: 2rem;
+}
+
+.levelTabBtn {
+  background: none;
+  border: none;
+  padding: 1.25rem 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.levelTabBtn:hover {
+  color: #047857;
+}
+
+.levelTabActive {
+  /* color se define en las clases dinámicas abajo */
+}
+
+.levelTabActive::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
+/* --- Colores Dinámicos de los Tabs --- */
+.tabInicial:hover { color: #ef4444; } /* Red */
+.tabInicial.levelTabActive { color: #ef4444; }
+.tabInicial.levelTabActive::after { background-color: #ef4444; }
+
+.tabPrimaria:hover { color: #f59e0b; } /* Yellow */
+.tabPrimaria.levelTabActive { color: #f59e0b; }
+.tabPrimaria.levelTabActive::after { background-color: #f59e0b; }
+
+.tabSecundaria:hover { color: #10b981; } /* Green */
+.tabSecundaria.levelTabActive { color: #10b981; }
+.tabSecundaria.levelTabActive::after { background-color: #10b981; }
+
+.tabPlanLector {
+  text-decoration: none; /* Porque es un link */
+}
+.tabPlanLector:hover { color: #3b82f6; } /* Blue */
+.tabPlanLector.levelTabActive { color: #3b82f6; }
+.tabPlanLector.levelTabActive::after { background-color: #3b82f6; }
+
+/* --- FIN TABS --- */
+
+.layoutContainer {
+  margin: 3rem auto 0;
+  padding: 0 5%;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.sidebarSticky {
+  position: sticky;
+  top: 150px; /* Debajo de los tabs */
+}
+
+.sidebarTitle {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted, #64748b);
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.categoryNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.categoryGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.categoryBtn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: white;
+  border: 1px solid transparent;
+  padding: 0.85rem 1.25rem;
+  font-size: 1.05rem;
+  color: var(--text-main, #334155);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.categoryBtn:hover {
+  background-color: #f1f5f9;
+}
+
+.categoryExpanded {
+  background-color: #ecfdf5; /* Emerald 50 */
+  border-color: #a7f3d0;
+  color: #047857; /* Emerald 700 */
+}
+
+.categoryName {
+  flex: 1;
+  text-align: left;
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+  transition: transform 0.3s ease;
+}
+
+.categoryExpanded .chevron {
+  color: #047857;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.gradesWrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.gradesInner {
+  overflow: hidden;
+}
+
+.gradesOpen {
+  grid-template-rows: 1fr;
+}
+
+.gradesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0 0.5rem 1.5rem;
+  border-left: 2px solid #e2e8f0;
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.gradeBtn {
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.gradeBtn:hover {
+  color: #047857;
+  background-color: rgba(4, 120, 87, 0.05);
+}
+
+.gradeActive {
+  color: #047857;
+  font-weight: 700;
+  background-color: rgba(4, 120, 87, 0.08);
+}
+
+.catalogHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* Alineado al centro vertical */
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1.5rem;
+}
+
+.catalogTitle {
+  font-size: 1.8rem;
+  font-family: var(--font-heading, inherit);
+  font-weight: 800;
+  color: var(--text-main, #0f172a);
+  margin-bottom: 0.2rem;
+}
+
+.activeSubjectSubtitle {
+  font-size: 1.05rem;
+  color: var(--text-main, #334155);
+  font-weight: 600;
+}
+
+.searchWrapper {
+  position: relative;
+  width: 280px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #94a3b8;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.65rem 1rem 0.65rem 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  background-color: white;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+.booksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .layoutContainer {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebarSticky {
+    position: static;
+  }
+  
+  .catalogHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  
+  .searchWrapper {
+    width: 100%;
+  }
+  
+  .tabsInner {
+    justify-content: space-between;
+  }
+}

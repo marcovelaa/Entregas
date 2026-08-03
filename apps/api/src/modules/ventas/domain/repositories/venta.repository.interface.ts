@@ -1,0 +1,27 @@
+export const VENTA_REPOSITORY = 'VENTA_REPOSITORY';
+
+export type VentaDetalleData = {
+  producto_id: string;
+  variante_id?: string;
+  empaque_id?: string;
+  cantidad: number;
+  precio_unitario: number;
+};
+
+export type VentaCreateData = {
+  cliente_id?: string;
+  usuario_id: string;
+  metodo_pago: string;
+  monto_pagado: number;
+  descuento_id?: string;
+  descuento_total?: number;
+  codigo_cupon?: string;
+  detalles: VentaDetalleData[];
+};
+
+export interface IVentaRepository {
+  crear(data: VentaCreateData, total: number, vuelto: number): Promise<any>;
+  listar(params: { offset: number; limit: number }): Promise<{ total: number; data: any[] }>;
+  anular(venta_id: string, usuario_id: string, motivo: string): Promise<any>;
+  revertirAnulacion(venta_id: string, usuario_id: string): Promise<any>;
+}

@@ -1,0 +1,38 @@
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.tabsContainer {
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 2rem;
+  margin-top: -1.5rem;
+}
+
+.tabsNav {
+  display: flex;
+  gap: 2rem;
+}
+
+.tab {
+  padding: 0.75rem 0;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-family: var(--font-body);
+}
+
+.tab:hover {
+  color: var(--text-main);
+}
+
+.activeTab {
+  color: var(--text-main);
+  border-bottom-color: var(--color-blue);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+}

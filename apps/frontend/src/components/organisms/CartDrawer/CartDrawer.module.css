@@ -1,0 +1,211 @@
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.backdropOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 420px;
+  height: 100vh;
+  background: white;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+}
+.drawerOpen {
+  transform: translateX(0);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-light);
+}
+.header h2 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.closeBtn {
+  background: transparent;
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+.closeBtn:hover {
+  color: var(--text-main);
+}
+.closeBtn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.itemsList {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.cartItem {
+  display: flex;
+  gap: 1rem;
+}
+.itemImage {
+  position: relative;
+  width: 80px;
+  aspect-ratio: 3/4;
+  background: var(--bg-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.img {
+  object-fit: cover;
+}
+.itemInfo {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.itemHeader h4 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  margin: 0;
+}
+.removeBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+.removeBtn svg {
+  width: 16px;
+  height: 16px;
+}
+.itemMeta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+}
+.itemBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+.qtyBox {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  height: 32px;
+}
+.qtyBox button {
+  background: transparent;
+  border: none;
+  width: 28px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.qtyBox span {
+  width: 24px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.itemPrice {
+  font-weight: 700;
+  font-family: var(--font-heading);
+}
+
+.footer {
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-subtle);
+}
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.summaryValue {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.shippingNote {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+.checkoutBtn {
+  width: 100%;
+  background: var(--text-main);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  height: 48px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+  transition: opacity 0.2s;
+}
+.checkoutBtn:hover {
+  opacity: 0.9;
+}
+.continueBtn {
+  width: 100%;
+  background: transparent;
+  color: var(--text-main);
+  border: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+.continueBtn:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,276 @@
+.main {
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.heroBanner {
+  background-color: var(--color-red, #dc2626);
+  background-image: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.08) 0%, transparent 40%),
+                    radial-gradient(circle at 80% 20%, rgba(0,0,0,0.1) 0%, transparent 40%);
+  color: white;
+  padding: 4rem 5%;
+  text-align: center;
+}
+
+.heroContent {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.heroTitle {
+  font-family: var(--font-heading, inherit);
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 1rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.heroSubtitle {
+  font-size: 1.2rem;
+  color: #fee2e2;
+  line-height: 1.5;
+  margin-bottom: 2.5rem;
+}
+
+.countdownBox {
+  display: inline-flex;
+  gap: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1.25rem 2.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.timeUnit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+  justify-content: center;
+}
+
+.timeNumber {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.timeLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #fca5a5;
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 3rem 5%;
+}
+
+.layout {
+  display: flex;
+  gap: 4rem;
+}
+
+.sidebar {
+  width: 250px;
+  flex-shrink: 0;
+}
+
+.filterGroup {
+  margin-bottom: 2.5rem;
+}
+
+.filterGroup h3 {
+  font-size: 1.1rem;
+  color: var(--text-main);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.filterOption {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.filterOption input[type="checkbox"] {
+  accent-color: var(--color-red, #dc2626);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.filterOption label {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.filterOption label:hover {
+  color: var(--text-main);
+}
+
+.content {
+  flex: 1;
+}
+
+.catalogHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.catalogTitle {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.itemCount {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+/* OFFER CARD */
+.offerCard {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+.offerCard:hover {
+  border-color: var(--color-red, #dc2626);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(220, 38, 38, 0.08);
+}
+
+.imageContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background-color: #f8fafc;
+}
+
+.productImg {
+  object-fit: cover;
+  mix-blend-mode: multiply;
+}
+
+.discountBadge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background-color: var(--color-red, #dc2626);
+  color: white;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  z-index: 2;
+  box-shadow: 0 4px 6px rgba(220, 38, 38, 0.2);
+}
+
+.cardInfo {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.category {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.title {
+  font-size: 1.05rem;
+  color: var(--text-main);
+  margin: 0 0 1.25rem 0;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.priceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: auto;
+}
+
+.priceCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.oldPrice {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-decoration: line-through;
+  font-weight: 500;
+}
+
+.newPrice {
+  font-weight: 800;
+  color: var(--color-red, #dc2626);
+  font-size: 1.25rem;
+}
+
+.addBtn {
+  background-color: var(--text-main);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.addBtn:hover {
+  background-color: var(--color-red, #dc2626);
+}
+
+@media (max-width: 1024px) {
+  .layout { gap: 2rem; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; }
+  .countdownBox { padding: 1rem; gap: 0.5rem; }
+  .timeNumber { font-size: 1.5rem; }
+}

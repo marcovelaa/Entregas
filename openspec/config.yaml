@@ -1,0 +1,16 @@
+schema: spec-driven
+context: |
+  Tech stack: Turborepo Monorepo. Backend: NestJS, Prisma, PostgreSQL. Frontend: Next.js (App Router), React, Vanilla CSS.
+  Architecture: Monolito Modular con Arquitectura Limpia (capas: domain, application, infrastructure).
+  Testing: Jest (NestJS default) para backend. Unit tests requeridos para la capa Application (use-cases).
+  Style: TypeScript estricto. Nomenclatura en español para el dominio, pero código base en inglés/spanglish según convención.
+
+rules:
+  apply:
+    tdd: true
+    test_command: "npx turbo run test"
+  verify:
+    test_command: "npx turbo run test"
+    build_command: "npx turbo run build"
+    coverage_threshold: 0
+

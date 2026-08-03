@@ -1,0 +1,80 @@
+/* Footer */
+.footer {
+  background-color: var(--bg-subtle);
+  border-top: 1px solid var(--border-light);
+  padding: 4rem 5% 2rem;
+  margin-top: 4rem;
+}
+.footerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 3rem;
+  margin-bottom: 3rem;
+}
+.footerCol h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+.footerCol ul {
+  list-style: none;
+  padding: 0;
+}
+.footerCol li {
+  margin-bottom: 0.75rem;
+}
+.footerCol a {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  transition: color 0.2s;
+}
+.footerCol a:hover {
+  color: var(--color-blue);
+}
+.footerBottom {
+  border-top: 1px solid var(--border-light);
+  padding-top: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Newsletter */
+.newsletterText {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+.newsletterBox {
+  display: flex;
+  height: 40px;
+}
+.newsletterBox input {
+  flex: 1;
+  border: 1px solid var(--border-light);
+  border-radius: 4px 0 0 4px;
+  padding: 0 1rem;
+  outline: none;
+  font-family: var(--font-body);
+}
+.newsletterBox button {
+  background-color: var(--color-blue);
+  color: white;
+  border: none;
+  padding: 0 1.5rem;
+  border-radius: 0 4px 4px 0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.newsletterBox button:hover {
+  background-color: #1aa3d4;
+}
+
+@media (max-width: 768px) {
+  .footerGrid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}

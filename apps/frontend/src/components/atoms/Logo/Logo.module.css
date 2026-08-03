@@ -1,0 +1,14 @@
+.logo {
+  display: flex;
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+}
+
+.red { color: var(--color-red); }
+.blue { color: var(--color-blue); }
+.green { color: var(--color-green); }
+.yellow { color: var(--color-yellow); }
+.main { color: var(--text-main); }

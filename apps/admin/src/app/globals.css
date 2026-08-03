@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Montserrat:wght@600;700;800&display=swap');
+
+:root {
+  --color-red: #F04B4B;
+  --color-blue: #2BBCEE;
+  --color-primary: #2BBCEE;
+  --color-green: #1E8A38;
+  --color-yellow: #FBC940;
+  
+  --bg-color: #F8FAFC;
+  --bg-subtle: #FFFFFF;
+  
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  
+  --border-light: #E2E8F0;
+  
+  --font-heading: 'Montserrat', sans-serif;
+  --font-body: 'Hanken Grotesk', sans-serif;
+
+  --sidebar-width: 250px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: var(--font-body);
+}

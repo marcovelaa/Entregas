@@ -1,0 +1,509 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id               BigInt    @id @default(autoincrement())
+  public_id        String    @unique @default(uuid()) @db.Uuid
+  rol_id           BigInt
+  nombres          String    @db.VarChar(120)
+  apellidos        String    @db.VarChar(120)
+  email            String    @unique @db.VarChar(255)
+  telefono         String?   @db.VarChar(30)
+  password_hash    String    @db.Text
+  codigo_referido  String?   @unique @db.VarChar(50)
+  activo           Boolean   @default(true)
+  ultimo_acceso_en DateTime?
+  creado_en        DateTime  @default(now())
+  actualizado_en   DateTime  @updatedAt
+
+  rol                   Rol                     @relation(fields: [rol_id], references: [id])
+  MovimientosInventario MovimientosInventario[]
+  Compra                Compra[]
+  Venta                 Venta[]
+
+  @@map("usuarios")
+}
+
+model Rol {
+  id             BigInt   @id @default(autoincrement())
+  nombre         String   @unique @db.VarChar(50)
+  descripcion    String?  @db.Text
+  activo         Boolean  @default(true)
+  creado_en      DateTime @default(now())
+  actualizado_en DateTime @updatedAt
+
+  usuarios Usuario[]
+  permisos RolPermiso[]
+
+  @@map("roles")
+}
+
+model Permiso {
+  codigo      String @id @db.VarChar(50) // ej: "iam:usuarios:crear"
+  descripcion String @db.VarChar(255)
+
+  roles RolPermiso[]
+
+  @@map("permisos")
+}
+
+model RolPermiso {
+  rol_id         BigInt
+  permiso_codigo String @db.VarChar(50)
+
+  rol     Rol     @relation(fields: [rol_id], references: [id], onDelete: Cascade)
+  permiso Permiso @relation(fields: [permiso_codigo], references: [codigo], onDelete: Cascade)
+
+  @@id([rol_id, permiso_codigo])
+  @@map("roles_permisos")
+}
+
+model Bitacora {
+  id               BigInt   @id @default(autoincrement())
+  usuario_id       BigInt?
+  ip               String?  @db.Inet
+  user_agent       String?  @db.Text
+  entidad          String   @db.VarChar(50)
+  entidad_id       String?  @db.VarChar(50)
+  operacion        String   @db.VarChar(50)
+  datos_anteriores Json?    @db.JsonB
+  datos_nuevos     Json?    @db.JsonB
+  creado_en        DateTime @default(now())
+
+  @@map("bitacora")
+}
+
+model Marca {
+  id             BigInt   @id @default(autoincrement())
+  nombre         String   @unique @db.VarChar(255)
+  slug           String   @unique @db.VarChar(255)
+  descripcion    String?  @db.Text
+  activo         Boolean  @default(true)
+  creado_en      DateTime @default(now())
+  actualizado_en DateTime @updatedAt
+
+  productos Producto[]
+
+  @@map("marcas")
+}
+
+model Categoria {
+  id                  BigInt   @id @default(autoincrement())
+  categoria_padre_id  BigInt?
+  nombre              String   @db.VarChar(255)
+  slug                String   @unique @db.VarChar(255)
+  descripcion         String?  @db.Text
+  plantilla_atributos Json?    @db.JsonB
+  activo              Boolean  @default(true)
+  creado_en           DateTime @default(now())
+  actualizado_en      DateTime @updatedAt
+
+  categoria_padre Categoria?  @relation("JerarquiaCategorias", fields: [categoria_padre_id], references: [id])
+  subcategorias   Categoria[] @relation("JerarquiaCategorias")
+  productos       Producto[]
+  descuentos      DescuentoCategoria[]
+
+  @@map("categorias")
+}
+
+enum TipoProducto {
+  SIMPLE
+  COMBO
+  SERVICIO
+}
+
+model Producto {
+  id                 BigInt       @id @default(autoincrement())
+  public_id          String       @unique @default(uuid()) @db.Uuid
+  categoria_id       BigInt
+  marca_id           BigInt?
+  sku                String       @unique @db.VarChar(255)
+  nombre             String       @db.VarChar(220)
+  descripcion        String?      @db.Text
+  naturaleza         String?      @db.VarChar(80)
+  tipo_producto      TipoProducto @default(SIMPLE)
+  unidad_medida      String       @default("UNIDAD") @db.VarChar(40)
+  atributos          Json         @default("{}") @db.JsonB
+  precio_base        Decimal      @default(0) @db.Decimal(14, 2)
+  precio_promocional Decimal?     @db.Decimal(14, 2)
+  opciones_variantes Json         @default("[]") @db.JsonB
+  activo             Boolean      @default(true)
+  creado_en          DateTime     @default(now())
+  actualizado_en     DateTime     @updatedAt
+
+  categoria             Categoria               @relation(fields: [categoria_id], references: [id])
+  marca                 Marca?                  @relation(fields: [marca_id], references: [id])
+  imagenes              ProductoImagen[]
+  variantes             Variante[]
+  Inventario            Inventario[]
+  MovimientosInventario MovimientosInventario[]
+  CompraDetalle         CompraDetalle[]
+  VentaDetalle          VentaDetalle[]
+  descuentos            DescuentoProducto[]
+  componentes_combo     ProductoComponente[]    @relation("ComboPadre")
+  usado_en_combos       ProductoComponente[]    @relation("ComponenteHijo")
+
+  @@map("productos")
+}
+
+model ProductoImagen {
+  id                BigInt   @id @default(autoincrement())
+  producto_id       BigInt
+  url               String   @db.Text
+  texto_alternativo String?  @db.VarChar(255)
+  orden             Int      @default(0)
+  es_principal      Boolean  @default(false)
+  activo            Boolean  @default(true)
+  creado_en         DateTime @default(now())
+  actualizado_en    DateTime @updatedAt
+
+  producto Producto @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+
+  @@unique([producto_id, url])
+  @@map("producto_imagenes")
+}
+
+model Variante {
+  id                     BigInt   @id @default(autoincrement())
+  producto_id            BigInt
+  nombre                 String   @db.VarChar(255)
+  sku_base               String   @unique @db.VarChar(255)
+  codigo_barras          String?  @unique @db.VarChar(255)
+  precio_unitario        Decimal  @default(0) @db.Decimal(14, 2)
+  precio_promocional     Decimal? @db.Decimal(14, 2)
+  combinacion_opciones   Json     @default("{}") @db.JsonB
+  imagen_url             String?  @db.Text
+  activo                 Boolean  @default(true)
+  creado_en              DateTime @default(now())
+  actualizado_en         DateTime @updatedAt
+
+  producto               Producto       @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+  empaques               Empaque[]
+  Inventario             Inventario[]
+  MovimientosInventario  MovimientosInventario[]
+  CompraDetalle          CompraDetalle[]
+  VentaDetalle           VentaDetalle[]
+  descuentos             DescuentoVariante[]
+  usado_en_combos        ProductoComponente[]
+
+  @@unique([producto_id, nombre])
+  @@map("variantes")
+}
+
+model Empaque {
+  id                     BigInt   @id @default(autoincrement())
+  variante_id            BigInt
+  nombre                 String   @db.VarChar(255)
+  sku                    String   @unique @db.VarChar(255)
+  codigo_barras          String?  @unique @db.VarChar(255)
+  multiplicador_unidades Int      @default(1)
+  precio                 Decimal  @db.Decimal(14, 2)
+  precio_promocional     Decimal? @db.Decimal(14, 2)
+  activo                 Boolean  @default(true)
+  creado_en              DateTime @default(now())
+  actualizado_en         DateTime @updatedAt
+
+  variante      Variante        @relation(fields: [variante_id], references: [id], onDelete: Cascade)
+  CompraDetalle CompraDetalle[]
+  VentaDetalle  VentaDetalle[]
+  descuentos    DescuentoEmpaque[]
+  usado_en_combos ProductoComponente[]
+
+  @@unique([variante_id, nombre])
+  @@map("empaques")
+}
+
+model ProductoComponente {
+  id                  BigInt   @id @default(autoincrement())
+  combo_producto_id   BigInt
+  componente_prod_id  BigInt
+  variante_id         BigInt?
+  empaque_id          BigInt?
+  cantidad            Int      @default(1)
+  creado_en           DateTime @default(now())
+
+  combo_producto      Producto  @relation("ComboPadre", fields: [combo_producto_id], references: [id], onDelete: Cascade)
+  componente_producto Producto  @relation("ComponenteHijo", fields: [componente_prod_id], references: [id], onDelete: Restrict)
+  variante            Variante? @relation(fields: [variante_id], references: [id], onDelete: Restrict)
+  empaque             Empaque?  @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
+
+  @@map("producto_componentes")
+}
+
+model Inventario {
+  id                  BigInt   @id @default(autoincrement())
+  producto_id         BigInt
+  variante_id         BigInt?
+  cantidad_disponible Int      @default(0)
+  reservado           Int      @default(0)
+  stock_minimo        Int      @default(5)
+  ubicacion           String?  @db.VarChar(120)
+  creado_en           DateTime @default(now())
+  actualizado_en      DateTime @updatedAt
+
+  producto Producto @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+  variante Variante? @relation(fields: [variante_id], references: [id], onDelete: Cascade)
+
+  @@unique([producto_id, variante_id, ubicacion])
+  @@map("inventario")
+}
+
+model MovimientosInventario {
+  id                    BigInt   @id @default(autoincrement())
+  producto_id           BigInt
+  variante_id           BigInt?
+  tipo_movimiento       String
+  cantidad              Int
+  motivo                String?
+  usuario_id            BigInt?
+  tipo_documento_origen String?
+  documento_origen_id   BigInt?
+  creado_en             DateTime @default(now())
+
+  producto Producto @relation(fields: [producto_id], references: [id], onDelete: Restrict)
+  variante Variante? @relation(fields: [variante_id], references: [id], onDelete: Restrict)
+  usuario  Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
+
+  @@map("movimientos_inventario")
+}
+
+model Proveedor {
+  id             BigInt   @id @default(autoincrement())
+  nombre         String   @db.VarChar(255) // Nombre de la empresa o persona
+  contacto       String?  @db.VarChar(255) // Persona de contacto
+  telefono       String?  @db.VarChar(50)
+  direccion      String?  @db.Text
+  email          String?  @db.VarChar(255)
+  activo         Boolean  @default(true)
+  creado_en      DateTime @default(now())
+  actualizado_en DateTime @updatedAt
+
+  compras Compra[]
+
+  @@map("proveedores")
+}
+
+model Compra {
+  id           BigInt   @id @default(autoincrement())
+  proveedor_id BigInt?
+  usuario_id   BigInt?
+  numero_nota  String   @default("S/N") @db.VarChar(100)
+  fecha        DateTime @default(now())
+  total        Decimal  @default(0) @db.Decimal(14, 2)
+  estado       String   @default("COMPLETADO") @db.VarChar(50) // COMPLETADO, ANULADO
+  notas        String?  @db.Text
+  creado_en    DateTime @default(now())
+
+  proveedor Proveedor?     @relation(fields: [proveedor_id], references: [id], onDelete: Restrict)
+  usuario   Usuario?       @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
+  detalles  CompraDetalle[]
+
+  @@map("compras")
+}
+
+model CompraDetalle {
+  id              BigInt  @id @default(autoincrement())
+  compra_id       BigInt
+  producto_id     BigInt
+  variante_id     BigInt?
+  empaque_id      BigInt?
+  cantidad        Int
+  precio_costo    Decimal @default(0) @db.Decimal(14, 2)
+  subtotal        Decimal @default(0) @db.Decimal(14, 2)
+
+  compra   Compra    @relation(fields: [compra_id], references: [id], onDelete: Cascade)
+  producto Producto  @relation(fields: [producto_id], references: [id], onDelete: Restrict)
+  variante Variante? @relation(fields: [variante_id], references: [id], onDelete: Restrict)
+  empaque  Empaque?  @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
+
+  @@map("compra_detalles")
+}
+
+model Cliente {
+  id             BigInt   @id @default(autoincrement())
+  nombre         String   @default("Cliente Generico") @db.VarChar(255)
+  documento_id   String?  @unique @db.VarChar(50) // Cédula de Identidad, NIT (Opcional)
+  email          String?  @db.VarChar(255)
+  telefono       String?  @db.VarChar(50)
+  direccion      String?  @db.Text
+  activo         Boolean  @default(true)
+  creado_en      DateTime @default(now())
+  actualizado_en DateTime @updatedAt
+
+  ventas        Venta[]
+  usosDescuento DescuentoUso[]
+
+  @@map("clientes")
+}
+
+model Venta {
+  id               BigInt   @id @default(autoincrement())
+  cliente_id       BigInt?
+  usuario_id       BigInt
+  numero_ticket    String   @unique @default(cuid()) @db.VarChar(100)
+  estado           String   @default("COMPLETADA") @db.VarChar(50) // COMPLETADA, ANULADA
+  motivo_anulacion String?  @db.Text
+  total            Decimal  @default(0) @db.Decimal(14, 2)
+  descuento_total  Decimal  @default(0) @db.Decimal(14, 2)
+  codigo_cupon     String?  @db.VarChar(100)
+  metodo_pago      String   @default("EFECTIVO") @db.VarChar(50)
+  monto_pagado     Decimal  @default(0) @db.Decimal(14, 2)
+  vuelto           Decimal  @default(0) @db.Decimal(14, 2)
+  creado_en        DateTime @default(now())
+  actualizado_en   DateTime @updatedAt
+
+  cliente       Cliente?       @relation(fields: [cliente_id], references: [id], onDelete: Restrict)
+  usuario       Usuario        @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  detalles      VentaDetalle[]
+  usosDescuento DescuentoUso[]
+
+  @@map("ventas")
+}
+
+model VentaDetalle {
+  id              BigInt  @id @default(autoincrement())
+  venta_id        BigInt
+  producto_id     BigInt
+  variante_id     BigInt?
+  empaque_id      BigInt?
+  cantidad        Int
+  precio_unitario Decimal @db.Decimal(14, 2)
+  subtotal        Decimal @db.Decimal(14, 2)
+
+  venta        Venta         @relation(fields: [venta_id], references: [id], onDelete: Cascade)
+  producto     Producto      @relation(fields: [producto_id], references: [id], onDelete: Restrict)
+  variante     Variante?     @relation(fields: [variante_id], references: [id], onDelete: Restrict)
+  empaque      Empaque?      @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
+
+  @@map("venta_detalles")
+}
+
+enum TipoDescuento {
+  PORCENTAJE
+  MONTO_FIJO
+  MONTO_FIJO_POR_UNIDAD
+  COMBO
+  LLEVA_X_PAGA_Y
+}
+
+enum AlcanceDescuento {
+  GLOBAL
+  CATEGORIA
+  PRODUCTO
+  VARIANTE
+  EMPAQUE
+}
+
+enum CanalDescuento {
+  POS
+  ECOMMERCE
+  TODOS
+}
+
+model Descuento {
+  id                    BigInt           @id @default(autoincrement())
+  nombre                String           @db.VarChar(255)
+  descripcion           String?          @db.Text
+  codigo_cupon          String?          @unique @db.VarChar(100)
+  tipo                  TipoDescuento    @default(PORCENTAJE)
+  valor                 Decimal          @default(0) @db.Decimal(14, 2)
+  max_monto_descuento   Decimal?         @db.Decimal(14, 2)
+  alcance               AlcanceDescuento @default(GLOBAL)
+  canal                 CanalDescuento   @default(TODOS)
+  
+  // Para Combos y NxF (ej: 2x1 -> lleva 2, paga 1)
+  cantidad_requerida    Int              @default(1)
+  cantidad_paga         Int              @default(1)
+
+  monto_minimo_compra   Decimal?         @db.Decimal(14, 2)
+  limite_usos           Int?
+  limite_usos_por_cliente Int?           @default(1)
+  usos_actuales         Int              @default(0)
+
+  es_acumulable         Boolean          @default(false)
+  prioridad             Int              @default(0)
+
+  fecha_inicio          DateTime
+  fecha_fin             DateTime
+  activo                Boolean          @default(true)
+
+  creado_en             DateTime         @default(now())
+  actualizado_en        DateTime         @updatedAt
+
+  productos             DescuentoProducto[]
+  variantes             DescuentoVariante[]
+  empaques              DescuentoEmpaque[]
+  categorias            DescuentoCategoria[]
+  usos                  DescuentoUso[]
+
+  @@map("descuentos")
+}
+
+model DescuentoProducto {
+  id           BigInt    @id @default(autoincrement())
+  descuento_id BigInt
+  producto_id  BigInt
+
+  descuento Descuento @relation(fields: [descuento_id], references: [id], onDelete: Cascade)
+  producto  Producto  @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+
+  @@unique([descuento_id, producto_id])
+  @@map("descuento_productos")
+}
+
+model DescuentoVariante {
+  id           BigInt    @id @default(autoincrement())
+  descuento_id BigInt
+  variante_id  BigInt
+
+  descuento Descuento @relation(fields: [descuento_id], references: [id], onDelete: Cascade)
+  variante  Variante  @relation(fields: [variante_id], references: [id], onDelete: Cascade)
+
+  @@unique([descuento_id, variante_id])
+  @@map("descuento_variantes")
+}
+
+model DescuentoEmpaque {
+  id           BigInt    @id @default(autoincrement())
+  descuento_id BigInt
+  empaque_id   BigInt
+
+  descuento Descuento @relation(fields: [descuento_id], references: [id], onDelete: Cascade)
+  empaque   Empaque   @relation(fields: [empaque_id], references: [id], onDelete: Cascade)
+
+  @@unique([descuento_id, empaque_id])
+  @@map("descuento_empaques")
+}
+
+model DescuentoCategoria {
+  id           BigInt    @id @default(autoincrement())
+  descuento_id BigInt
+  categoria_id BigInt
+
+  descuento Descuento @relation(fields: [descuento_id], references: [id], onDelete: Cascade)
+  categoria Categoria @relation(fields: [categoria_id], references: [id], onDelete: Cascade)
+
+  @@unique([descuento_id, categoria_id])
+  @@map("descuento_categorias")
+}
+
+model DescuentoUso {
+  id               BigInt    @id @default(autoincrement())
+  descuento_id     BigInt
+  venta_id         BigInt
+  cliente_id       BigInt?
+  monto_descontado Decimal   @db.Decimal(14, 2)
+  creado_en        DateTime  @default(now())
+
+  descuento Descuento @relation(fields: [descuento_id], references: [id], onDelete: Cascade)
+  venta     Venta     @relation(fields: [venta_id], references: [id], onDelete: Cascade)
+  cliente   Cliente?  @relation(fields: [cliente_id], references: [id], onDelete: SetNull)
+
+  @@map("descuento_usos")
+}

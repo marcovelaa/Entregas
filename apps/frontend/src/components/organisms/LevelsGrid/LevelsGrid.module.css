@@ -1,0 +1,94 @@
+.section {
+  margin-top: 4rem;
+}
+.sectionTitle {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+.sectionSubtitle {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+
+.levelsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.levelCardImage {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.levelCardImage:hover, .levelCardImage:focus {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  outline: none;
+}
+.levelCardImage:focus-visible {
+  outline: 2px solid var(--color-blue);
+}
+
+.levelImgWrapper {
+  position: relative;
+  height: 160px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.levelImg {
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.levelCardImage:hover .levelImg, .levelCardImage:focus .levelImg {
+  transform: scale(1.05);
+}
+
+.levelColorBar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 4px;
+}
+
+.levelCardBody {
+  padding: 1.5rem;
+}
+
+.levelCardBody h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.levelCardBody p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.bgRed { background-color: var(--color-red); }
+.bgYellow { background-color: var(--color-yellow); }
+.bgGreen { background-color: var(--color-green); }
+.bgBlue { background-color: var(--color-blue); }
+
+.textRed { color: var(--color-red); }
+.textYellow { color: var(--color-yellow); }
+.textGreen { color: var(--color-green); }
+.textBlue { color: var(--color-blue); }
+
+@media (max-width: 768px) {
+  .levelsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
