@@ -1,3 +1,5 @@
+import { ModoVenta } from '@prisma/client';
+
 export const PRODUCTO_REPOSITORY = 'PRODUCTO_REPOSITORY';
 
 export interface ProductoEntity {
@@ -10,6 +12,11 @@ export interface ProductoEntity {
   descripcion?: string | null;
   naturaleza?: string | null;
   tipo_producto?: 'SIMPLE' | 'COMBO' | 'SERVICIO';
+  modo_venta?: ModoVenta;
+  vigencia_inicio?: Date | null;
+  vigencia_fin?: Date | null;
+  cupo_maximo?: number | null;
+  cupo_usado?: number;
   unidad_medida: string;
   atributos: any;
   precio_base: any;
@@ -25,16 +32,33 @@ export interface ProductoFiltros {
   categoria_id?: bigint;
   marca_id?: bigint;
   tipo_producto?: 'SIMPLE' | 'COMBO' | 'SERVICIO';
+  visibilidad?: 'publica' | 'admin';
   search?: string;
 }
 
+export interface InventarioStockRow {
+  producto_id: bigint;
+  variante_id: bigint | null;
+  cantidad_disponible: number;
+  reservado: number;
+}
+
+export type ProductoCrearInput = Omit<Partial<ProductoEntity>, 'cupo_usado'> & {
+  componentes_combo?: any[];
+};
+
+export type ProductoActualizarInput = Omit<Partial<ProductoEntity>, 'cupo_usado'> & {
+  componentes_combo?: any[];
+};
+
 export interface IProductoRepository {
-  crear(producto: Partial<ProductoEntity>): Promise<ProductoEntity>;
+  crear(producto: ProductoCrearInput): Promise<ProductoEntity>;
   buscarTodos(filtros?: ProductoFiltros, page?: number, limit?: number): Promise<{ data: ProductoEntity[]; total: number }>;
   buscarPorId(id: bigint): Promise<ProductoEntity | null>;
   buscarPorPublicId(publicId: string): Promise<ProductoEntity | null>;
   buscarPorSku(sku: string): Promise<ProductoEntity | null>;
-  actualizar(id: bigint, datos: Partial<ProductoEntity>): Promise<ProductoEntity>;
+  buscarStocksComponentes(ids: bigint[]): Promise<InventarioStockRow[]>;
+  actualizar(id: bigint, datos: ProductoActualizarInput): Promise<ProductoEntity>;
   desactivar(id: bigint): Promise<ProductoEntity>;
   eliminar(id: bigint): Promise<void>;
   contarVariantesAsociadas(id: bigint): Promise<number>;

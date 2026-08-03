@@ -1,5 +1,6 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber, IsObject, IsBoolean, Min, IsArray } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsNumber, IsObject, IsBoolean, Min, IsArray, IsEnum, IsInt, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ModoVenta } from '@prisma/client';
 import { PaginationDto } from '../../../../common/dto/pagination.dto';
 
 export class CrearProductoDto {
@@ -38,6 +39,23 @@ export class CrearProductoDto {
   @IsString()
   @IsOptional()
   tipo_producto?: 'SIMPLE' | 'COMBO' | 'SERVICIO';
+
+  @IsEnum(ModoVenta)
+  @IsOptional()
+  modo_venta?: ModoVenta;
+
+  @IsString()
+  @IsOptional()
+  vigencia_inicio?: string;
+
+  @IsString()
+  @IsOptional()
+  vigencia_fin?: string;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  cupo_maximo?: number;
 
   @IsArray()
   @IsOptional()
@@ -95,6 +113,23 @@ export class ActualizarProductoDto {
   @IsOptional()
   tipo_producto?: 'SIMPLE' | 'COMBO' | 'SERVICIO';
 
+  @IsEnum(ModoVenta)
+  @IsOptional()
+  modo_venta?: ModoVenta;
+
+  @IsString()
+  @IsOptional()
+  vigencia_inicio?: string;
+
+  @IsString()
+  @IsOptional()
+  vigencia_fin?: string;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  cupo_maximo?: number;
+
   @IsArray()
   @IsOptional()
   componentes_combo?: Array<{
@@ -142,4 +177,8 @@ export class ListarProductosDto extends PaginationDto {
   @IsString()
   @IsOptional()
   search?: string;
+
+  @IsIn(['publica', 'admin'])
+  @IsOptional()
+  visibilidad?: 'publica' | 'admin' = 'admin';
 }

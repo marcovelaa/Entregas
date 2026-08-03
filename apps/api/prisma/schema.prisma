@@ -1,3 +1,17 @@
+// Migrations note (db push -> migrate transition):
+// - 20260803083000_init is a FULL SCHEMA SNAPSHOT (baseline). On databases
+//   previously created with `prisma db push` its SQL is already applied:
+//   run `npm run prisma:migrate:pre-existing` (prisma migrate resolve
+//   --applied 20260803083000_init, then prisma migrate deploy) instead of a
+//   plain `prisma migrate deploy`.
+// - The pre-existing script is idempotent: `resolve --applied` is expected to
+//   fail on databases where the baseline is already registered, so its output
+//   is suppressed and `migrate deploy` always runs (it only applies what is
+//   pending). Do NOT chain it with `&&`, which would abort the deploy.
+// - 20260803083233_combo-sale-rules adds sale/vigencia rules (modo_venta,
+//   vigencia, cupo) on top of the baseline.
+// - `prisma migrate dev` requires a TTY (fails in CI/scripts): use deploy.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -118,6 +132,14 @@ enum TipoProducto {
   SERVICIO
 }
 
+enum ModoVenta {
+  PERMANENTE
+  RANGO_FECHAS
+  FECHA_HORA
+  CUPO_FIJO
+  MIXTO
+}
+
 model Producto {
   id                 BigInt       @id @default(autoincrement())
   public_id          String       @unique @default(uuid()) @db.Uuid
@@ -134,6 +156,11 @@ model Producto {
   precio_promocional Decimal?     @db.Decimal(14, 2)
   opciones_variantes Json         @default("[]") @db.JsonB
   activo             Boolean      @default(true)
+  modo_venta         ModoVenta    @default(PERMANENTE)
+  vigencia_inicio    DateTime?    @db.Timestamptz(3)
+  vigencia_fin       DateTime?    @db.Timestamptz(3)
+  cupo_maximo        Int?
+  cupo_usado         Int          @default(0)
   creado_en          DateTime     @default(now())
   actualizado_en     DateTime     @updatedAt
 
@@ -149,6 +176,7 @@ model Producto {
   componentes_combo     ProductoComponente[]    @relation("ComboPadre")
   usado_en_combos       ProductoComponente[]    @relation("ComponenteHijo")
 
+  @@index([activo, tipo_producto, vigencia_fin])
   @@map("productos")
 }
 
