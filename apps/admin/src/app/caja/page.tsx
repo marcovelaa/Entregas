@@ -57,7 +57,7 @@ export default function CajaPage() {
 
   const fetchProductos = async () => {
     try {
-      const res = await api.get('/productos?limit=100');
+      const res = await api.get('/productos?limit=100&visibilidad=publica');
       setProductos(res.data.data || []);
     } catch (err) { console.error(err); }
   };
@@ -94,6 +94,9 @@ export default function CajaPage() {
   }, [carrito, codigoCuponInput, clienteSeleccionado]);
 
   const getStock = (prod: any, varId?: string) => {
+    if (typeof prod.stock_vendible === 'number') {
+      return prod.stock_vendible;
+    }
     if (prod.tipo_producto === 'COMBO' && prod.componentes_combo && prod.componentes_combo.length > 0) {
       const componentRatios = prod.componentes_combo.map((comp: any) => {
         const compProd = comp.componente_producto;
@@ -111,6 +114,7 @@ export default function CajaPage() {
   };
 
   const productosFiltrados = productos.filter(p => {
+    if (p.estado_venta === 'VENCIDO' || p.estado_venta === 'AGOTADO') return false;
     const matchCat = categoriaSeleccionada ? p.categoria_id === categoriaSeleccionada : true;
     const matchSearch = (p.nombre || '').toLowerCase().includes(searchQuery.toLowerCase()) || (p.sku || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchVar = (p.variantes || []).some((v: any) => (v.sku_base || '').toLowerCase().includes(searchQuery.toLowerCase()));

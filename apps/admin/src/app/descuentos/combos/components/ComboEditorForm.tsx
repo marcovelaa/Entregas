@@ -23,10 +23,18 @@ import {
   Monitor,
   Upload,
   Check,
+  CalendarClock,
 } from 'lucide-react';
 import { api } from '@/lib/axios';
 import { CatalogBrowseModal, CatalogProduct } from './CatalogBrowseModal';
 import { ComboProductOmnibox } from './ComboProductOmnibox';
+import {
+  computeSellable,
+  parseUtcOrLocal,
+  utcToLocalDate,
+  OFFSET_MINUTES,
+} from '@/lib/combo-rules';
+import type { ModoVenta } from '@/lib/combo-rules';
 
 interface ComponenteItem {
   componente_prod_id: string;
@@ -55,6 +63,31 @@ const BADGE_STYLES: { key: BadgeStyle; label: string; bg: string; text: string; 
   { key: 'none', label: 'Sin Badge', bg: '#f1f5f9', text: '#64748b', border: '#cbd5e1' },
 ];
 
+const MODOS_VENTA: { key: ModoVenta; titulo: string; descripcion: string }[] = [
+  { key: 'PERMANENTE', titulo: 'Permanente', descripcion: 'Sin restricciones: se vende siempre que haya stock.' },
+  { key: 'RANGO_FECHAS', titulo: 'Rango de Fechas', descripcion: 'Válido únicamente entre una fecha de inicio y una de fin.' },
+  { key: 'FECHA_HORA', titulo: 'Fecha y Hora', descripcion: 'Válido desde una fecha y hora exacta en adelante.' },
+  { key: 'CUPO_FIJO', titulo: 'Cupo Fijo', descripcion: 'Limitado a un cupo máximo de ventas totales.' },
+  { key: 'MIXTO', titulo: 'Mixto', descripcion: 'Combina rango de fechas, hora exacta y cupo máximo.' },
+];
+
+function utcToLocalDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const local = new Date(d.getTime() + OFFSET_MINUTES * 60_000);
+  const y = local.getUTCFullYear();
+  const m = String(local.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(local.getUTCDate()).padStart(2, '0');
+  const hh = String(local.getUTCHours()).padStart(2, '0');
+  const mm = String(local.getUTCMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day}T${hh}:${mm}`;
+}
+
+function formatFechaDDMM(date: Date): string {
+  const [y, m, d] = utcToLocalDate(date).split('-');
+  return `${d}/${m}/${y}`;
+}
+
 export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFormProps) {
   const router = useRouter();
   const [loadingData, setLoadingData] = useState(true);
@@ -77,6 +110,15 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
   const [destacadoPortada, setDestacadoPortada] = useState(false);
+
+  // Sale Rules & Validity State
+  const [modoVenta, setModoVenta] = useState<ModoVenta>('PERMANENTE');
+  const [vigenciaInicio, setVigenciaInicio] = useState('');
+  const [vigenciaFin, setVigenciaFin] = useState('');
+  const [vigenciaHora, setVigenciaHora] = useState('');
+  const [cupoMaximo, setCupoMaximo] = useState('');
+  const [cupoUsado, setCupoUsado] = useState(0);
+  const [activoCombo, setActivoCombo] = useState(true);
 
   // Live Preview Mode
   const [previewTab, setPreviewTab] = useState<'ecommerce' | 'pos'>('ecommerce');
@@ -145,6 +187,22 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
               };
             });
             setComponentes(mappedComps);
+          }
+
+          // Load sale rules & validity (backend stores UTC -> convert to local strings)
+          setModoVenta(data.modo_venta || 'PERMANENTE');
+          setCupoUsado(Number(data.cupo_usado) || 0);
+          setActivoCombo(data.activo !== false);
+          if (data.cupo_maximo != null) {
+            setCupoMaximo(String(data.cupo_maximo));
+          }
+          if (data.vigencia_inicio) {
+            const localDt = utcToLocalDateTime(data.vigencia_inicio);
+            setVigenciaInicio(localDt.slice(0, 10));
+            setVigenciaHora(localDt.length > 10 ? localDt.slice(11, 16) : '');
+          }
+          if (data.vigencia_fin) {
+            setVigenciaFin(utcToLocalDate(new Date(data.vigencia_fin)));
           }
         } else {
           if (cats.length > 0) setCategoriaId(cats[0].id.toString());
@@ -297,6 +355,53 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
     return list;
   }, [componentes, catalogoProductos]);
 
+  // Sale rules derived state
+  const cupoNum = cupoMaximo.trim() === '' ? null : Number(cupoMaximo);
+  const cupoValido = cupoNum === null || (!isNaN(cupoNum) && cupoNum >= 0);
+  const cupoExcedeStock = cupoNum !== null && !isNaN(cupoNum) && cupoNum > virtualStock;
+  const cupoInvalido = !cupoValido || cupoExcedeStock;
+
+  const vigenciaInicioDate = useMemo(() => {
+    if (!vigenciaInicio) return null;
+    try {
+      const conHora = (modoVenta === 'FECHA_HORA' || modoVenta === 'MIXTO') && vigenciaHora;
+      return parseUtcOrLocal(conHora ? `${vigenciaInicio}T${vigenciaHora}` : vigenciaInicio);
+    } catch {
+      return null;
+    }
+  }, [vigenciaInicio, vigenciaHora, modoVenta]);
+
+  const vigenciaFinDate = useMemo(() => {
+    if (!vigenciaFin) return null;
+    try {
+      return parseUtcOrLocal(vigenciaFin);
+    } catch {
+      return null;
+    }
+  }, [vigenciaFin]);
+
+  const sellableInfo = useMemo(() => {
+    return computeSellable({
+      tipoProducto: 'COMBO',
+      stockBom: virtualStock,
+      activo: activoCombo,
+      modoVenta,
+      vigenciaInicio: vigenciaInicioDate,
+      vigenciaFin: vigenciaFinDate,
+      cupoMaximo: cupoNum ?? null,
+      cupoUsado,
+    });
+  }, [virtualStock, activoCombo, modoVenta, vigenciaInicioDate, vigenciaFinDate, cupoNum, cupoUsado]);
+
+  let estadoLabel: string | null = null;
+  if (sellableInfo.estado === 'VENCIDO') estadoLabel = 'Vencido';
+  else if (sellableInfo.estado === 'AGOTADO') estadoLabel = 'Agotado';
+  else if (sellableInfo.estado === 'INACTIVO') estadoLabel = 'Inactivo';
+  else if (sellableInfo.estado === 'ACTIVO') {
+    if (vigenciaFinDate) estadoLabel = `Vigente hasta ${formatFechaDDMM(vigenciaFinDate)}`;
+    else if (cupoNum === null && modoVenta === 'PERMANENTE') estadoLabel = 'Sin restricciones';
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -317,9 +422,47 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
       setErrorMsg('Debes ingresar un precio de venta para el Combo.');
       return;
     }
+    if (modoVenta === 'RANGO_FECHAS' || modoVenta === 'MIXTO') {
+      if (!vigenciaInicio || !vigenciaFin) {
+        setErrorMsg('Debes completar las fechas de inicio y fin de la vigencia.');
+        return;
+      }
+      if (vigenciaFin < vigenciaInicio) {
+        setErrorMsg('La fecha de fin no puede ser anterior a la fecha de inicio.');
+        return;
+      }
+    }
+    if (modoVenta === 'FECHA_HORA' || modoVenta === 'MIXTO') {
+      if (!vigenciaInicio) {
+        setErrorMsg('Debes ingresar la fecha de vigencia.');
+        return;
+      }
+      if (!vigenciaHora) {
+        setErrorMsg('Debes ingresar la hora de vigencia.');
+        return;
+      }
+    }
+    if (modoVenta === 'CUPO_FIJO' || modoVenta === 'MIXTO') {
+      if (cupoMaximo.trim() === '') {
+        setErrorMsg('Debes ingresar un cupo máximo de ventas.');
+        return;
+      }
+      if (!cupoValido) {
+        setErrorMsg('El cupo máximo debe ser un número mayor o igual a 0.');
+        return;
+      }
+      if (cupoExcedeStock) {
+        setErrorMsg(`El cupo supera el stock del combo (${virtualStock} kit(s) disponibles).`);
+        return;
+      }
+    }
 
     setSaving(true);
     try {
+      const conHora = (modoVenta === 'FECHA_HORA' || modoVenta === 'MIXTO') && vigenciaHora;
+      const vigenciaInicioStr = vigenciaInicio ? (conHora ? `${vigenciaInicio}T${vigenciaHora}` : vigenciaInicio) : null;
+      const vigenciaFinStr = vigenciaFin || null;
+
       const payload = {
         nombre: nombre.trim(),
         sku: sku.trim() || undefined,
@@ -327,6 +470,10 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
         categoria_id: Number(categoriaId),
         tipo_producto: 'COMBO',
         precio_base: Number(precioBase),
+        modo_venta: modoVenta,
+        vigencia_inicio: vigenciaInicioStr,
+        vigencia_fin: vigenciaFinStr,
+        cupo_maximo: cupoNum ?? null,
         atributos: {
           presentacion_visual: {
             badge_texto: badgeTexto.trim() || undefined,
@@ -965,6 +1112,134 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
               </label>
             </div>
           </div>
+
+          {/* Card 4: Reglas de Venta & Vigencia */}
+          <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
+            <h3 style={{ margin: '0 0 0.3rem 0', fontSize: '1rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <CalendarClock size={18} color="#0f172a" /> 4. Reglas de Venta & Vigencia
+            </h3>
+            <p style={{ margin: '0 0 1.25rem 0', color: '#64748b', fontSize: '0.8rem' }}>
+              Controla cuándo se puede vender este combo y cuántas veces como máximo.
+            </p>
+
+            {/* Mode selector */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+              {MODOS_VENTA.map((modo) => (
+                <button
+                  key={modo.key}
+                  type="button"
+                  onClick={() => setModoVenta(modo.key)}
+                  style={{
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    textAlign: 'left',
+                    backgroundColor: modoVenta === modo.key ? '#ffffff' : '#f1f5f9',
+                    border: modoVenta === modo.key ? '2px solid #0f172a' : '1px solid #cbd5e1',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    {modoVenta === modo.key && <Check size={14} />}
+                    {modo.titulo}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>
+                    {modo.descripcion}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Conditional fields */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              {(modoVenta === 'RANGO_FECHAS' || modoVenta === 'FECHA_HORA' || modoVenta === 'MIXTO') && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
+                    Fecha de Inicio
+                  </label>
+                  <input
+                    type="date"
+                    value={vigenciaInicio}
+                    onChange={(e) => setVigenciaInicio(e.target.value)}
+                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                  />
+                </div>
+              )}
+
+              {(modoVenta === 'FECHA_HORA' || modoVenta === 'MIXTO') && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
+                    Hora
+                  </label>
+                  <input
+                    type="time"
+                    value={vigenciaHora}
+                    onChange={(e) => setVigenciaHora(e.target.value)}
+                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                  />
+                </div>
+              )}
+
+              {(modoVenta === 'RANGO_FECHAS' || modoVenta === 'MIXTO') && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
+                    Fecha de Fin
+                  </label>
+                  <input
+                    type="date"
+                    value={vigenciaFin}
+                    onChange={(e) => setVigenciaFin(e.target.value)}
+                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                  />
+                </div>
+              )}
+
+              {(modoVenta === 'CUPO_FIJO' || modoVenta === 'MIXTO') && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
+                    Cupo Máximo de Ventas
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={cupoMaximo}
+                    onChange={(e) => setCupoMaximo(e.target.value)}
+                    placeholder="Sin límite"
+                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '6px', border: cupoInvalido ? '1.5px solid #ef4444' : '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Live guardrail: cupo vs stock BOM */}
+            {cupoExcedeStock && (
+              <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#991b1b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <AlertTriangle size={14} /> El cupo supera el stock del combo
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#991b1b', marginTop: '0.2rem' }}>
+                  El stock virtual del combo es de {virtualStock} kit(s). No puede venderse un cupo mayor al stock disponible.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCupoMaximo(String(virtualStock))}
+                  style={{
+                    marginTop: '0.5rem',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '6px',
+                    border: '1px solid #fca5a5',
+                    backgroundColor: '#ffffff',
+                    color: '#991b1b',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Ajustar al máximo: {virtualStock}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Column: Pricing, Availability & Live Card Preview */}
@@ -1040,38 +1315,55 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
             {/* Virtual Availability Box */}
             <div
               style={{
-                backgroundColor: virtualStock > 0 ? '#f0fdf4' : '#fef2f2',
-                border: virtualStock > 0 ? '1px solid #bbf7d0' : '1px solid #fecaca',
+                backgroundColor: sellableInfo.sellable > 0 ? '#f0fdf4' : '#fef2f2',
+                border: sellableInfo.sellable > 0 ? '1px solid #bbf7d0' : '1px solid #fecaca',
                 borderRadius: '8px',
                 padding: '0.75rem',
                 marginBottom: '1.25rem',
               }}
             >
-              <div style={{ fontSize: '0.75rem', color: virtualStock > 0 ? '#166534' : '#991b1b', fontWeight: 600 }}>
+              <div style={{ fontSize: '0.75rem', color: sellableInfo.sellable > 0 ? '#166534' : '#991b1b', fontWeight: 600 }}>
                 Disponibilidad Inmediata:
               </div>
               <div
                 style={{
                   fontSize: '1.05rem',
                   fontWeight: 800,
-                  color: virtualStock > 0 ? '#16a34a' : '#ef4444',
+                  color: sellableInfo.sellable > 0 ? '#16a34a' : '#ef4444',
                   marginTop: '0.2rem',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.4rem',
                 }}
               >
-                {virtualStock > 0 ? <CheckCircle size={17} /> : <AlertCircle size={17} />}
-                {virtualStock} kit{virtualStock !== 1 ? 's' : ''} disponibles
+                {sellableInfo.sellable > 0 ? <CheckCircle size={17} /> : <AlertCircle size={17} />}
+                {sellableInfo.sellable} kit{sellableInfo.sellable !== 1 ? 's' : ''} disponibles
               </div>
+              {estadoLabel && (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    marginTop: '0.4rem',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: '999px',
+                    backgroundColor: sellableInfo.estado === 'ACTIVO' ? '#dcfce7' : '#fee2e2',
+                    color: sellableInfo.estado === 'ACTIVO' ? '#166534' : '#991b1b',
+                    border: `1px solid ${sellableInfo.estado === 'ACTIVO' ? '#bbf7d0' : '#fecaca'}`,
+                  }}
+                >
+                  {estadoLabel}
+                </span>
+              )}
               <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.7rem', color: '#64748b' }}>
-                Stock dinámico según el producto con menor disponibilidad.
+                Stock dinámico según el producto con menor disponibilidad, vigencia y cupo configurados.
               </p>
             </div>
 
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || cupoInvalido}
               style={{
                 width: '100%',
                 backgroundColor: '#0f172a',

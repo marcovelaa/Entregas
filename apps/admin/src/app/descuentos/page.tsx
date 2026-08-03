@@ -535,7 +535,11 @@ export default function DescuentosDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {combos.map((c) => (
+                  {combos.map((c) => {
+                    const estadoVenta = c.estado_venta || (c.activo ? 'ACTIVO' : 'INACTIVO');
+                    const comboActivo = estadoVenta === 'ACTIVO';
+                    const estadoLabel = estadoVenta === 'ACTIVO' ? 'Activo' : estadoVenta === 'VENCIDO' ? 'Vencido' : estadoVenta === 'AGOTADO' ? 'Agotado' : 'Inactivo';
+                    return (
                     <tr key={c.id}>
                       <td style={{ fontWeight: 600, color: '#0f172a' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -571,8 +575,8 @@ export default function DescuentosDashboardPage() {
                         Bs. {Number(c.precio_base).toFixed(2)}
                       </td>
                       <td>
-                        <span className={`${styles.statusPill} ${c.activo ? styles.statusActive : styles.statusExpired}`}>
-                          {c.activo ? 'Activo' : 'Inactivo'}
+                        <span className={`${styles.statusPill} ${comboActivo ? styles.statusActive : styles.statusExpired}`}>
+                          {estadoLabel}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
@@ -596,7 +600,8 @@ export default function DescuentosDashboardPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

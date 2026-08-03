@@ -165,14 +165,6 @@ export default function ComboRecipeSection({ productPayload, setProductPayload }
     };
   }, [componentes, productPayload.precio_base, catalogoProductos]);
 
-  const filteredCatalogOptions = useMemo(() => {
-    if (!searchTerm) return catalogoProductos;
-    const term = searchTerm.toLowerCase();
-    return catalogoProductos.filter(
-      (p) => p.nombre?.toLowerCase().includes(term) || p.sku?.toLowerCase().includes(term)
-    );
-  }, [catalogoProductos, searchTerm]);
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Product Type Selector */}
