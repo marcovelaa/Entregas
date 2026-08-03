@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@repo/combo-rules": ["../../packages/combo-rules/src/index.ts"]
     }
   },
   "include": [
