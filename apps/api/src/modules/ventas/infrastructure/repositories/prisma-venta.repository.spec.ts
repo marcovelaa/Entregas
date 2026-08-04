@@ -18,6 +18,12 @@ type TxMock = {
     updateMany: jest.Mock;
     update: jest.Mock;
   };
+  variante: {
+    findFirst: jest.Mock;
+  };
+  empaque: {
+    findUnique: jest.Mock;
+  };
   movimientosInventario: { create: jest.Mock };
 };
 
@@ -28,6 +34,8 @@ function createTx(): TxMock {
     venta: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     producto: { findUnique: jest.fn(), updateMany: jest.fn() },
     inventario: { findFirst: jest.fn(), updateMany: jest.fn(), update: jest.fn() },
+    variante: { findFirst: jest.fn() },
+    empaque: { findUnique: jest.fn() },
     movimientosInventario: { create: jest.fn() },
   };
 }
@@ -93,40 +101,35 @@ function completadaRow() {
   return { ...anuladaRow(), estado: 'COMPLETADA' };
 }
 
-/**
- * Mirrors the DB-level conditional-update semantics of cupo reservations:
- * - reservation (where.cupo_usado.lte + increment) succeeds only while
- *   cupoUsado <= cap - cantidad (atomic guard that kills the POS race),
- * - release (where.cupo_usado.gte + decrement) subtracts only when there is
- *   enough usage, otherwise the caller clamps via the gt-branch,
- * - plain increment (revertirAnulacion) never validates against the cap.
- */
 function mockCupoStateful(tx: TxMock, state: CupoState) {
   tx.producto.updateMany.mockImplementation(
-    async ({ where, data }: { where: Record<string, any>; data: Record<string, any> }) => {
+    async ({
+      where,
+      data,
+    }: {
+      where: { id: bigint; cupo_maximo?: { not: null }; cupo_usado?: { lte?: number; gte?: number; gt?: number } };
+      data: { cupo_usado: { increment?: number; decrement?: number } | number };
+    }) => {
       const used = state.cupoUsado;
-      if (typeof where.cupo_usado?.lte === 'number') {
-        if (used <= where.cupo_usado.lte) {
-          state.cupoUsado = used + data.cupo_usado.increment;
-          return { count: 1 };
+
+      if (typeof data.cupo_usado === 'number') {
+        if (where.cupo_usado?.gt !== undefined && used <= where.cupo_usado.gt) {
+          return { count: 0 };
         }
-        return { count: 0 };
+        state.cupoUsado = data.cupo_usado;
+        return { count: 1 };
       }
-      if (typeof where.cupo_usado?.gte === 'number') {
-        if (used >= where.cupo_usado.gte) {
-          state.cupoUsado = used - data.cupo_usado.decrement;
-          return { count: 1 };
-        }
-        return { count: 0 };
+
+      if (data.cupo_usado.decrement !== undefined) {
+        const threshold = where.cupo_usado?.gte ?? 0;
+        if (used < threshold) return { count: 0 };
+        state.cupoUsado = Math.max(0, used - data.cupo_usado.decrement);
+        return { count: 1 };
       }
-      if (typeof where.cupo_usado?.gt === 'number') {
-        if (used > where.cupo_usado.gt) {
-          state.cupoUsado = 0;
-          return { count: 1 };
-        }
-        return { count: 0 };
-      }
-      if (data.cupo_usado?.increment !== undefined) {
+
+      if (data.cupo_usado.increment !== undefined) {
+        const ceiling = where.cupo_usado?.lte;
+        if (ceiling !== undefined && used > ceiling) return { count: 0 };
         state.cupoUsado = used + data.cupo_usado.increment;
         return { count: 1 };
       }
@@ -138,7 +141,8 @@ function mockCupoStateful(tx: TxMock, state: CupoState) {
 function setupCrear(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
   tx.venta.create.mockResolvedValue(ventaRow());
   tx.producto.findUnique.mockResolvedValue(comboRow(comboOverrides));
-  tx.inventario.findFirst.mockResolvedValue({ id: 5n, cantidad_disponible: 100, reservado: 0 });
+  tx.variante.findFirst.mockResolvedValue({ id: 701n, producto_id: 7n, activo: true });
+  tx.inventario.findFirst.mockResolvedValue({ id: 5n, variante_id: 701n, cantidad_disponible: 100, reservado: 0 });
   tx.inventario.updateMany.mockResolvedValue({ count: 1 });
   tx.movimientosInventario.create.mockResolvedValue({});
 }
@@ -146,7 +150,8 @@ function setupCrear(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
 function setupAnular(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
   tx.venta.findUnique.mockResolvedValue(completadaRow());
   tx.producto.findUnique.mockResolvedValue(comboRow(comboOverrides));
-  tx.inventario.findFirst.mockResolvedValue({ id: 5n, cantidad_disponible: 8, reservado: 0 });
+  tx.variante.findFirst.mockResolvedValue({ id: 701n, producto_id: 7n, activo: true });
+  tx.inventario.findFirst.mockResolvedValue({ id: 5n, variante_id: 701n, cantidad_disponible: 8, reservado: 0 });
   tx.inventario.update.mockResolvedValue({});
   tx.movimientosInventario.create.mockResolvedValue({});
 }
@@ -154,8 +159,9 @@ function setupAnular(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
 function setupRevertir(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
   tx.venta.findUnique.mockResolvedValue(anuladaRow());
   tx.producto.findUnique.mockResolvedValue(comboRow(comboOverrides));
-  tx.inventario.findFirst.mockResolvedValue({ id: 5n, cantidad_disponible: 10, reservado: 0 });
-  tx.inventario.update.mockResolvedValue({});
+  tx.variante.findFirst.mockResolvedValue({ id: 701n, producto_id: 7n, activo: true });
+  tx.inventario.findFirst.mockResolvedValue({ id: 5n, variante_id: 701n, cantidad_disponible: 10, reservado: 0 });
+  tx.inventario.updateMany.mockResolvedValue({ count: 1 });
   tx.movimientosInventario.create.mockResolvedValue({});
 }
 
@@ -312,6 +318,33 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     expect(tx.producto.updateMany).not.toHaveBeenCalled();
     expect(tx.inventario.updateMany).toHaveBeenCalled();
   });
+
+  it('resolves component base variant when variante_id is null and decrements atomically', async () => {
+    const { repo, tx } = createHarness(createTx());
+    setupCrear(tx, { cupo_maximo: null });
+
+    const result = await repo.crear(ventaData, 50, 0);
+
+    expect(result.id).toBe('1');
+    expect(tx.variante.findFirst).toHaveBeenCalledWith({
+      where: { producto_id: 7n, activo: true },
+      orderBy: { id: 'asc' },
+    });
+    expect(tx.inventario.updateMany).toHaveBeenCalledWith({
+      where: { id: 5n, cantidad_disponible: { gte: 2 } },
+      data: { cantidad_disponible: { decrement: 2 } },
+    });
+  });
+
+  it('throws error when concurrent update decreases stock below required units', async () => {
+    const { repo, tx } = createHarness(createTx());
+    setupCrear(tx, { cupo_maximo: null });
+    tx.inventario.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(repo.crear(ventaData, 50, 0)).rejects.toThrow(
+      /Conflicto de concurrencia: stock insuficiente/,
+    );
+  });
 });
 
 describe('PrismaVentaRepository.anular - liberación de cupo (2.8)', () => {
@@ -331,7 +364,7 @@ describe('PrismaVentaRepository.anular - liberación de cupo (2.8)', () => {
     });
     expect(tx.inventario.update).toHaveBeenCalledWith({
       where: { id: 5n },
-      data: { cantidad_disponible: 10 },
+      data: { cantidad_disponible: { increment: 2 } },
     });
     expect(tx.movimientosInventario.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ tipo_movimiento: 'ENTRADA' }) }),
@@ -379,9 +412,9 @@ describe('PrismaVentaRepository.revertirAnulacion - restauración de cupo (2.8)'
       where: { id: 99n, cupo_maximo: { not: null } },
       data: { cupo_usado: { increment: 1 } },
     });
-    expect(tx.inventario.update).toHaveBeenCalledWith({
-      where: { id: 5n },
-      data: { cantidad_disponible: 8 },
+    expect(tx.inventario.updateMany).toHaveBeenCalledWith({
+      where: { id: 5n, cantidad_disponible: { gte: 2 } },
+      data: { cantidad_disponible: { decrement: 2 } },
     });
     expect(tx.movimientosInventario.create).toHaveBeenCalledWith(
       expect.objectContaining({

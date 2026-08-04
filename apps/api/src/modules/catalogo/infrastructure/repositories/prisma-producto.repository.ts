@@ -199,75 +199,77 @@ export class PrismaProductoRepository implements IProductoRepository {
   }
 
   async actualizar(id: bigint, datos: ProductoActualizarInput): Promise<ProductoEntity> {
-    if (datos.precio_base !== undefined || datos.precio_promocional !== undefined) {
-      const prodWithVars = await this.prisma.producto.findUnique({
+    return this.prisma.$transaction(async (tx) => {
+      if (datos.precio_base !== undefined || datos.precio_promocional !== undefined) {
+        const prodWithVars = await tx.producto.findUnique({
+          where: { id },
+          include: { variantes: true },
+        });
+        if (prodWithVars && prodWithVars.variantes.length === 1) {
+          await tx.variante.update({
+            where: { id: prodWithVars.variantes[0].id },
+            data: {
+              ...(datos.precio_base !== undefined && { precio_unitario: datos.precio_base }),
+              ...(datos.precio_promocional !== undefined && { precio_promocional: datos.precio_promocional }),
+            },
+          });
+        }
+      }
+
+      if (datos.componentes_combo !== undefined) {
+        await tx.productoComponente.deleteMany({
+          where: { combo_producto_id: id },
+        });
+        if (datos.componentes_combo.length > 0) {
+          await tx.productoComponente.createMany({
+            data: datos.componentes_combo.map((c: any) => ({
+              combo_producto_id: id,
+              componente_prod_id: BigInt(c.componente_prod_id),
+              variante_id: c.variante_id ? BigInt(c.variante_id) : null,
+              empaque_id: c.empaque_id ? BigInt(c.empaque_id) : null,
+              cantidad: Number(c.cantidad) || 1,
+            })),
+          });
+        }
+      }
+
+      return tx.producto.update({
         where: { id },
-        include: { variantes: true },
-      });
-      if (prodWithVars && prodWithVars.variantes.length === 1) {
-        await this.prisma.variante.update({
-          where: { id: prodWithVars.variantes[0].id },
-          data: {
-            ...(datos.precio_base !== undefined && { precio_unitario: datos.precio_base }),
-            ...(datos.precio_promocional !== undefined && { precio_promocional: datos.precio_promocional }),
-          },
-        });
-      }
-    }
-
-    if (datos.componentes_combo !== undefined) {
-      await this.prisma.productoComponente.deleteMany({
-        where: { combo_producto_id: id },
-      });
-      if (datos.componentes_combo.length > 0) {
-        await this.prisma.productoComponente.createMany({
-          data: datos.componentes_combo.map((c: any) => ({
-            combo_producto_id: id,
-            componente_prod_id: BigInt(c.componente_prod_id),
-            variante_id: c.variante_id ? BigInt(c.variante_id) : null,
-            empaque_id: c.empaque_id ? BigInt(c.empaque_id) : null,
-            cantidad: Number(c.cantidad) || 1,
-          })),
-        });
-      }
-    }
-
-    return this.prisma.producto.update({
-      where: { id },
-      data: {
-        ...(datos.categoria_id !== undefined && { categoria_id: datos.categoria_id }),
-        ...(datos.marca_id !== undefined && { marca_id: datos.marca_id }),
-        ...(datos.sku !== undefined && { sku: datos.sku }),
-        ...(datos.nombre !== undefined && { nombre: datos.nombre }),
-        ...(datos.descripcion !== undefined && { descripcion: datos.descripcion }),
-        ...(datos.naturaleza !== undefined && { naturaleza: datos.naturaleza }),
-        ...(datos.tipo_producto !== undefined && { tipo_producto: datos.tipo_producto as any }),
-        ...(datos.unidad_medida !== undefined && { unidad_medida: datos.unidad_medida }),
-        ...(datos.atributos !== undefined && { atributos: datos.atributos }),
-        ...(datos.precio_base !== undefined && { precio_base: datos.precio_base }),
-        ...(datos.precio_promocional !== undefined && { precio_promocional: datos.precio_promocional }),
-        ...(datos.activo !== undefined && { activo: datos.activo }),
-        ...(datos.modo_venta !== undefined && { modo_venta: datos.modo_venta }),
-        ...(datos.vigencia_inicio !== undefined && { vigencia_inicio: datos.vigencia_inicio }),
-        ...(datos.vigencia_fin !== undefined && { vigencia_fin: datos.vigencia_fin }),
-        ...(datos.cupo_maximo !== undefined && { cupo_maximo: datos.cupo_maximo }),
-        ...(datos.dias_semana !== undefined && { dias_semana: datos.dias_semana }),
-        ...(datos.canal_venta !== undefined && { canal_venta: datos.canal_venta }),
-      },
-      include: {
-        marca: true,
-        categoria: true,
-        variantes: { include: { empaques: true } },
-        imagenes: true,
-        componentes_combo: {
-          include: {
-            componente_producto: { include: { imagenes: true } },
-            variante: true,
-            empaque: true,
+        data: {
+          ...(datos.categoria_id !== undefined && { categoria_id: datos.categoria_id }),
+          ...(datos.marca_id !== undefined && { marca_id: datos.marca_id }),
+          ...(datos.sku !== undefined && { sku: datos.sku }),
+          ...(datos.nombre !== undefined && { nombre: datos.nombre }),
+          ...(datos.descripcion !== undefined && { descripcion: datos.descripcion }),
+          ...(datos.naturaleza !== undefined && { naturaleza: datos.naturaleza }),
+          ...(datos.tipo_producto !== undefined && { tipo_producto: datos.tipo_producto as any }),
+          ...(datos.unidad_medida !== undefined && { unidad_medida: datos.unidad_medida }),
+          ...(datos.atributos !== undefined && { atributos: datos.atributos }),
+          ...(datos.precio_base !== undefined && { precio_base: datos.precio_base }),
+          ...(datos.precio_promocional !== undefined && { precio_promocional: datos.precio_promocional }),
+          ...(datos.activo !== undefined && { activo: datos.activo }),
+          ...(datos.modo_venta !== undefined && { modo_venta: datos.modo_venta }),
+          ...(datos.vigencia_inicio !== undefined && { vigencia_inicio: datos.vigencia_inicio }),
+          ...(datos.vigencia_fin !== undefined && { vigencia_fin: datos.vigencia_fin }),
+          ...(datos.cupo_maximo !== undefined && { cupo_maximo: datos.cupo_maximo }),
+          ...(datos.dias_semana !== undefined && { dias_semana: datos.dias_semana }),
+          ...(datos.canal_venta !== undefined && { canal_venta: datos.canal_venta }),
+        },
+        include: {
+          marca: true,
+          categoria: true,
+          variantes: { include: { empaques: true } },
+          imagenes: true,
+          componentes_combo: {
+            include: {
+              componente_producto: { include: { imagenes: true } },
+              variante: true,
+              empaque: true,
+            },
           },
         },
-      },
-    }) as unknown as ProductoEntity;
+      }) as unknown as ProductoEntity;
+    });
   }
 
   async desactivar(id: bigint): Promise<ProductoEntity> {

@@ -105,10 +105,22 @@ export class PrismaVentaRepository implements IVentaRepository {
           // Atomic deduction for each component in the combo recipe
           for (const comp of productoInfo.componentes_combo) {
             const requiredUnits = d.cantidad * comp.cantidad;
+            let targetVarId = comp.variante_id;
+
+            if (!targetVarId) {
+              const defaultVar = await tx.variante.findFirst({
+                where: { producto_id: comp.componente_prod_id, activo: true },
+                orderBy: { id: 'asc' },
+              });
+              if (defaultVar) {
+                targetVarId = defaultVar.id;
+              }
+            }
+
             const compInv = await tx.inventario.findFirst({
               where: {
                 producto_id: comp.componente_prod_id,
-                variante_id: comp.variante_id,
+                ...(targetVarId ? { variante_id: targetVarId } : {}),
               },
             });
 
@@ -120,17 +132,24 @@ export class PrismaVentaRepository implements IVentaRepository {
               throw new Error(`Stock insuficiente para el componente "${comp.componente_producto.nombre}" del combo "${productoInfo.nombre}" (disponible: ${compInv.cantidad_disponible}, requerido: ${requiredUnits})`);
             }
 
-            await tx.inventario.updateMany({
-              where: { id: compInv.id },
+            const updated = await tx.inventario.updateMany({
+              where: {
+                id: compInv.id,
+                cantidad_disponible: { gte: requiredUnits + (compInv.reservado || 0) },
+              },
               data: {
                 cantidad_disponible: { decrement: requiredUnits },
               },
             });
 
+            if (updated.count === 0) {
+              throw new Error(`Conflicto de concurrencia: stock insuficiente para el componente "${comp.componente_producto.nombre}" del combo "${productoInfo.nombre}"`);
+            }
+
             await tx.movimientosInventario.create({
               data: {
                 producto_id: comp.componente_prod_id,
-                variante_id: comp.variante_id,
+                variante_id: targetVarId || compInv.variante_id,
                 tipo_movimiento: 'SALIDA',
                 cantidad: requiredUnits,
                 motivo: `VENTA_COMBO (${productoInfo.nombre})`,
@@ -182,17 +201,24 @@ export class PrismaVentaRepository implements IVentaRepository {
             throw new Error(`Stock insuficiente para el producto ${d.producto_id}`);
           }
 
-          await tx.inventario.updateMany({
-            where: { id: inv.id },
+          const updated = await tx.inventario.updateMany({
+            where: {
+              id: inv.id,
+              cantidad_disponible: { gte: targetUnits + (inv.reservado || 0) },
+            },
             data: {
               cantidad_disponible: { decrement: targetUnits },
             },
           });
 
+          if (updated.count === 0) {
+            throw new Error(`Conflicto de concurrencia: stock insuficiente para el producto ${d.producto_id}`);
+          }
+
           await tx.movimientosInventario.create({
             data: {
               producto_id: prodId,
-              variante_id: targetVarianteId,
+              variante_id: targetVarianteId || inv.variante_id,
               tipo_movimiento: 'SALIDA',
               cantidad: targetUnits,
               motivo: 'VENTA',
@@ -331,24 +357,36 @@ export class PrismaVentaRepository implements IVentaRepository {
         if (productoInfo?.tipo_producto === 'COMBO' && productoInfo.componentes_combo.length > 0) {
           for (const comp of productoInfo.componentes_combo) {
             const unitsToReturn = d.cantidad * comp.cantidad;
+            let targetVarId = comp.variante_id;
+
+            if (!targetVarId) {
+              const defaultVar = await tx.variante.findFirst({
+                where: { producto_id: comp.componente_prod_id, activo: true },
+                orderBy: { id: 'asc' },
+              });
+              if (defaultVar) {
+                targetVarId = defaultVar.id;
+              }
+            }
+
             const compInv = await tx.inventario.findFirst({
               where: {
                 producto_id: comp.componente_prod_id,
-                variante_id: comp.variante_id,
+                ...(targetVarId ? { variante_id: targetVarId } : {}),
               },
             });
 
             if (compInv) {
               await tx.inventario.update({
                 where: { id: compInv.id },
-                data: { cantidad_disponible: compInv.cantidad_disponible + unitsToReturn },
+                data: { cantidad_disponible: { increment: unitsToReturn } },
               });
             }
 
             await tx.movimientosInventario.create({
               data: {
                 producto_id: comp.componente_prod_id,
-                variante_id: comp.variante_id,
+                variante_id: targetVarId || compInv?.variante_id || null,
                 tipo_movimiento: 'ENTRADA',
                 cantidad: unitsToReturn,
                 motivo: motivo || `DEVOLUCION_VENTA_COMBO (${productoInfo.nombre})`,
@@ -359,24 +397,35 @@ export class PrismaVentaRepository implements IVentaRepository {
             });
           }
         } else {
+          let targetVarianteId = d.variante_id ? BigInt(d.variante_id) : null;
+          if (!targetVarianteId) {
+            const defaultVar = await tx.variante.findFirst({
+              where: { producto_id: prodId, activo: true },
+              orderBy: { id: 'asc' },
+            });
+            if (defaultVar) {
+              targetVarianteId = defaultVar.id;
+            }
+          }
+
           const inv = await tx.inventario.findFirst({
             where: {
               producto_id: prodId,
-              variante_id: d.variante_id,
+              ...(targetVarianteId ? { variante_id: targetVarianteId } : {}),
             },
           });
 
           if (inv) {
             await tx.inventario.update({
               where: { id: inv.id },
-              data: { cantidad_disponible: inv.cantidad_disponible + d.cantidad },
+              data: { cantidad_disponible: { increment: d.cantidad } },
             });
           }
 
           await tx.movimientosInventario.create({
             data: {
               producto_id: prodId,
-              variante_id: d.variante_id,
+              variante_id: targetVarianteId || inv?.variante_id || null,
               tipo_movimiento: 'ENTRADA',
               cantidad: d.cantidad,
               motivo: motivo || 'DEVOLUCION_VENTA',
@@ -430,27 +479,51 @@ export class PrismaVentaRepository implements IVentaRepository {
         if (productoInfo?.tipo_producto === 'COMBO' && productoInfo.componentes_combo.length > 0) {
           for (const comp of productoInfo.componentes_combo) {
             const unitsToDeduct = d.cantidad * comp.cantidad;
+            let targetVarId = comp.variante_id;
+
+            if (!targetVarId) {
+              const defaultVar = await tx.variante.findFirst({
+                where: { producto_id: comp.componente_prod_id, activo: true },
+                orderBy: { id: 'asc' },
+              });
+              if (defaultVar) {
+                targetVarId = defaultVar.id;
+              }
+            }
+
             const compInv = await tx.inventario.findFirst({
               where: {
                 producto_id: comp.componente_prod_id,
-                variante_id: comp.variante_id,
+                ...(targetVarId ? { variante_id: targetVarId } : {}),
               },
             });
 
-            if (compInv) {
-              if (compInv.cantidad_disponible - compInv.reservado < unitsToDeduct) {
-                throw new Error(`Stock insuficiente para revertir anulación en componente del combo`);
-              }
-              await tx.inventario.update({
-                where: { id: compInv.id },
-                data: { cantidad_disponible: compInv.cantidad_disponible - unitsToDeduct },
-              });
+            if (!compInv) {
+              throw new Error(`Inventario no encontrado para revertir anulación en componente del combo`);
+            }
+
+            if (compInv.cantidad_disponible - compInv.reservado < unitsToDeduct) {
+              throw new Error(`Stock insuficiente para revertir anulación en componente del combo`);
+            }
+
+            const updated = await tx.inventario.updateMany({
+              where: {
+                id: compInv.id,
+                cantidad_disponible: { gte: unitsToDeduct + (compInv.reservado || 0) },
+              },
+              data: {
+                cantidad_disponible: { decrement: unitsToDeduct },
+              },
+            });
+
+            if (updated.count === 0) {
+              throw new Error(`Conflicto de concurrencia al revertir anulación del componente del combo`);
             }
 
             await tx.movimientosInventario.create({
               data: {
                 producto_id: comp.componente_prod_id,
-                variante_id: comp.variante_id,
+                variante_id: targetVarId || compInv.variante_id,
                 tipo_movimiento: 'SALIDA',
                 cantidad: unitsToDeduct,
                 motivo: `REVERSION_ANULACION_COMBO (${productoInfo.nombre})`,
@@ -461,27 +534,50 @@ export class PrismaVentaRepository implements IVentaRepository {
             });
           }
         } else {
+          let targetVarianteId = d.variante_id ? BigInt(d.variante_id) : null;
+          if (!targetVarianteId) {
+            const defaultVar = await tx.variante.findFirst({
+              where: { producto_id: prodId, activo: true },
+              orderBy: { id: 'asc' },
+            });
+            if (defaultVar) {
+              targetVarianteId = defaultVar.id;
+            }
+          }
+
           const inv = await tx.inventario.findFirst({
             where: {
               producto_id: prodId,
-              variante_id: d.variante_id,
+              ...(targetVarianteId ? { variante_id: targetVarianteId } : {}),
             },
           });
 
-          if (inv) {
-            if (inv.cantidad_disponible - inv.reservado < d.cantidad) {
-              throw new Error(`Stock insuficiente para revertir la anulación del producto ${d.producto_id}`);
-            }
-            await tx.inventario.update({
-              where: { id: inv.id },
-              data: { cantidad_disponible: inv.cantidad_disponible - d.cantidad },
-            });
+          if (!inv) {
+            throw new Error(`Inventario no encontrado para revertir la anulación del producto ${d.producto_id}`);
+          }
+
+          if (inv.cantidad_disponible - inv.reservado < d.cantidad) {
+            throw new Error(`Stock insuficiente para revertir la anulación del producto ${d.producto_id}`);
+          }
+
+          const updated = await tx.inventario.updateMany({
+            where: {
+              id: inv.id,
+              cantidad_disponible: { gte: d.cantidad + (inv.reservado || 0) },
+            },
+            data: {
+              cantidad_disponible: { decrement: d.cantidad },
+            },
+          });
+
+          if (updated.count === 0) {
+            throw new Error(`Conflicto de concurrencia al revertir anulación del producto ${d.producto_id}`);
           }
 
           await tx.movimientosInventario.create({
             data: {
               producto_id: prodId,
-              variante_id: d.variante_id,
+              variante_id: targetVarianteId || inv.variante_id,
               tipo_movimiento: 'SALIDA',
               cantidad: d.cantidad,
               motivo: 'REVERSION_ANULACION',
