@@ -47,7 +47,14 @@ export default function ClientesPage() {
 
   const saveCliente = async () => {
     try {
-      const payload = { nombres, apellidos, documento_id: documentoId, telefono, email, direccion };
+      const payload = {
+        nombres: nombres.trim(),
+        apellidos: apellidos.trim() || undefined,
+        documento_id: documentoId.trim() || undefined,
+        telefono: telefono.trim() || undefined,
+        email: email.trim() || undefined,
+        direccion: direccion.trim() || undefined,
+      };
       if (editingCliente) {
         await api.put(`/clientes/${editingCliente.id}`, payload);
       } else {
@@ -55,8 +62,10 @@ export default function ClientesPage() {
       }
       setIsModalOpen(false);
       fetchClientes();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving cliente:', error);
+      const msg = error.response?.data?.message;
+      alert(Array.isArray(msg) ? msg.join(', ') : (msg || 'Error al guardar el cliente'));
     }
   };
 
