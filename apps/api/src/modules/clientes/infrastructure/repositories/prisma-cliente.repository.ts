@@ -7,14 +7,37 @@ export class PrismaClienteRepository implements IClienteRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async crear(data: ClienteCreateData) {
-    const cliente = await this.prisma.cliente.create({ data });
+    const nombreCompleto = [data.nombres, data.apellidos].filter(Boolean).join(' ').trim() || data.nombre || 'Cliente Genérico';
+    const cliente = await this.prisma.cliente.create({
+      data: {
+        nombre: nombreCompleto,
+        documento_id: data.documento_id || null,
+        email: data.email || null,
+        telefono: data.telefono || null,
+        direccion: data.direccion || null,
+        activo: data.activo !== undefined ? data.activo : true,
+      },
+    });
     return this.serialize(cliente);
   }
 
   async actualizar(id: string, data: ClienteUpdateData) {
+    const updateData: any = {};
+    if (data.nombres !== undefined || data.apellidos !== undefined || data.nombre !== undefined) {
+      const nombreCompleto = [data.nombres, data.apellidos].filter(Boolean).join(' ').trim() || data.nombre;
+      if (nombreCompleto) {
+        updateData.nombre = nombreCompleto;
+      }
+    }
+    if (data.documento_id !== undefined) updateData.documento_id = data.documento_id || null;
+    if (data.email !== undefined) updateData.email = data.email || null;
+    if (data.telefono !== undefined) updateData.telefono = data.telefono || null;
+    if (data.direccion !== undefined) updateData.direccion = data.direccion || null;
+    if (data.activo !== undefined) updateData.activo = data.activo;
+
     const cliente = await this.prisma.cliente.update({
       where: { id: BigInt(id) },
-      data
+      data: updateData,
     });
     return this.serialize(cliente);
   }
@@ -22,9 +45,10 @@ export class PrismaClienteRepository implements IClienteRepository {
   async listar(params: { offset: number; limit: number; buscar?: string }) {
     const where = params.buscar ? {
       OR: [
-        { nombres: { contains: params.buscar, mode: 'insensitive' as any } },
-        { documento_id: { contains: params.buscar } }
-      ]
+        { nombre: { contains: params.buscar, mode: 'insensitive' as any } },
+        { documento_id: { contains: params.buscar, mode: 'insensitive' as any } },
+        { telefono: { contains: params.buscar } },
+      ],
     } : {};
 
     const [total, data] = await Promise.all([
@@ -33,11 +57,11 @@ export class PrismaClienteRepository implements IClienteRepository {
         where,
         skip: params.offset,
         take: params.limit,
-        orderBy: { creado_en: 'desc' }
-      })
+        orderBy: { creado_en: 'desc' },
+      }),
     ]);
 
-    return { total, data: data.map(this.serialize) };
+    return { total, data: data.map((c) => this.serialize(c)) };
   }
 
   async obtenerPorId(id: string) {
@@ -46,9 +70,17 @@ export class PrismaClienteRepository implements IClienteRepository {
   }
 
   private serialize(cliente: any) {
+    const nombreStr = cliente.nombre || '';
+    const parts = nombreStr.split(' ');
+    const nombres = parts[0] || nombreStr;
+    const apellidos = parts.slice(1).join(' ');
+
     return {
       ...cliente,
       id: cliente.id.toString(),
+      nombre: nombreStr,
+      nombres: nombres,
+      apellidos: apellidos,
     };
   }
 }

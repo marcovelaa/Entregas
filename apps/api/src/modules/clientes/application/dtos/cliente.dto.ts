@@ -9,9 +9,15 @@ export class ListarClientesDto extends PaginationDto {
 }
 
 export class CrearClienteDto {
-  @IsString()
+  @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  nombres!: string;
+  @IsString()
+  nombre?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  nombres?: string;
 
   @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value))
@@ -41,6 +47,11 @@ export class CrearClienteDto {
 }
 
 export class ActualizarClienteDto {
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  nombre?: string;
+
   @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()

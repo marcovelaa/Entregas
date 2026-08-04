@@ -1,15 +1,17 @@
 export const CLIENTE_REPOSITORY = 'CLIENTE_REPOSITORY';
 
 export type ClienteCreateData = {
-  nombres: string;
+  nombre?: string;
+  nombres?: string;
   apellidos?: string;
   documento_id?: string;
   email?: string;
   telefono?: string;
   direccion?: string;
+  activo?: boolean;
 };
 
-export type ClienteUpdateData = Partial<ClienteCreateData> & { activo?: boolean };
+export type ClienteUpdateData = Partial<ClienteCreateData>;
 
 export interface IClienteRepository {
   crear(data: ClienteCreateData): Promise<any>;
