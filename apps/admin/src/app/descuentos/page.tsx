@@ -470,38 +470,14 @@ export default function DescuentosDashboardPage() {
                         </td>
                         <td>
                           {d.limiteUsos && d.limiteUsos > 0 ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '90px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.82rem' }}>
-                                <span style={{ fontWeight: 700, color: '#0f172a' }}>{d.usosActuales}</span>
-                                <span style={{ color: '#64748b', fontSize: '0.75rem' }}>de {d.limiteUsos} usos</span>
-                              </div>
-                              <div style={{ width: '100%', height: '4px', backgroundColor: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
-                                <div
-                                  style={{
-                                    width: `${Math.min(100, (d.usosActuales / d.limiteUsos) * 100)}%`,
-                                    height: '100%',
-                                    backgroundColor: (d.usosActuales / d.limiteUsos) >= 0.9 ? '#ef4444' : '#0f172a',
-                                    borderRadius: '999px',
-                                  }}
-                                />
-                              </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <span style={{ fontWeight: 700, color: '#0f172a' }}>{d.usosActuales}</span>
+                              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>/ {d.limiteUsos}</span>
                             </div>
                           ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                              <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.85rem' }}>{d.usosActuales}</span>
-                              <span
-                                style={{
-                                  fontSize: '0.72rem',
-                                  fontWeight: 600,
-                                  color: '#059669',
-                                  backgroundColor: '#ecfdf5',
-                                  padding: '0.15rem 0.5rem',
-                                  borderRadius: '999px',
-                                  border: '1px solid #a7f3d0',
-                                }}
-                              >
-                                Ilimitado
-                              </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <span style={{ fontWeight: 700, color: '#0f172a' }}>{d.usosActuales}</span>
+                              <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>· Ilimitado</span>
                             </div>
                           )}
                         </td>
@@ -673,19 +649,7 @@ export default function DescuentosDashboardPage() {
                             </div>
                           </div>
                         ) : (
-                          <span
-                            style={{
-                              fontSize: '0.72rem',
-                              fontWeight: 600,
-                              color: '#059669',
-                              backgroundColor: '#ecfdf5',
-                              padding: '0.18rem 0.55rem',
-                              borderRadius: '999px',
-                              border: '1px solid #a7f3d0',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                            }}
-                          >
+                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
                             Sin límite
                           </span>
                         )}
