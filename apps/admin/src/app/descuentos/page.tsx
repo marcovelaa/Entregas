@@ -477,7 +477,7 @@ export default function DescuentosDashboardPage() {
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                               <span style={{ fontWeight: 700, color: '#0f172a' }}>{d.usosActuales}</span>
-                              <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>· Ilimitado</span>
+                              <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>/ Ilimitado</span>
                             </div>
                           )}
                         </td>
