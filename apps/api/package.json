@@ -20,6 +20,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:migrate:pre-existing": "prisma migrate resolve --applied 20260803083000_init >nul 2>&1 & prisma migrate deploy",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:generate": "prisma generate",
     "db:seed": "prisma db seed"
   },
   "dependencies": {
