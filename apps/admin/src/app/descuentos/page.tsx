@@ -565,7 +565,8 @@ export default function DescuentosDashboardPage() {
                 <thead>
                   <tr>
                     <th>Nombre del Combo</th>
-                    <th>SKU & Canal</th>
+                    <th>SKU</th>
+                    <th>Canal</th>
                     <th>Categoría</th>
                     <th>Componentes en Receta (BOM)</th>
                     <th>Cupo / Ventas</th>
@@ -590,23 +591,11 @@ export default function DescuentosDashboardPage() {
                       <td style={{ fontWeight: 600, color: '#0f172a' }}>
                         {c.nombre}
                       </td>
-                      <td>
-                        <div style={{ fontSize: '0.82rem', color: '#0f172a', fontWeight: 500 }}>{c.sku || 'N/A'}</div>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            marginTop: '2px',
-                            fontSize: '0.68rem',
-                            fontWeight: 600,
-                            padding: '0.1rem 0.45rem',
-                            borderRadius: '4px',
-                            backgroundColor: canal === 'ECOMMERCE' ? '#eff6ff' : canal === 'POS' ? '#f0fdf4' : '#f8fafc',
-                            color: canal === 'ECOMMERCE' ? '#1d4ed8' : canal === 'POS' ? '#15803d' : '#64748b',
-                            border: `1px solid ${canal === 'ECOMMERCE' ? '#bfdbfe' : canal === 'POS' ? '#bbf7d0' : '#e2e8f0'}`,
-                          }}
-                        >
-                          {canal === 'ECOMMERCE' ? 'E-commerce' : canal === 'POS' ? 'POS' : 'Omnicanal'}
-                        </span>
+                      <td style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: 500 }}>
+                        {c.sku || 'N/A'}
+                      </td>
+                      <td style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                        {canal === 'ECOMMERCE' ? 'E-commerce' : canal === 'POS' ? 'POS' : 'Ambos'}
                       </td>
                       <td>{c.categoria?.nombre || 'General'}</td>
                       <td>
