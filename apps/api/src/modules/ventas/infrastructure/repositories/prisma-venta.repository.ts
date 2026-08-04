@@ -376,17 +376,19 @@ export class PrismaVentaRepository implements IVentaRepository {
               },
             });
 
-            if (compInv) {
-              await tx.inventario.update({
-                where: { id: compInv.id },
-                data: { cantidad_disponible: { increment: unitsToReturn } },
-              });
+            if (!compInv) {
+              throw new Error(`Inventario no encontrado para devolver stock en componente del combo`);
             }
+
+            await tx.inventario.update({
+              where: { id: compInv.id },
+              data: { cantidad_disponible: { increment: unitsToReturn } },
+            });
 
             await tx.movimientosInventario.create({
               data: {
                 producto_id: comp.componente_prod_id,
-                variante_id: targetVarId || compInv?.variante_id || null,
+                variante_id: targetVarId || compInv.variante_id,
                 tipo_movimiento: 'ENTRADA',
                 cantidad: unitsToReturn,
                 motivo: motivo || `DEVOLUCION_VENTA_COMBO (${productoInfo.nombre})`,
@@ -415,17 +417,19 @@ export class PrismaVentaRepository implements IVentaRepository {
             },
           });
 
-          if (inv) {
-            await tx.inventario.update({
-              where: { id: inv.id },
-              data: { cantidad_disponible: { increment: d.cantidad } },
-            });
+          if (!inv) {
+            throw new Error(`Inventario no encontrado para retornar stock del producto ${prodId}`);
           }
+
+          await tx.inventario.update({
+            where: { id: inv.id },
+            data: { cantidad_disponible: { increment: d.cantidad } },
+          });
 
           await tx.movimientosInventario.create({
             data: {
               producto_id: prodId,
-              variante_id: targetVarianteId || inv?.variante_id || null,
+              variante_id: targetVarianteId || inv.variante_id,
               tipo_movimiento: 'ENTRADA',
               cantidad: d.cantidad,
               motivo: motivo || 'DEVOLUCION_VENTA',
