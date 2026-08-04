@@ -403,18 +403,6 @@ export default function DescuentosDashboardPage() {
             </div>
           </div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-              <Loader2 size={28} className="spin" style={{ margin: '0 auto 0.5rem', color: '#0f172a' }} />
-              Cargando promociones...
-            </div>
-          ) : filteredDescuentos.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-              <Tag size={32} color="#94a3b8" style={{ marginBottom: '0.5rem' }} />
-              <p style={{ fontWeight: 600, margin: '0 0 0.25rem 0' }}>No se encontraron promociones</p>
-              <p style={{ fontSize: '0.8rem', margin: 0 }}>Crea una regla de descuento o cupón para comenzar.</p>
-            </div>
-          ) : (
             <div className={styles.tableContainer}>
               <table className={styles.table}>
                 <thead>
@@ -430,15 +418,61 @@ export default function DescuentosDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDescuentos.map((d) => {
-                    const now = new Date();
-                    const inicio = new Date(d.fechaInicio);
-                    const fin = new Date(d.fechaFin);
-                    const isLive = d.activo && inicio <= now && fin >= now;
-                    const scheduleLabel = dayTimeLabel(d);
+                  {loading ? (
+                    Array.from({ length: 5 }).map((_, idx) => (
+                      <tr key={`skeleton-desc-${idx}`}>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '130px' }} />
+                            <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '80px', height: '11px' }} />
+                          </div>
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonBadge}`} style={{ width: '70px' }} />
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '85px' }} />
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonBadge}`} style={{ width: '60px' }} />
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '75px' }} />
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '120px' }} />
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonBadge}`} style={{ width: '55px' }} />
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                            <div className={`${styles.skeleton} ${styles.skeletonBtn}`} />
+                            <div className={`${styles.skeleton} ${styles.skeletonBtn}`} />
+                            <div className={`${styles.skeleton} ${styles.skeletonBtn}`} />
+                            <div className={`${styles.skeleton} ${styles.skeletonBtn}`} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : filteredDescuentos.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                        <Tag size={32} color="#94a3b8" style={{ margin: '0 auto 0.5rem', display: 'block' }} />
+                        <p style={{ fontWeight: 600, margin: '0 0 0.25rem 0', color: '#0f172a' }}>No se encontraron promociones</p>
+                        <p style={{ fontSize: '0.8rem', margin: 0 }}>Crea una regla de descuento o cupón para comenzar.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredDescuentos.map((d) => {
+                      const now = new Date();
+                      const inicio = new Date(d.fechaInicio);
+                      const fin = new Date(d.fechaFin);
+                      const isLive = d.activo && inicio <= now && fin >= now;
+                      const scheduleLabel = dayTimeLabel(d);
 
-                    return (
-                      <tr key={d.id}>
+                      return (
+                        <tr key={d.id}>
                         <td>
                           <div style={{ fontWeight: 600, color: '#0f172a' }}>{d.nombre}</div>
                           {d.descripcion && <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{d.descripcion}</div>}
@@ -528,11 +562,11 @@ export default function DescuentosDashboardPage() {
                         </td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
@@ -548,18 +582,6 @@ export default function DescuentosDashboardPage() {
             </p>
           </div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-              <Loader2 size={28} className="spin" style={{ margin: '0 auto 0.5rem', color: '#0f172a' }} />
-              Cargando combos...
-            </div>
-          ) : combos.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-              <Layers size={32} color="#94a3b8" style={{ marginBottom: '0.5rem' }} />
-              <p style={{ fontWeight: 600, margin: '0 0 0.25rem 0' }}>No tienes combos creados aún</p>
-              <p style={{ fontSize: '0.8rem', margin: 0 }}>Crea un combo promocional uniendo 2 o más productos existentes.</p>
-            </div>
-          ) : (
             <div className={styles.tableContainer}>
               <table className={styles.table}>
                 <thead>
@@ -576,7 +598,56 @@ export default function DescuentosDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {combos.map((c) => {
+                  {loading ? (
+                    Array.from({ length: 5 }).map((_, idx) => (
+                      <tr key={`skeleton-combo-${idx}`}>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '150px' }} />
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '70px' }} />
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '60px' }} />
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '80px' }} />
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '100px' }} />
+                            <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '140px', height: '11px' }} />
+                          </div>
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '80px' }} />
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonText}`} style={{ width: '70px' }} />
+                        </td>
+                        <td>
+                          <div className={`${styles.skeleton} ${styles.skeletonBadge}`} style={{ width: '55px' }} />
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                            <div className={`${styles.skeleton} ${styles.skeletonBtn}`} />
+                            <div className={`${styles.skeleton} ${styles.skeletonBtn}`} />
+                            <div className={`${styles.skeleton} ${styles.skeletonBtn}`} />
+                            <div className={`${styles.skeleton} ${styles.skeletonBtn}`} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : combos.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                        <Layers size={32} color="#94a3b8" style={{ margin: '0 auto 0.5rem', display: 'block' }} />
+                        <p style={{ fontWeight: 600, margin: '0 0 0.25rem 0', color: '#0f172a' }}>No tienes combos creados aún</p>
+                        <p style={{ fontSize: '0.8rem', margin: 0 }}>Crea un combo promocional uniendo 2 o más productos existentes.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    combos.map((c) => {
                     const estadoVenta = c.estado_venta || (c.activo ? 'ACTIVO' : 'INACTIVO');
                     const comboActivo = estadoVenta === 'ACTIVO';
                     const estadoLabel = estadoVenta === 'ACTIVO' ? 'Activo' : estadoVenta === 'VENCIDO' ? 'Vencido' : estadoVenta === 'AGOTADO' ? 'Agotado' : 'Inactivo';
@@ -666,11 +737,11 @@ export default function DescuentosDashboardPage() {
                       </td>
                     </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
