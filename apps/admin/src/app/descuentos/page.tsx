@@ -588,22 +588,7 @@ export default function DescuentosDashboardPage() {
                     return (
                     <tr key={c.id}>
                       <td style={{ fontWeight: 600, color: '#0f172a' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <span
-                            style={{
-                              backgroundColor: '#f1f5f9',
-                              color: '#334155',
-                              border: '1px solid #e2e8f0',
-                              fontSize: '0.7rem',
-                              padding: '0.15rem 0.4rem',
-                              borderRadius: '4px',
-                              fontWeight: 700,
-                            }}
-                          >
-                            KIT
-                          </span>
-                          {c.nombre}
-                        </div>
+                        {c.nombre}
                       </td>
                       <td>
                         <div style={{ fontSize: '0.82rem', color: '#0f172a', fontWeight: 500 }}>{c.sku || 'N/A'}</div>
