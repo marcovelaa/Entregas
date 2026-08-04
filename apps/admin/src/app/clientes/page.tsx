@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Edit, ToggleLeft, ToggleRight, Users, X, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit, ToggleLeft, ToggleRight, Users, X, AlertCircle, User, CreditCard, Phone, Mail, MapPin, Loader2 } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { Modal } from '../../components/molecules/Modal/Modal';
 import styles from './page.module.css';
@@ -273,93 +273,154 @@ export default function ClientesPage() {
         </div>
       </section>
 
-      {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingCliente ? 'Editar Cliente' : 'Nuevo Cliente'} maxWidth="560px">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '0.5rem 0' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+      {/* Modal: Nuevo / Editar Cliente */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingCliente ? 'Editar Cliente' : 'Nuevo Cliente'}
+        maxWidth="600px"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveCliente();
+          }}
+          className={styles.modalBody}
+        >
+          {/* Section 1: Personal Info */}
+          <div className={styles.sectionHeader}>
+            <User size={13} />
+            <span>Información Personal</span>
+          </div>
+
+          <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Nombres *</label>
-              <input
-                className={styles.formInput}
-                placeholder="Ej. Juan"
-                value={nombres}
-                onChange={(e) => setNombres(e.target.value)}
-                autoFocus
-              />
+              <label className={styles.formLabel}>
+                Nombres <span className={styles.requiredStar}>*</span>
+              </label>
+              <div className={styles.inputWrapper}>
+                <User size={15} className={styles.inputIcon} />
+                <input
+                  className={styles.formInputWithIcon}
+                  placeholder="Ej. Juan Carlos"
+                  value={nombres}
+                  onChange={(e) => setNombres(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
             </div>
+
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Apellidos</label>
-              <input
-                className={styles.formInput}
-                placeholder="Ej. Pérez"
-                value={apellidos}
-                onChange={(e) => setApellidos(e.target.value)}
-              />
+              <div className={styles.inputWrapper}>
+                <User size={15} className={styles.inputIcon} />
+                <input
+                  className={styles.formInputWithIcon}
+                  placeholder="Ej. Pérez García"
+                  value={apellidos}
+                  onChange={(e) => setApellidos(e.target.value)}
+                />
+              </div>
             </div>
+          </div>
+
+          {/* Section 2: Identification */}
+          <div className={styles.sectionHeader}>
+            <CreditCard size={13} />
+            <span>Identificación & Facturación</span>
           </div>
 
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Cédula de Identidad / NIT</label>
-            <input
-              className={styles.formInput}
-              placeholder="Ej. 12345678 o NIT"
-              value={documentoId}
-              onChange={(e) => setDocumentoId(e.target.value)}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Teléfono / Celular</label>
+            <div className={styles.inputWrapper}>
+              <CreditCard size={15} className={styles.inputIcon} />
               <input
-                className={styles.formInput}
-                placeholder="Ej. 77123456"
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
+                className={styles.formInputWithIcon}
+                placeholder="Ej. 8472910 o NIT empresarial"
+                value={documentoId}
+                onChange={(e) => setDocumentoId(e.target.value)}
               />
             </div>
+            <span className={styles.helperText}>Utilizado para emisión de comprobantes y facturación.</span>
+          </div>
+
+          {/* Section 3: Contact & Location */}
+          <div className={styles.sectionHeader}>
+            <Phone size={13} />
+            <span>Contacto & Ubicación</span>
+          </div>
+
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Teléfono / WhatsApp</label>
+              <div className={styles.inputWrapper}>
+                <Phone size={15} className={styles.inputIcon} />
+                <input
+                  type="tel"
+                  className={styles.formInputWithIcon}
+                  placeholder="Ej. 77123456"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Correo Electrónico</label>
-              <input
-                type="email"
-                className={styles.formInput}
-                placeholder="cliente@ejemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <div className={styles.inputWrapper}>
+                <Mail size={15} className={styles.inputIcon} />
+                <input
+                  type="email"
+                  className={styles.formInputWithIcon}
+                  placeholder="cliente@ejemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Dirección Física</label>
-            <input
-              className={styles.formInput}
-              placeholder="Av. Principal #123, Zona Central"
-              value={direccion}
-              onChange={(e) => setDireccion(e.target.value)}
-            />
+            <label className={styles.formLabel}>Dirección de Entrega</label>
+            <div className={styles.inputWrapper}>
+              <MapPin size={15} className={styles.inputIcon} />
+              <input
+                className={styles.formInputWithIcon}
+                placeholder="Av. Principal #123, Edificio Los Pinos"
+                value={direccion}
+                onChange={(e) => setDireccion(e.target.value)}
+              />
+            </div>
+            <span className={styles.helperText}>Dirección física para envíos y pedidos a domicilio.</span>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+          {/* Footer Actions */}
+          <div className={styles.modalFooter}>
             <button
               type="button"
-              className={styles.actionBtn}
-              style={{ padding: '0.6rem 1rem', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#475569', fontWeight: 600 }}
+              className={styles.cancelBtn}
               onClick={() => setIsModalOpen(false)}
             >
               Cancelar
             </button>
             <button
-              type="button"
-              className={styles.primaryBtn}
-              onClick={saveCliente}
+              type="submit"
+              className={styles.submitBtn}
               disabled={!nombres.trim() || saving}
-              style={{ opacity: (!nombres.trim() || saving) ? 0.6 : 1 }}
             >
-              {saving ? 'Guardando...' : editingCliente ? 'Guardar Cambios' : 'Crear Cliente'}
+              {saving ? (
+                <>
+                  <Loader2 size={16} className="spin" /> Guardando...
+                </>
+              ) : editingCliente ? (
+                'Guardar Cambios'
+              ) : (
+                'Registrar Cliente'
+              )}
             </button>
           </div>
-        </div>
+        </form>
       </Modal>
     </main>
   );

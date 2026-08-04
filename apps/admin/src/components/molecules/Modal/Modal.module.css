@@ -14,14 +14,16 @@
 }
 
 .modal {
-  background-color: var(--bg-subtle);
-  border-radius: 12px;
+  background-color: var(--bg-subtle, #ffffff);
+  border-radius: 16px;
   width: 100%;
   max-width: 750px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-light, #e2e8f0);
+  font-family: var(--font-body);
   animation: modalIn 0.2s ease-out;
 }
 
@@ -29,13 +31,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border-light);
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
 }
 
 .title {
-  font-size: 1.125rem;
-  font-weight: 700;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-family: var(--font-heading);
   color: var(--text-main);
 }
 
