@@ -121,35 +121,25 @@ export default function ClientesPage() {
 
       {/* Main Card */}
       <section className={styles.card}>
-        {/* Filter Sub-Tabs and Search */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+        {/* Toolbar: Filter Sub-Tabs and Search */}
+        <div className={styles.toolbar}>
+          <div className={styles.filterTabs}>
             {(['todos', 'activos', 'inactivos'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTabFilter(tab)}
-                style={{
-                  border: 'none',
-                  background: activeTabFilter === tab ? '#f1f5f9' : 'transparent',
-                  color: activeTabFilter === tab ? '#0f172a' : '#64748b',
-                  padding: '0.4rem 0.8rem',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem',
-                  fontWeight: activeTabFilter === tab ? 700 : 500,
-                  cursor: 'pointer',
-                  textTransform: 'capitalize',
-                }}
+                className={`${styles.filterTab} ${activeTabFilter === tab ? styles.filterTabActive : ''}`}
               >
-                {tab}
+                {tab === 'todos' ? 'Todos' : tab === 'activos' ? 'Activos' : 'Inactivos'}
               </button>
             ))}
           </div>
 
-          <div className={styles.searchBar} style={{ margin: 0 }}>
-            <Search size={16} color="#94a3b8" />
+          <div className={styles.searchWrapper}>
+            <Search size={16} className={styles.searchIcon} />
             <input
               type="text"
-              placeholder="Buscar por nombre, CI/NIT, teléfono..."
+              placeholder="Buscar cliente, CI/NIT, teléfono..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={styles.searchInput}
@@ -157,7 +147,8 @@ export default function ClientesPage() {
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}
+                className={styles.clearSearchBtn}
+                title="Limpiar búsqueda"
               >
                 <X size={14} />
               </button>

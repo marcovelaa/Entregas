@@ -378,24 +378,14 @@ export default function DescuentosDashboardPage() {
       {/* TAB 1: Promociones & Cupones View */}
       {mainTab === 'promociones' && (
         <section className={styles.card}>
-          {/* Filter Sub-Tabs */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {/* Toolbar: Filter Sub-Tabs */}
+          <div className={styles.toolbar}>
+            <div className={styles.filterTabs}>
               {(['todas', 'activas', 'programadas', 'vencidas'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTabFilter(tab)}
-                  style={{
-                    border: 'none',
-                    background: activeTabFilter === tab ? '#f1f5f9' : 'transparent',
-                    color: activeTabFilter === tab ? '#0f172a' : '#64748b',
-                    padding: '0.4rem 0.8rem',
-                    borderRadius: '6px',
-                    fontSize: '0.85rem',
-                    fontWeight: activeTabFilter === tab ? 700 : 500,
-                    cursor: 'pointer',
-                    textTransform: 'capitalize',
-                  }}
+                  className={`${styles.filterTab} ${activeTabFilter === tab ? styles.filterTabActive : ''}`}
                 >
                   {tab}
                 </button>
