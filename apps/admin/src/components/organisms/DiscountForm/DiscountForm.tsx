@@ -6,6 +6,19 @@ import { TargetSelector, TargetItem } from './TargetSelector';
 import { LivePromoSimulator } from './LivePromoSimulator';
 import { Tag, Layers, Calendar, Sliders, Save, Loader2 } from 'lucide-react';
 
+// Day values follow the API contract: 0 = Sunday .. 6 = Saturday.
+// Display order is week-first: Monday (1) .. Sunday (0).
+const DAY_ORDER: number[] = [1, 2, 3, 4, 5, 6, 0];
+const DAY_LABELS: Record<number, string> = {
+  0: 'Dom',
+  1: 'Lun',
+  2: 'Mar',
+  3: 'Mié',
+  4: 'Jue',
+  5: 'Vie',
+  6: 'Sáb',
+};
+
 export interface DiscountFormProps {
   initialData?: any;
   onSubmit: (data: any) => Promise<void>;
@@ -56,7 +69,25 @@ export function DiscountForm({
     productoIds: (initialData?.productos?.map((p: any) => p.id.toString()) || initialData?.productoIds || []) as string[],
     varianteIds: (initialData?.variantes?.map((v: any) => v.id.toString()) || initialData?.varianteIds || []) as string[],
     empaqueIds: (initialData?.empaques?.map((e: any) => e.id.toString()) || initialData?.empaqueIds || []) as string[],
+    diasSemana: (initialData?.diasSemana ?? []) as number[],
+    horaInicio: initialData?.horaInicio ?? '',
+    horaFin: initialData?.horaFin ?? '',
   });
+
+  const [scheduleEnabled, setScheduleEnabled] = useState(
+    (initialData?.diasSemana?.length ?? 0) > 0 ||
+      Boolean(initialData?.horaInicio) ||
+      Boolean(initialData?.horaFin),
+  );
+
+  const toggleDay = (day: number) => {
+    setFormData({
+      ...formData,
+      diasSemana: formData.diasSemana.includes(day)
+        ? formData.diasSemana.filter((d) => d !== day)
+        : [...formData.diasSemana, day],
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,12 +100,17 @@ export function DiscountForm({
 
     setSubmitting(true);
     try {
+      const hasSchedule = scheduleEnabled;
+      const hasTimeWindow = Boolean(formData.horaInicio) && Boolean(formData.horaFin);
       const payload = {
         ...formData,
         categoriaIds: formData.alcance === 'CATEGORIA' ? formData.categoriaIds : [],
         productoIds: formData.alcance === 'PRODUCTO' ? formData.productoIds : [],
         varianteIds: formData.alcance === 'VARIANTE' ? formData.varianteIds : [],
         empaqueIds: formData.alcance === 'EMPAQUE' ? formData.empaqueIds : [],
+        diasSemana: hasSchedule ? formData.diasSemana : [],
+        horaInicio: hasTimeWindow ? formData.horaInicio : null,
+        horaFin: hasTimeWindow ? formData.horaFin : null,
       };
       await onSubmit(payload);
     } catch (err: any) {
@@ -468,6 +504,63 @@ export function DiscountForm({
                 />
               </div>
             </div>
+
+            <label className={styles.checkboxGroup}>
+              <input
+                type="checkbox"
+                className={styles.checkboxInput}
+                checked={scheduleEnabled}
+                onChange={(e) => {
+                  setScheduleEnabled(e.target.checked);
+                  if (!e.target.checked) {
+                    setFormData({ ...formData, diasSemana: [], horaInicio: '', horaFin: '' });
+                  }
+                }}
+                disabled={submitting}
+              />
+              <span className={styles.checkboxLabel}>Solo en días específicos</span>
+            </label>
+
+            {scheduleEnabled && (
+              <div className={styles.field}>
+                <span className={styles.label}>Días de la semana</span>
+                <div className={styles.dayChips}>
+                  {DAY_ORDER.map((day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      className={`${styles.dayChip} ${formData.diasSemana.includes(day) ? styles.dayChipActive : ''}`}
+                      onClick={() => toggleDay(day)}
+                      disabled={submitting}
+                    >
+                      {DAY_LABELS[day]}
+                    </button>
+                  ))}
+                </div>
+                <div className={`${styles.formGrid} ${styles.formGridTwo}`}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Hora Inicio</label>
+                    <input
+                      type="time"
+                      className={styles.input}
+                      value={formData.horaInicio}
+                      onChange={(e) => setFormData({ ...formData, horaInicio: e.target.value })}
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Hora Fin</label>
+                    <input
+                      type="time"
+                      className={styles.input}
+                      value={formData.horaFin}
+                      onChange={(e) => setFormData({ ...formData, horaFin: e.target.value })}
+                      disabled={submitting}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <label className={styles.checkboxGroup}>
               <input

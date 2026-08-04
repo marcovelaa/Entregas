@@ -45,6 +45,7 @@ import { ObtenerProductoUseCase } from './application/use-cases/productos/obtene
 import { ActualizarProductoUseCase } from './application/use-cases/productos/actualizar-producto.use-case';
 import { EliminarProductoUseCase } from './application/use-cases/productos/eliminar-producto.use-case';
 import { CrearProductoImagenUseCase } from './application/use-cases/productos/crear-producto-imagen.use-case';
+import { ObtenerAnaliticaComboUseCase } from './application/use-cases/productos/obtener-analitica-combo.use-case';
 
 // Use Cases - Variantes
 import { CrearVarianteUseCase } from './application/use-cases/variantes/crear-variante.use-case';
@@ -97,6 +98,7 @@ import { CrearEmpaquesBulkUseCase } from './application/use-cases/empaques/crear
     { provide: ActualizarProductoUseCase, useFactory: (r) => new ActualizarProductoUseCase(r), inject: [PRODUCTO_REPOSITORY] },
     { provide: EliminarProductoUseCase, useFactory: (r) => new EliminarProductoUseCase(r), inject: [PRODUCTO_REPOSITORY] },
     { provide: CrearProductoImagenUseCase, useFactory: (r) => new CrearProductoImagenUseCase(r), inject: [PRODUCTO_IMAGEN_REPOSITORY] },
+    ObtenerAnaliticaComboUseCase,
 
     // Variantes use cases
     { provide: CrearVarianteUseCase, useFactory: (r) => new CrearVarianteUseCase(r), inject: [VARIANTE_REPOSITORY] },

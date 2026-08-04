@@ -35,6 +35,21 @@ export class PrismaProductoRepository implements IProductoRepository {
         vigencia_inicio: producto.vigencia_inicio,
         vigencia_fin: producto.vigencia_fin,
         cupo_maximo: producto.cupo_maximo,
+        dias_semana: producto.dias_semana ?? [],
+        canal_venta: producto.canal_venta ?? 'AMBOS',
+        ...(tipoProducto !== 'COMBO' && {
+          variantes: {
+            create: [
+              {
+                nombre: 'Estándar',
+                sku_base: producto.sku!,
+                precio_unitario: producto.precio_base!,
+                precio_promocional: producto.precio_promocional ?? null,
+                activo: producto.activo ?? true,
+              },
+            ],
+          },
+        }),
         ...(producto.componentes_combo && producto.componentes_combo.length > 0 && {
           componentes_combo: {
             create: producto.componentes_combo.map((c: any) => ({
@@ -184,6 +199,22 @@ export class PrismaProductoRepository implements IProductoRepository {
   }
 
   async actualizar(id: bigint, datos: ProductoActualizarInput): Promise<ProductoEntity> {
+    if (datos.precio_base !== undefined || datos.precio_promocional !== undefined) {
+      const prodWithVars = await this.prisma.producto.findUnique({
+        where: { id },
+        include: { variantes: true },
+      });
+      if (prodWithVars && prodWithVars.variantes.length === 1) {
+        await this.prisma.variante.update({
+          where: { id: prodWithVars.variantes[0].id },
+          data: {
+            ...(datos.precio_base !== undefined && { precio_unitario: datos.precio_base }),
+            ...(datos.precio_promocional !== undefined && { precio_promocional: datos.precio_promocional }),
+          },
+        });
+      }
+    }
+
     if (datos.componentes_combo !== undefined) {
       await this.prisma.productoComponente.deleteMany({
         where: { combo_producto_id: id },
@@ -220,6 +251,8 @@ export class PrismaProductoRepository implements IProductoRepository {
         ...(datos.vigencia_inicio !== undefined && { vigencia_inicio: datos.vigencia_inicio }),
         ...(datos.vigencia_fin !== undefined && { vigencia_fin: datos.vigencia_fin }),
         ...(datos.cupo_maximo !== undefined && { cupo_maximo: datos.cupo_maximo }),
+        ...(datos.dias_semana !== undefined && { dias_semana: datos.dias_semana }),
+        ...(datos.canal_venta !== undefined && { canal_venta: datos.canal_venta }),
       },
       include: {
         marca: true,

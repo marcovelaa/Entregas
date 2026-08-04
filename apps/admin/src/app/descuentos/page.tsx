@@ -9,6 +9,7 @@ import {
   BarChart2, Layers, Package, CheckCircle, ToggleLeft, ToggleRight, Loader2
 } from 'lucide-react';
 import { CampaignAnalyticsModal } from '@/components/organisms/CampaignAnalyticsModal';
+import { ComboAnalyticsModal } from '@/components/organisms/ComboAnalyticsModal';
 
 interface Descuento {
   id: string;
@@ -31,6 +32,37 @@ interface Descuento {
   fechaInicio: string;
   fechaFin: string;
   activo: boolean;
+  diasSemana?: number[];
+  horaInicio?: string;
+  horaFin?: string;
+}
+
+const DAY_LABELS: Record<number, string> = {
+  0: 'Dom',
+  1: 'Lun',
+  2: 'Mar',
+  3: 'Mié',
+  4: 'Jue',
+  5: 'Vie',
+  6: 'Sáb',
+};
+
+function dayTimeLabel(d: Descuento): string | null {
+  const days = d.diasSemana ?? [];
+  const hasDays = days.length > 0;
+  const hasTime = Boolean(d.horaInicio) && Boolean(d.horaFin);
+  if (!hasDays && !hasTime) return null;
+
+  const parts: string[] = [];
+  if (hasDays) {
+    const sorted = [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+    parts.push(sorted.map((day) => DAY_LABELS[day] ?? String(day)).join(' · '));
+  }
+  if (hasTime) {
+    const fmt = (t: string) => (t.endsWith(':00') ? t.slice(0, 2) : t);
+    parts.push(`${fmt(d.horaInicio!)}-${fmt(d.horaFin!)}h`);
+  }
+  return parts.join(' · ');
 }
 
 export default function DescuentosDashboardPage() {
@@ -41,6 +73,7 @@ export default function DescuentosDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTabFilter, setActiveTabFilter] = useState<'todas' | 'activas' | 'programadas' | 'vencidas'>('todas');
   const [selectedAnalyticsId, setSelectedAnalyticsId] = useState<string | null>(null);
+  const [selectedComboAnalyticsId, setSelectedComboAnalyticsId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -402,6 +435,7 @@ export default function DescuentosDashboardPage() {
                     const inicio = new Date(d.fechaInicio);
                     const fin = new Date(d.fechaFin);
                     const isLive = d.activo && inicio <= now && fin >= now;
+                    const scheduleLabel = dayTimeLabel(d);
 
                     return (
                       <tr key={d.id}>
@@ -410,11 +444,14 @@ export default function DescuentosDashboardPage() {
                           {d.descripcion && <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{d.descripcion}</div>}
                         </td>
                         <td>
-                          {d.codigoCupon ? (
-                            <span className={styles.couponBadge}>{d.codigoCupon}</span>
-                          ) : (
-                            <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Automático</span>
-                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-start' }}>
+                            {d.codigoCupon ? (
+                              <span className={styles.couponBadge}>{d.codigoCupon}</span>
+                            ) : (
+                              <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Automático</span>
+                            )}
+                            {scheduleLabel && <span className={styles.scheduleBadge}>{scheduleLabel}</span>}
+                          </div>
                         </td>
                         <td>
                           <div style={{ fontWeight: 600, color: '#0f172a' }}>
@@ -526,9 +563,10 @@ export default function DescuentosDashboardPage() {
                 <thead>
                   <tr>
                     <th>Nombre del Combo</th>
-                    <th>SKU</th>
+                    <th>SKU & Canal</th>
                     <th>Categoría</th>
                     <th>Componentes en Receta (BOM)</th>
+                    <th>Cupo / Ventas</th>
                     <th>Precio del Combo</th>
                     <th>Estado</th>
                     <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -539,6 +577,12 @@ export default function DescuentosDashboardPage() {
                     const estadoVenta = c.estado_venta || (c.activo ? 'ACTIVO' : 'INACTIVO');
                     const comboActivo = estadoVenta === 'ACTIVO';
                     const estadoLabel = estadoVenta === 'ACTIVO' ? 'Activo' : estadoVenta === 'VENCIDO' ? 'Vencido' : estadoVenta === 'AGOTADO' ? 'Agotado' : 'Inactivo';
+                    const hasCupo = typeof c.cupo_maximo === 'number' && c.cupo_maximo > 0;
+                    const cupoUsado = c.cupo_usado ?? 0;
+                    const cupoPct = hasCupo ? Math.min(100, Math.round((cupoUsado / c.cupo_maximo) * 100)) : 0;
+                    const barColor = cupoPct >= 100 ? '#ef4444' : cupoPct >= 80 ? '#f59e0b' : '#0f172a';
+                    const canal = c.canal_venta || 'AMBOS';
+
                     return (
                     <tr key={c.id}>
                       <td style={{ fontWeight: 600, color: '#0f172a' }}>
@@ -559,7 +603,24 @@ export default function DescuentosDashboardPage() {
                           {c.nombre}
                         </div>
                       </td>
-                      <td style={{ fontSize: '0.85rem', color: '#64748b' }}>{c.sku || 'N/A'}</td>
+                      <td>
+                        <div style={{ fontSize: '0.82rem', color: '#0f172a', fontWeight: 500 }}>{c.sku || 'N/A'}</div>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            marginTop: '2px',
+                            fontSize: '0.68rem',
+                            fontWeight: 600,
+                            padding: '0.1rem 0.45rem',
+                            borderRadius: '4px',
+                            backgroundColor: canal === 'ECOMMERCE' ? '#eff6ff' : canal === 'POS' ? '#f0fdf4' : '#f8fafc',
+                            color: canal === 'ECOMMERCE' ? '#1d4ed8' : canal === 'POS' ? '#15803d' : '#64748b',
+                            border: `1px solid ${canal === 'ECOMMERCE' ? '#bfdbfe' : canal === 'POS' ? '#bbf7d0' : '#e2e8f0'}`,
+                          }}
+                        >
+                          {canal === 'ECOMMERCE' ? 'E-commerce' : canal === 'POS' ? 'POS' : 'Omnicanal'}
+                        </span>
+                      </td>
                       <td>{c.categoria?.nombre || 'General'}</td>
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -571,6 +632,24 @@ export default function DescuentosDashboardPage() {
                           </span>
                         </div>
                       </td>
+                      <td>
+                        {hasCupo ? (
+                          <div style={{ minWidth: '100px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '3px' }}>
+                              <span style={{ fontWeight: 700, color: '#0f172a' }}>{cupoUsado}</span>
+                              <span style={{ color: '#64748b' }}>/ {c.cupo_maximo} kits</span>
+                            </div>
+                            <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ width: `${cupoPct}%`, height: '100%', backgroundColor: barColor, borderRadius: '3px', transition: 'width 0.3s' }} />
+                            </div>
+                            <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '2px', textAlign: 'right' }}>
+                              {cupoPct}% vendido
+                            </div>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Sin límite (∞)</span>
+                        )}
+                      </td>
                       <td style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>
                         Bs. {Number(c.precio_base).toFixed(2)}
                       </td>
@@ -581,6 +660,14 @@ export default function DescuentosDashboardPage() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                          <button
+                            onClick={() => setSelectedComboAnalyticsId(c.id)}
+                            className={styles.deleteBtn}
+                            style={{ color: '#0f172a' }}
+                            title="Ver Rendimiento del Combo"
+                          >
+                            <BarChart2 size={16} />
+                          </button>
                           <button
                             onClick={() => router.push(`/descuentos/combos/${c.id}`)}
                             className={styles.deleteBtn}
@@ -613,6 +700,12 @@ export default function DescuentosDashboardPage() {
       <CampaignAnalyticsModal
         discountId={selectedAnalyticsId}
         onClose={() => setSelectedAnalyticsId(null)}
+      />
+
+      {/* Combo Analytics Modal */}
+      <ComboAnalyticsModal
+        comboId={selectedComboAnalyticsId}
+        onClose={() => setSelectedComboAnalyticsId(null)}
       />
     </main>
   );

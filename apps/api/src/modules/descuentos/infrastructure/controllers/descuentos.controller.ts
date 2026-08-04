@@ -2,6 +2,21 @@ import { Controller, Get, Post, Put, Patch, Delete, Body, Param, NotFoundExcepti
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { DiscountEngineService, CartItemInput } from '../../domain/discount-engine.service';
 
+const HHMM_RE = /^\d{2}:\d{2}$/;
+
+function parseHHMM(v: unknown): string | null {
+  if (typeof v !== 'string' || !HHMM_RE.test(v)) return null;
+  const hh = Number(v.slice(0, 2));
+  const mm = Number(v.slice(3, 5));
+  if (hh > 23 || mm > 59) return null;
+  return v;
+}
+
+function parseDiasSemana(v: unknown): number[] {
+  if (!Array.isArray(v)) return [];
+  return Array.from(new Set(v.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)));
+}
+
 @Controller('descuentos')
 export class DescuentosController {
   constructor(
@@ -42,6 +57,9 @@ export class DescuentosController {
       fechaInicio: d.fecha_inicio,
       fechaFin: d.fecha_fin,
       activo: d.activo,
+      diasSemana: d.dias_semana,
+      horaInicio: d.hora_inicio,
+      horaFin: d.hora_fin,
       productos: d.productos.map((p: any) => ({ id: p.producto.id.toString(), nombre: p.producto.nombre })),
       variantes: d.variantes.map((v: any) => ({ id: v.variante.id.toString(), nombre: v.variante.nombre })),
       empaques: d.empaques.map((e: any) => ({ id: e.empaque.id.toString(), nombre: e.empaque.nombre })),
@@ -186,6 +204,9 @@ export class DescuentosController {
       fechaInicio: d.fecha_inicio,
       fechaFin: d.fecha_fin,
       activo: d.activo,
+      diasSemana: d.dias_semana,
+      horaInicio: d.hora_inicio,
+      horaFin: d.hora_fin,
       productos: d.productos.map((p: any) => ({ id: p.producto.id.toString(), nombre: p.producto.nombre })),
       variantes: d.variantes.map((v: any) => ({ id: v.variante.id.toString(), nombre: v.variante.nombre })),
       empaques: d.empaques.map((e: any) => ({ id: e.empaque.id.toString(), nombre: e.empaque.nombre })),
@@ -215,6 +236,9 @@ export class DescuentosController {
       prioridad,
       fechaInicio,
       fechaFin,
+      diasSemana,
+      horaInicio,
+      horaFin,
       productoIds,
       varianteIds,
       empaqueIds,
@@ -241,6 +265,9 @@ export class DescuentosController {
         fecha_inicio: new Date(fechaInicio),
         fecha_fin: new Date(fechaFin),
         activo: true,
+        dias_semana: parseDiasSemana(diasSemana),
+        hora_inicio: parseHHMM(horaInicio),
+        hora_fin: parseHHMM(horaFin),
         productos: productoIds?.length
           ? { create: productoIds.map((id: string) => ({ producto_id: BigInt(id) })) }
           : undefined,
@@ -282,6 +309,9 @@ export class DescuentosController {
     if (dto.valor !== undefined) dataToUpdate.valor = parseFloat(dto.valor);
     if (dto.fechaInicio) dataToUpdate.fecha_inicio = new Date(dto.fechaInicio);
     if (dto.fechaFin) dataToUpdate.fecha_fin = new Date(dto.fechaFin);
+    if (dto.diasSemana !== undefined) dataToUpdate.dias_semana = parseDiasSemana(dto.diasSemana);
+    if (dto.horaInicio !== undefined) dataToUpdate.hora_inicio = parseHHMM(dto.horaInicio);
+    if (dto.horaFin !== undefined) dataToUpdate.hora_fin = parseHHMM(dto.horaFin);
 
     const updated = await this.prisma.descuento.update({
       where: { id: descId },
@@ -318,6 +348,9 @@ export class DescuentosController {
       fechaInicio,
       fechaFin,
       activo,
+      diasSemana,
+      horaInicio,
+      horaFin,
       productoIds,
       varianteIds,
       empaqueIds,
@@ -348,6 +381,9 @@ export class DescuentosController {
       fecha_inicio: fechaInicio ? new Date(fechaInicio) : existing.fecha_inicio,
       fecha_fin: fechaFin ? new Date(fechaFin) : existing.fecha_fin,
       activo: activo !== undefined ? Boolean(activo) : existing.activo,
+      dias_semana: diasSemana !== undefined ? parseDiasSemana(diasSemana) : existing.dias_semana,
+      hora_inicio: horaInicio !== undefined ? parseHHMM(horaInicio) : existing.hora_inicio,
+      hora_fin: horaFin !== undefined ? parseHHMM(horaFin) : existing.hora_fin,
     };
 
     if (productoIds !== undefined || varianteIds !== undefined || empaqueIds !== undefined || categoriaIds !== undefined) {

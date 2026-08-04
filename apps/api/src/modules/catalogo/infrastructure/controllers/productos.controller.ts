@@ -4,6 +4,7 @@ import { ListarProductosUseCase } from '../../application/use-cases/productos/li
 import { ObtenerProductoUseCase } from '../../application/use-cases/productos/obtener-producto.use-case';
 import { ActualizarProductoUseCase } from '../../application/use-cases/productos/actualizar-producto.use-case';
 import { EliminarProductoUseCase } from '../../application/use-cases/productos/eliminar-producto.use-case';
+import { ObtenerAnaliticaComboUseCase } from '../../application/use-cases/productos/obtener-analitica-combo.use-case';
 import { CrearProductoDto, ActualizarProductoDto, ListarProductosDto } from '../../application/dtos/producto.dto';
 import { ParseBigIntPipe } from '../../../../common/pipes';
 
@@ -15,6 +16,7 @@ export class ProductosController {
     private readonly obtenerProductoUseCase: ObtenerProductoUseCase,
     private readonly actualizarProductoUseCase: ActualizarProductoUseCase,
     private readonly eliminarProductoUseCase: EliminarProductoUseCase,
+    private readonly obtenerAnaliticaComboUseCase: ObtenerAnaliticaComboUseCase,
   ) {}
 
   @Post()
@@ -25,6 +27,12 @@ export class ProductosController {
   @Get()
   async listar(@Query() query: ListarProductosDto) {
     return this.listarProductosUseCase.execute(query, query.page, query.limit);
+  }
+
+  @Get(':id/analitica')
+  async obtenerAnalitica(@Param('id', ParseBigIntPipe) id: bigint) {
+    const data = await this.obtenerAnaliticaComboUseCase.execute(id);
+    return { success: true, data };
   }
 
   @Get(':publicId')

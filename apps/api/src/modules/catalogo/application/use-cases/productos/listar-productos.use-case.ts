@@ -56,9 +56,17 @@ export class ListarProductosUseCase {
         cupoUsado: p.cupo_usado ?? 0,
         now: ahora,
       });
-      if (esPublica && estado !== 'ACTIVO') {
-        continue;
-      }
+      if (esPublica && estado !== 'ACTIVO') continue;
+
+      // Gate: días de semana ([] = sin restricción = siempre visible)
+      const diasSemana: number[] = (p as any).dias_semana ?? [];
+      if (esPublica && diasSemana.length > 0 && !diasSemana.includes(ahora.getDay())) continue;
+
+      // Gate: canal de venta
+      const canal: string = (p as any).canal_venta ?? 'AMBOS';
+      const canalSolicitado: string = dto?.canal ?? 'ECOMMERCE';
+      if (esPublica && canal !== 'AMBOS' && canal !== canalSolicitado) continue;
+
       dataEnriquecida.push({ ...p, stock_vendible: sellable, estado_venta: estado });
     }
 

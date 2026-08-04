@@ -164,6 +164,39 @@
   color: #1e293b;
 }
 
+/* Day-of-week schedule chips */
+.dayChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.dayChip {
+  min-width: 2.5rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid var(--border-light, #cbd5e1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dayChip:hover {
+  border-color: #0f172a;
+  color: #0f172a;
+}
+
+.dayChipActive,
+.dayChipActive:hover {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+
 /* Actions Footer */
 .actionsBar {
   display: flex;

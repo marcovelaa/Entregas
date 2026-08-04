@@ -142,10 +142,35 @@ export class PrismaVentaRepository implements IVentaRepository {
           }
         } else {
           // Standard single product deduction
+          let targetUnits = d.cantidad;
+          let targetVarianteId = d.variante_id ? BigInt(d.variante_id) : null;
+
+          if (d.empaque_id) {
+            const emp = await tx.empaque.findUnique({
+              where: { id: BigInt(d.empaque_id) },
+            });
+            if (emp) {
+              targetUnits = d.cantidad * (emp.multiplicador_unidades || 1);
+              if (!targetVarianteId) {
+                targetVarianteId = emp.variante_id;
+              }
+            }
+          }
+
+          if (!targetVarianteId) {
+            const defaultVar = await tx.variante.findFirst({
+              where: { producto_id: prodId, activo: true },
+              orderBy: { id: 'asc' },
+            });
+            if (defaultVar) {
+              targetVarianteId = defaultVar.id;
+            }
+          }
+
           const inv = await tx.inventario.findFirst({
             where: {
               producto_id: prodId,
-              variante_id: d.variante_id ? BigInt(d.variante_id) : null,
+              ...(targetVarianteId ? { variante_id: targetVarianteId } : {}),
             },
           });
 
@@ -153,23 +178,23 @@ export class PrismaVentaRepository implements IVentaRepository {
             throw new Error(`Inventario no encontrado para el producto ${d.producto_id}`);
           }
 
-          if (inv.cantidad_disponible - inv.reservado < d.cantidad) {
+          if (inv.cantidad_disponible - inv.reservado < targetUnits) {
             throw new Error(`Stock insuficiente para el producto ${d.producto_id}`);
           }
 
           await tx.inventario.updateMany({
             where: { id: inv.id },
             data: {
-              cantidad_disponible: { decrement: d.cantidad },
+              cantidad_disponible: { decrement: targetUnits },
             },
           });
 
           await tx.movimientosInventario.create({
             data: {
               producto_id: prodId,
-              variante_id: d.variante_id ? BigInt(d.variante_id) : null,
+              variante_id: targetVarianteId,
               tipo_movimiento: 'SALIDA',
-              cantidad: d.cantidad,
+              cantidad: targetUnits,
               motivo: 'VENTA',
               tipo_documento_origen: 'VENTA',
               documento_origen_id: venta.id,

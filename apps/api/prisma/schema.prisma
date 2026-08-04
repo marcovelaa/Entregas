@@ -140,6 +140,12 @@ enum ModoVenta {
   MIXTO
 }
 
+enum CanalVenta {
+  AMBOS
+  ECOMMERCE
+  POS
+}
+
 model Producto {
   id                 BigInt       @id @default(autoincrement())
   public_id          String       @unique @default(uuid()) @db.Uuid
@@ -161,6 +167,8 @@ model Producto {
   vigencia_fin       DateTime?    @db.Timestamptz(3)
   cupo_maximo        Int?
   cupo_usado         Int          @default(0)
+  dias_semana        Int[]        @default([])
+  canal_venta        CanalVenta   @default(AMBOS)
   creado_en          DateTime     @default(now())
   actualizado_en     DateTime     @updatedAt
 
@@ -460,6 +468,11 @@ model Descuento {
   fecha_inicio          DateTime
   fecha_fin             DateTime
   activo                Boolean          @default(true)
+
+  // Programación semanal: días (0=Domingo..6=Sábado, [] = todos) y ventana horaria "HH:MM"
+  dias_semana           Int[]            @default([])
+  hora_inicio           String?          @db.VarChar(5)
+  hora_fin              String?          @db.VarChar(5)
 
   creado_en             DateTime         @default(now())
   actualizado_en        DateTime         @updatedAt

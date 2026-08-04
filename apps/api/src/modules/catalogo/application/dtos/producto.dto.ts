@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsOptional, IsString, IsNumber, IsObject, IsBoolean, Min, IsArray, IsEnum, IsInt, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ModoVenta } from '@prisma/client';
+import { ModoVenta, CanalVenta } from '@prisma/client';
 import { PaginationDto } from '../../../../common/dto/pagination.dto';
 
 export class CrearProductoDto {
@@ -56,6 +56,14 @@ export class CrearProductoDto {
   @Min(0)
   @IsOptional()
   cupo_maximo?: number;
+
+  @IsArray()
+  @IsOptional()
+  dias_semana?: number[];
+
+  @IsEnum(CanalVenta)
+  @IsOptional()
+  canal_venta?: CanalVenta;
 
   @IsArray()
   @IsOptional()
@@ -132,6 +140,14 @@ export class ActualizarProductoDto {
 
   @IsArray()
   @IsOptional()
+  dias_semana?: number[];
+
+  @IsEnum(CanalVenta)
+  @IsOptional()
+  canal_venta?: CanalVenta;
+
+  @IsArray()
+  @IsOptional()
   componentes_combo?: Array<{
     componente_prod_id: string | number;
     variante_id?: string | number;
@@ -181,4 +197,8 @@ export class ListarProductosDto extends PaginationDto {
   @IsIn(['publica', 'admin'])
   @IsOptional()
   visibilidad?: 'publica' | 'admin' = 'admin';
+
+  @IsIn(['ECOMMERCE', 'POS', 'AMBOS'])
+  @IsOptional()
+  canal?: 'ECOMMERCE' | 'POS' | 'AMBOS' = 'ECOMMERCE';
 }

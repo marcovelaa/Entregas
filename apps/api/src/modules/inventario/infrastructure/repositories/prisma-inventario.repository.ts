@@ -70,11 +70,22 @@ export class PrismaInventarioRepository implements IInventarioRepository {
     usuario_id?: bigint;
   }, tx?: any) {
     const execute = async (client: any) => {
+      let targetVarianteId = data.variante_id;
+      if (!targetVarianteId) {
+        const defaultVar = await client.variante.findFirst({
+          where: { producto_id: data.producto_id, activo: true },
+          orderBy: { id: 'asc' },
+        });
+        if (defaultVar) {
+          targetVarianteId = defaultVar.id;
+        }
+      }
+
       // 1. Registrar movimiento
       const mov = await client.movimientosInventario.create({
         data: {
           producto_id: data.producto_id,
-          variante_id: data.variante_id,
+          variante_id: targetVarianteId,
           tipo_movimiento: data.tipo_movimiento,
           cantidad: data.cantidad,
           motivo: data.motivo,
@@ -86,7 +97,7 @@ export class PrismaInventarioRepository implements IInventarioRepository {
       const stockItem = await client.inventario.findFirst({
         where: {
           producto_id: data.producto_id,
-          variante_id: data.variante_id || null,
+          variante_id: targetVarianteId || null,
         }
       });
 
@@ -109,7 +120,7 @@ export class PrismaInventarioRepository implements IInventarioRepository {
         await client.inventario.create({
           data: {
             producto_id: data.producto_id,
-            variante_id: data.variante_id,
+            variante_id: targetVarianteId,
             cantidad_disponible: cantidadDelta,
             ubicacion: 'PRINCIPAL'
           }

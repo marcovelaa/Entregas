@@ -1,4 +1,4 @@
-import { ModoVenta } from '@prisma/client';
+import { ModoVenta, CanalVenta } from '@prisma/client';
 
 export const PRODUCTO_REPOSITORY = 'PRODUCTO_REPOSITORY';
 
@@ -17,6 +17,8 @@ export interface ProductoEntity {
   vigencia_fin?: Date | null;
   cupo_maximo?: number | null;
   cupo_usado?: number;
+  dias_semana?: number[];
+  canal_venta?: CanalVenta;
   unidad_medida: string;
   atributos: any;
   precio_base: any;

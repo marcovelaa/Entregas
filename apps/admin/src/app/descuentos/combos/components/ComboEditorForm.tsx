@@ -111,13 +111,18 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
   const [destacadoPortada, setDestacadoPortada] = useState(false);
 
-  // Sale Rules & Validity State
-  const [modoVenta, setModoVenta] = useState<ModoVenta>('PERMANENTE');
+  // Availability State (independent toggles)
+  const [vigenciaEnabled, setVigenciaEnabled] = useState(false);
+  const [diasEnabled, setDiasEnabled] = useState(false);
+  const [cupoEnabled, setCupoEnabled] = useState(false);
   const [vigenciaInicio, setVigenciaInicio] = useState('');
+  const [vigenciaInicioHora, setVigenciaInicioHora] = useState('');
   const [vigenciaFin, setVigenciaFin] = useState('');
-  const [vigenciaHora, setVigenciaHora] = useState('');
+  const [vigenciaFinHora, setVigenciaFinHora] = useState('');
+  const [diasSemana, setDiasSemana] = useState<number[]>([]);
   const [cupoMaximo, setCupoMaximo] = useState('');
   const [cupoUsado, setCupoUsado] = useState(0);
+  const [canalVenta, setCanalVenta] = useState<'AMBOS' | 'ECOMMERCE' | 'POS'>('AMBOS');
   const [activoCombo, setActivoCombo] = useState(true);
 
   // Live Preview Mode
@@ -173,9 +178,9 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
           if (data.componentes_combo && data.componentes_combo.length > 0) {
             const mappedComps: ComponenteItem[] = data.componentes_combo.map((c: any) => {
               const compProd = c.componente_producto || {};
-              const stock = compProd.Inventario?.[0]
-                ? Math.max(0, compProd.Inventario[0].cantidad_disponible - compProd.Inventario[0].reservado)
-                : 0;
+              const stock = Array.isArray(compProd.Inventario)
+                ? compProd.Inventario.reduce((acc: number, inv: any) => acc + Math.max(0, (inv.cantidad_disponible ?? 0) - (inv.reservado ?? 0)), 0)
+                : (typeof c.stock_disponible === 'number' ? c.stock_disponible : 0);
               return {
                 componente_prod_id: c.componente_prod_id?.toString(),
                 cantidad: c.cantidad || 1,
@@ -189,21 +194,28 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
             setComponentes(mappedComps);
           }
 
-          // Load sale rules & validity (backend stores UTC -> convert to local strings)
-          setModoVenta(data.modo_venta || 'PERMANENTE');
+          // Load availability state
           setCupoUsado(Number(data.cupo_usado) || 0);
           setActivoCombo(data.activo !== false);
-          if (data.cupo_maximo != null) {
-            setCupoMaximo(String(data.cupo_maximo));
-          }
+          const hasCupo = data.cupo_maximo != null;
+          const hasVigencia = !!data.vigencia_inicio || !!data.vigencia_fin;
+          const hasDias = (data.dias_semana?.length ?? 0) > 0;
+          setCupoEnabled(hasCupo);
+          setVigenciaEnabled(hasVigencia);
+          setDiasEnabled(hasDias);
+          if (hasCupo) setCupoMaximo(String(data.cupo_maximo));
           if (data.vigencia_inicio) {
-            const localDt = utcToLocalDateTime(data.vigencia_inicio);
-            setVigenciaInicio(localDt.slice(0, 10));
-            setVigenciaHora(localDt.length > 10 ? localDt.slice(11, 16) : '');
+            const dt = utcToLocalDateTime(data.vigencia_inicio);
+            setVigenciaInicio(dt.slice(0, 10));
+            setVigenciaInicioHora(dt.length > 10 ? dt.slice(11, 16) : '');
           }
           if (data.vigencia_fin) {
-            setVigenciaFin(utcToLocalDate(new Date(data.vigencia_fin)));
+            const dt = utcToLocalDateTime(data.vigencia_fin);
+            setVigenciaFin(dt.slice(0, 10));
+            setVigenciaFinHora(dt.length > 10 ? dt.slice(11, 16) : '');
           }
+          if (hasDias) setDiasSemana(data.dias_semana);
+          if (data.canal_venta) setCanalVenta(data.canal_venta);
         } else {
           if (cats.length > 0) setCategoriaId(cats[0].id.toString());
         }
@@ -220,8 +232,8 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
   const handleAddProduct = (prod: CatalogProduct, qty: number = 1) => {
     const idStr = prod.id.toString();
     const existingIdx = componentes.findIndex((c) => c.componente_prod_id === idStr);
-    const stock = prod.Inventario?.[0]
-      ? Math.max(0, prod.Inventario[0].cantidad_disponible - prod.Inventario[0].reservado)
+    const stock = Array.isArray(prod.Inventario)
+      ? prod.Inventario.reduce((acc: number, inv: any) => acc + Math.max(0, (inv.cantidad_disponible ?? 0) - (inv.reservado ?? 0)), 0)
       : 0;
     const imgUrl = prod.imagenes?.[0]?.url || null;
 
@@ -251,8 +263,8 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
       items.forEach(({ producto, cantidad }) => {
         const idStr = producto.id.toString();
         const existingIdx = updated.findIndex((c) => c.componente_prod_id === idStr);
-        const stock = producto.Inventario?.[0]
-          ? Math.max(0, producto.Inventario[0].cantidad_disponible - producto.Inventario[0].reservado)
+        const stock = Array.isArray(producto.Inventario)
+          ? producto.Inventario.reduce((acc: number, inv: any) => acc + Math.max(0, (inv.cantidad_disponible ?? 0) - (inv.reservado ?? 0)), 0)
           : 0;
         const imgUrl = producto.imagenes?.[0]?.url || null;
 
@@ -306,9 +318,9 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
       let minKits = Infinity;
       componentes.forEach((c) => {
         const prod = catalogoProductos.find((p) => p.id?.toString() === c.componente_prod_id);
-        const stockFisico = prod?.Inventario?.[0]
-          ? Math.max(0, prod.Inventario[0].cantidad_disponible - prod.Inventario[0].reservado)
-          : c.stock_disponible || 0;
+        const stockFisico = Array.isArray(prod?.Inventario) && prod.Inventario.length > 0
+          ? prod.Inventario.reduce((acc: number, inv: any) => acc + Math.max(0, (inv.cantidad_disponible ?? 0) - (inv.reservado ?? 0)), 0)
+          : (typeof c.stock_disponible === 'number' ? c.stock_disponible : 0);
         const kitsForThis = Math.floor(stockFisico / (c.cantidad || 1));
         if (kitsForThis < minKits) {
           minKits = kitsForThis;
@@ -355,30 +367,29 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
     return list;
   }, [componentes, catalogoProductos]);
 
+  // Derived modoVenta from toggles
+  const modoVenta = useMemo((): ModoVenta => {
+    if (!vigenciaEnabled && !cupoEnabled) return 'PERMANENTE';
+    if (vigenciaEnabled && !cupoEnabled) return 'RANGO_FECHAS';
+    if (!vigenciaEnabled && cupoEnabled) return 'CUPO_FIJO';
+    return 'MIXTO';
+  }, [vigenciaEnabled, cupoEnabled]);
+
   // Sale rules derived state
-  const cupoNum = cupoMaximo.trim() === '' ? null : Number(cupoMaximo);
-  const cupoValido = cupoNum === null || (!isNaN(cupoNum) && cupoNum >= 0);
+  const cupoNum = cupoEnabled && cupoMaximo.trim() !== '' ? Number(cupoMaximo) : null;
+  const cupoValido = cupoNum === null || (!isNaN(cupoNum) && cupoNum >= 1);
   const cupoExcedeStock = cupoNum !== null && !isNaN(cupoNum) && cupoNum > virtualStock;
-  const cupoInvalido = !cupoValido || cupoExcedeStock;
+  const cupoInvalido = cupoEnabled && (!cupoValido || cupoExcedeStock);
 
   const vigenciaInicioDate = useMemo(() => {
-    if (!vigenciaInicio) return null;
-    try {
-      const conHora = (modoVenta === 'FECHA_HORA' || modoVenta === 'MIXTO') && vigenciaHora;
-      return parseUtcOrLocal(conHora ? `${vigenciaInicio}T${vigenciaHora}` : vigenciaInicio);
-    } catch {
-      return null;
-    }
-  }, [vigenciaInicio, vigenciaHora, modoVenta]);
+    if (!vigenciaEnabled || !vigenciaInicio) return null;
+    try { return parseUtcOrLocal(vigenciaInicio); } catch { return null; }
+  }, [vigenciaInicio, vigenciaEnabled]);
 
   const vigenciaFinDate = useMemo(() => {
-    if (!vigenciaFin) return null;
-    try {
-      return parseUtcOrLocal(vigenciaFin);
-    } catch {
-      return null;
-    }
-  }, [vigenciaFin]);
+    if (!vigenciaEnabled || !vigenciaFin) return null;
+    try { return parseUtcOrLocal(vigenciaFin); } catch { return null; }
+  }, [vigenciaFin, vigenciaEnabled]);
 
   const sellableInfo = useMemo(() => {
     return computeSellable({
@@ -422,33 +433,19 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
       setErrorMsg('Debes ingresar un precio de venta para el Combo.');
       return;
     }
-    if (modoVenta === 'RANGO_FECHAS' || modoVenta === 'MIXTO') {
+    if (vigenciaEnabled) {
       if (!vigenciaInicio || !vigenciaFin) {
-        setErrorMsg('Debes completar las fechas de inicio y fin de la vigencia.');
+        setErrorMsg('Completá la fecha/hora de inicio y fin de la vigencia.');
         return;
       }
       if (vigenciaFin < vigenciaInicio) {
-        setErrorMsg('La fecha de fin no puede ser anterior a la fecha de inicio.');
+        setErrorMsg('La fecha de fin no puede ser anterior a la de inicio.');
         return;
       }
     }
-    if (modoVenta === 'FECHA_HORA' || modoVenta === 'MIXTO') {
-      if (!vigenciaInicio) {
-        setErrorMsg('Debes ingresar la fecha de vigencia.');
-        return;
-      }
-      if (!vigenciaHora) {
-        setErrorMsg('Debes ingresar la hora de vigencia.');
-        return;
-      }
-    }
-    if (modoVenta === 'CUPO_FIJO' || modoVenta === 'MIXTO') {
-      if (cupoMaximo.trim() === '') {
-        setErrorMsg('Debes ingresar un cupo máximo de ventas.');
-        return;
-      }
-      if (!cupoValido) {
-        setErrorMsg('El cupo máximo debe ser un número mayor o igual a 0.');
+    if (cupoEnabled) {
+      if (!cupoMaximo.trim() || Number(cupoMaximo) < 1) {
+        setErrorMsg('Ingresá un cupo máximo mayor a 0.');
         return;
       }
       if (cupoExcedeStock) {
@@ -456,13 +453,13 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
         return;
       }
     }
+    if (diasEnabled && diasSemana.length === 0) {
+      setErrorMsg('Seleccioná al menos un día o desactivá la restricción de días.');
+      return;
+    }
 
     setSaving(true);
     try {
-      const conHora = (modoVenta === 'FECHA_HORA' || modoVenta === 'MIXTO') && vigenciaHora;
-      const vigenciaInicioStr = vigenciaInicio ? (conHora ? `${vigenciaInicio}T${vigenciaHora}` : vigenciaInicio) : null;
-      const vigenciaFinStr = vigenciaFin || null;
-
       const payload = {
         nombre: nombre.trim(),
         sku: sku.trim() || undefined,
@@ -471,9 +468,15 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
         tipo_producto: 'COMBO',
         precio_base: Number(precioBase),
         modo_venta: modoVenta,
-        vigencia_inicio: vigenciaInicioStr,
-        vigencia_fin: vigenciaFinStr,
-        cupo_maximo: cupoNum ?? null,
+        vigencia_inicio: vigenciaEnabled && vigenciaInicio
+          ? (vigenciaInicioHora ? `${vigenciaInicio}T${vigenciaInicioHora}:00` : vigenciaInicio)
+          : null,
+        vigencia_fin: vigenciaEnabled && vigenciaFin
+          ? (vigenciaFinHora ? `${vigenciaFin}T${vigenciaFinHora}:00` : vigenciaFin)
+          : null,
+        cupo_maximo: cupoEnabled ? cupoNum : null,
+        dias_semana: diasEnabled ? diasSemana : [],
+        canal_venta: canalVenta,
         atributos: {
           presentacion_visual: {
             badge_texto: badgeTexto.trim() || undefined,
@@ -1113,134 +1116,245 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
             </div>
           </div>
 
-          {/* Card 4: Reglas de Venta & Vigencia */}
+          {/* Card 4: Disponibilidad */}
           <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-            <h3 style={{ margin: '0 0 0.3rem 0', fontSize: '1rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <CalendarClock size={18} color="#0f172a" /> 4. Reglas de Venta & Vigencia
-            </h3>
-            <p style={{ margin: '0 0 1.25rem 0', color: '#64748b', fontSize: '0.8rem' }}>
-              Controla cuándo se puede vender este combo y cuántas veces como máximo.
-            </p>
 
-            {/* Mode selector */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-              {MODOS_VENTA.map((modo) => (
-                <button
-                  key={modo.key}
-                  type="button"
-                  onClick={() => setModoVenta(modo.key)}
-                  style={{
-                    padding: '0.75rem',
-                    borderRadius: '8px',
-                    textAlign: 'left',
-                    backgroundColor: modoVenta === modo.key ? '#ffffff' : '#f1f5f9',
-                    border: modoVenta === modo.key ? '2px solid #0f172a' : '1px solid #cbd5e1',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    {modoVenta === modo.key && <Check size={14} />}
-                    {modo.titulo}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>
-                    {modo.descripcion}
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Conditional fields */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              {(modoVenta === 'RANGO_FECHAS' || modoVenta === 'FECHA_HORA' || modoVenta === 'MIXTO') && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-                    Fecha de Inicio
-                  </label>
-                  <input
-                    type="date"
-                    value={vigenciaInicio}
-                    onChange={(e) => setVigenciaInicio(e.target.value)}
-                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
-                  />
-                </div>
-              )}
-
-              {(modoVenta === 'FECHA_HORA' || modoVenta === 'MIXTO') && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-                    Hora
-                  </label>
-                  <input
-                    type="time"
-                    value={vigenciaHora}
-                    onChange={(e) => setVigenciaHora(e.target.value)}
-                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
-                  />
-                </div>
-              )}
-
-              {(modoVenta === 'RANGO_FECHAS' || modoVenta === 'MIXTO') && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-                    Fecha de Fin
-                  </label>
-                  <input
-                    type="date"
-                    value={vigenciaFin}
-                    onChange={(e) => setVigenciaFin(e.target.value)}
-                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
-                  />
-                </div>
-              )}
-
-              {(modoVenta === 'CUPO_FIJO' || modoVenta === 'MIXTO') && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-                    Cupo Máximo de Ventas
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={cupoMaximo}
-                    onChange={(e) => setCupoMaximo(e.target.value)}
-                    placeholder="Sin límite"
-                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '6px', border: cupoInvalido ? '1.5px solid #ef4444' : '1px solid #cbd5e1', fontSize: '0.9rem' }}
-                  />
-                </div>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <CalendarClock size={18} color="#0f172a" /> 4. Disponibilidad
+              </h3>
+              {[vigenciaEnabled, diasEnabled, cupoEnabled].filter(Boolean).length > 0 && (
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '999px', backgroundColor: '#0f172a', color: '#ffffff' }}>
+                  {[vigenciaEnabled, diasEnabled, cupoEnabled].filter(Boolean).length} activa{[vigenciaEnabled, diasEnabled, cupoEnabled].filter(Boolean).length > 1 ? 's' : ''}
+                </span>
               )}
             </div>
 
-            {/* Live guardrail: cupo vs stock BOM */}
-            {cupoExcedeStock && (
-              <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px' }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#991b1b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <AlertTriangle size={14} /> El cupo supera el stock del combo
+            {/* Mode badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <p style={{ margin: 0, color: '#64748b', fontSize: '0.8rem' }}>
+                Cada restricción es independiente y se combina automáticamente.
+              </p>
+              <span style={{
+                flexShrink: 0,
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                padding: '0.18rem 0.55rem',
+                borderRadius: '999px',
+                border: '1.5px solid',
+                borderColor: modoVenta === 'PERMANENTE' ? '#cbd5e1' : '#0f172a',
+                backgroundColor: modoVenta === 'PERMANENTE' ? '#f8fafc' : '#f1f5f9',
+                color: modoVenta === 'PERMANENTE' ? '#94a3b8' : '#0f172a',
+                whiteSpace: 'nowrap',
+              }}>
+                {modoVenta === 'PERMANENTE' && 'Permanente'}
+                {modoVenta === 'RANGO_FECHAS' && 'Temporal'}
+                {modoVenta === 'CUPO_FIJO' && 'Con cupo'}
+                {modoVenta === 'MIXTO' && 'Temporal + cupo'}
+              </span>
+            </div>
+
+            {/* Toggle 1 — Período de vigencia */}
+            <div style={{ borderRadius: '10px', border: `1.5px solid ${vigenciaEnabled ? '#0f172a' : '#e2e8f0'}`, overflow: 'hidden', marginBottom: '0.65rem' }}>
+              <button
+                type="button"
+                onClick={() => setVigenciaEnabled(!vigenciaEnabled)}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1rem', backgroundColor: vigenciaEnabled ? '#0f172a' : '#f8fafc', border: 'none', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                  <div style={{ width: 17, height: 17, borderRadius: '50%', border: `2px solid ${vigenciaEnabled ? '#fff' : '#94a3b8'}`, backgroundColor: vigenciaEnabled ? '#fff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {vigenciaEnabled && <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#0f172a' }} />}
+                  </div>
+                  <span style={{ fontSize: '0.87rem', fontWeight: 600, color: vigenciaEnabled ? '#ffffff' : '#0f172a' }}>Período de vigencia</span>
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#991b1b', marginTop: '0.2rem' }}>
-                  El stock virtual del combo es de {virtualStock} kit(s). No puede venderse un cupo mayor al stock disponible.
+                <span style={{ fontSize: '0.74rem', color: vigenciaEnabled ? '#94a3b8' : '#64748b' }}>
+                  {vigenciaEnabled ? 'Activo' : 'Siempre disponible'}
+                </span>
+              </button>
+              {vigenciaEnabled && (
+                <div style={{ padding: '1rem', backgroundColor: '#ffffff', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  {/* Desde */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Disponible desde</label>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <input
+                        type="date"
+                        value={vigenciaInicio}
+                        onChange={(e) => setVigenciaInicio(e.target.value)}
+                        style={{ flex: '1 1 60%', padding: '0.5rem 0.6rem', borderRadius: '7px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', color: '#0f172a', minWidth: 0 }}
+                      />
+                      <input
+                        type="time"
+                        value={vigenciaInicioHora}
+                        onChange={(e) => setVigenciaInicioHora(e.target.value)}
+                        style={{ flex: '1 1 40%', padding: '0.5rem 0.4rem', borderRadius: '7px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', color: '#0f172a', minWidth: 0 }}
+                      />
+                    </div>
+                  </div>
+                  {/* Hasta */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Disponible hasta</label>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <input
+                        type="date"
+                        value={vigenciaFin}
+                        onChange={(e) => setVigenciaFin(e.target.value)}
+                        style={{ flex: '1 1 60%', padding: '0.5rem 0.6rem', borderRadius: '7px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', color: '#0f172a', minWidth: 0 }}
+                      />
+                      <input
+                        type="time"
+                        value={vigenciaFinHora}
+                        onChange={(e) => setVigenciaFinHora(e.target.value)}
+                        style={{ flex: '1 1 40%', padding: '0.5rem 0.4rem', borderRadius: '7px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', color: '#0f172a', minWidth: 0 }}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCupoMaximo(String(virtualStock))}
-                  style={{
-                    marginTop: '0.5rem',
-                    padding: '0.4rem 0.8rem',
-                    borderRadius: '6px',
-                    border: '1px solid #fca5a5',
-                    backgroundColor: '#ffffff',
-                    color: '#991b1b',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Ajustar al máximo: {virtualStock}
-                </button>
+              )}
+            </div>
+
+            {/* Toggle 2 — Días específicos */}
+            <div style={{ borderRadius: '10px', border: `1.5px solid ${diasEnabled ? '#0f172a' : '#e2e8f0'}`, overflow: 'hidden', marginBottom: '0.65rem' }}>
+              <button
+                type="button"
+                onClick={() => setDiasEnabled(!diasEnabled)}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1rem', backgroundColor: diasEnabled ? '#0f172a' : '#f8fafc', border: 'none', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                  <div style={{ width: 17, height: 17, borderRadius: '50%', border: `2px solid ${diasEnabled ? '#fff' : '#94a3b8'}`, backgroundColor: diasEnabled ? '#fff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {diasEnabled && <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#0f172a' }} />}
+                  </div>
+                  <span style={{ fontSize: '0.87rem', fontWeight: 600, color: diasEnabled ? '#ffffff' : '#0f172a' }}>Solo en días específicos</span>
+                </div>
+                <span style={{ fontSize: '0.74rem', color: diasEnabled ? '#94a3b8' : '#64748b' }}>
+                  {diasEnabled
+                    ? diasSemana.length > 0
+                      ? (['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'] as string[]).filter((_, i) => diasSemana.includes(i)).join(', ')
+                      : 'Seleccioná días'
+                    : 'Todos los días'}
+                </span>
+              </button>
+              {diasEnabled && (
+                <div style={{ padding: '0.85rem 1rem', backgroundColor: '#ffffff' }}>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {([1,2,3,4,5,6,0] as number[]).map((day) => {
+                      const labels: Record<number,string> = { 0:'Dom', 1:'Lun', 2:'Mar', 3:'Mié', 4:'Jue', 5:'Vie', 6:'Sáb' };
+                      const isOn = diasSemana.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => setDiasSemana(isOn ? diasSemana.filter(d => d !== day) : [...diasSemana, day])}
+                          style={{ padding: '0.4rem 0.8rem', borderRadius: '999px', fontSize: '0.82rem', fontWeight: isOn ? 700 : 500, cursor: 'pointer', border: `2px solid ${isOn ? '#0f172a' : '#e2e8f0'}`, backgroundColor: isOn ? '#0f172a' : '#f8fafc', color: isOn ? '#ffffff' : '#64748b', transition: 'all 0.12s' }}
+                        >
+                          {labels[day]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {diasSemana.length === 0 && (
+                    <p style={{ margin: '0.55rem 0 0 0', fontSize: '0.74rem', color: '#f59e0b' }}>Seleccioná al menos un día o desactivá esta restricción.</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Toggle 3 — Cupo máximo */}
+            <div style={{ borderRadius: '10px', border: `1.5px solid ${cupoEnabled ? '#0f172a' : '#e2e8f0'}`, overflow: 'hidden' }}>
+              <button
+                type="button"
+                onClick={() => setCupoEnabled(!cupoEnabled)}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1rem', backgroundColor: cupoEnabled ? '#0f172a' : '#f8fafc', border: 'none', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                  <div style={{ width: 17, height: 17, borderRadius: '50%', border: `2px solid ${cupoEnabled ? '#fff' : '#94a3b8'}`, backgroundColor: cupoEnabled ? '#fff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {cupoEnabled && <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#0f172a' }} />}
+                  </div>
+                  <span style={{ fontSize: '0.87rem', fontWeight: 600, color: cupoEnabled ? '#ffffff' : '#0f172a' }}>Limitar cupo de ventas</span>
+                </div>
+                <span style={{ fontSize: '0.74rem', color: cupoEnabled ? '#94a3b8' : '#64748b' }}>
+                  {cupoEnabled ? (cupoMaximo ? `${cupoMaximo} kits máx.` : 'Sin definir') : 'Sin límite'}
+                </span>
+              </button>
+              {cupoEnabled && (
+                <div style={{ padding: '0.85rem 1rem', backgroundColor: '#ffffff' }}>
+                  <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Cupo máximo</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={cupoMaximo}
+                        onChange={(e) => setCupoMaximo(e.target.value)}
+                        placeholder="0"
+                        style={{ width: '100%', padding: '0.5rem 3rem 0.5rem 0.7rem', borderRadius: '7px', border: `1.5px solid ${cupoInvalido ? '#ef4444' : '#cbd5e1'}`, fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', backgroundColor: cupoInvalido ? '#fef2f2' : '#ffffff', boxSizing: 'border-box' as const }}
+                      />
+                      <span style={{ position: 'absolute', right: '0.7rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.73rem', color: '#94a3b8', fontWeight: 600, pointerEvents: 'none' }}>kits</span>
+                    </div>
+                    {cupoUsado > 0 && <span style={{ fontSize: '0.77rem', color: '#64748b', whiteSpace: 'nowrap' }}>{cupoUsado} vendido{cupoUsado !== 1 ? 's' : ''}</span>}
+                  </div>
+                  {cupoExcedeStock && (
+                    <div style={{ marginTop: '0.7rem', padding: '0.65rem 0.9rem', backgroundColor: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
+                        <AlertTriangle size={14} color="#dc2626" style={{ flexShrink: 0, marginTop: 2 }} />
+                        <span style={{ fontSize: '0.77rem', color: '#991b1b' }}>El cupo supera el stock virtual (<strong>{virtualStock}</strong> kits armables)</span>
+                      </div>
+                      <button type="button" onClick={() => setCupoMaximo(String(virtualStock))} style={{ flexShrink: 0, padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1.5px solid #fca5a5', backgroundColor: '#ffffff', color: '#991b1b', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>Ajustar a {virtualStock}</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Canal de Publicación */}
+            <div style={{ marginTop: '0.75rem', padding: '0.85rem 1rem', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+              <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: '#475569', marginBottom: '0.45rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Canal de Publicación
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                {[
+                  { value: 'AMBOS', label: 'Todos los Canales', desc: 'Web + Caja POS' },
+                  { value: 'ECOMMERCE', label: 'Solo E-commerce', desc: 'Tienda Online' },
+                  { value: 'POS', label: 'Solo POS', desc: 'Caja / Local' },
+                ].map((c) => {
+                  const isSel = canalVenta === c.value;
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => setCanalVenta(c.value as any)}
+                      style={{
+                        padding: '0.55rem 0.4rem',
+                        borderRadius: '8px',
+                        border: isSel ? '2px solid #0f172a' : '1px solid #cbd5e1',
+                        backgroundColor: isSel ? '#0f172a' : '#ffffff',
+                        color: isSel ? '#ffffff' : '#0f172a',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700 }}>{c.label}</div>
+                      <div style={{ fontSize: '0.68rem', color: isSel ? '#94a3b8' : '#64748b', marginTop: '2px' }}>{c.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {!vigenciaEnabled && !diasEnabled && !cupoEnabled && (
+              <div style={{ marginTop: '0.85rem', padding: '0.65rem 1rem', backgroundColor: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle size={14} color="#94a3b8" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                  Sin restricciones de fecha/cupo — se vende siempre que haya stock disponible.
+                </span>
               </div>
             )}
           </div>
         </div>
+
 
         {/* Right Column: Pricing, Availability & Live Card Preview */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', position: 'sticky', top: '1rem' }}>

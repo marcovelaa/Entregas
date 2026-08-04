@@ -48,6 +48,7 @@ export class DiscountEngineService {
         fecha_inicio: { lte: now },
         fecha_fin: { gte: now },
         codigo_cupon: cupon ? cupon.toUpperCase() : null,
+        OR: [{ dias_semana: { isEmpty: true } }, { dias_semana: { has: now.getDay() } }],
       },
       include: {
         productos: true,
@@ -64,6 +65,11 @@ export class DiscountEngineService {
     let maxSavings = -1;
 
     for (const d of activeDiscounts) {
+      // 0. Day-of-Week / Time-of-Day Gate (before channel filter)
+      if (!this.isDayTimeEligible(d, now)) {
+        continue;
+      }
+
       // 1. Channel Filter
       if (d.canal !== 'TODOS' && canal !== 'TODOS' && d.canal !== canal) {
         continue;
@@ -211,5 +217,16 @@ export class DiscountEngineService {
     }
 
     return bestResult;
+  }
+
+  private isDayTimeEligible(
+    d: { dias_semana?: number[]; hora_inicio?: string | null; hora_fin?: string | null },
+    now: Date,
+  ): boolean {
+    const dias = d.dias_semana ?? [];
+    if (dias.length > 0 && !dias.includes(now.getDay())) return false;
+    if (!d.hora_inicio || !d.hora_fin) return true;
+    const nowHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    return nowHHMM >= d.hora_inicio && nowHHMM <= d.hora_fin;
   }
 }
