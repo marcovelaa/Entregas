@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Delete, Param, Body, BadRequestException, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { CrearRolUseCase } from '../../application/use-cases/roles/crear-rol.use-case';
 import { ListarRolesUseCase } from '../../application/use-cases/roles/listar-roles.use-case';
 import { VerDetalleRolUseCase } from '../../application/use-cases/roles/ver-detalle-rol.use-case';
@@ -8,7 +8,6 @@ import { ObtenerPermisosRolUseCase } from '../../application/use-cases/roles/obt
 import { AsignarPermisosUseCase } from '../../application/use-cases/roles/asignar-permisos.use-case';
 import { CrearRolDto } from '../../application/dtos/crear-rol.dto';
 import { UpdateRolDto } from '../../application/dtos/update-rol.dto';
-import { RolDuplicadoException } from '../../domain/exceptions/iam.exceptions';
 
 @Controller('roles')
 export class RolesController {
@@ -37,24 +36,16 @@ export class RolesController {
 
   @Post()
   async create(@Body() dto: CrearRolDto) {
-    try {
-      const nuevoRol = await this.crearRolUseCase.execute(dto);
-      
-      // Mapeamos a JSON para evitar problemas serializando el BigInt y mantener limpia la respuesta
-      return {
-        id: nuevoRol.id.toString(),
-        nombre: nuevoRol.nombre,
-        descripcion: nuevoRol.descripcion,
-        activo: nuevoRol.activo,
-        creadoEn: nuevoRol.creadoEn,
-      };
-    } catch (error) {
-      if (error instanceof RolDuplicadoException) {
-        // Traducimos el error de dominio a HTTP 400 sin que el Caso de Uso se entere
-        throw new BadRequestException(error.message);
-      }
-      throw error; // Cualquier otro error inesperado se lanza normal (500)
-    }
+    const nuevoRol = await this.crearRolUseCase.execute(dto);
+
+    // Mapeamos a JSON para evitar problemas serializando el BigInt y mantener limpia la respuesta
+    return {
+      id: nuevoRol.id.toString(),
+      nombre: nuevoRol.nombre,
+      descripcion: nuevoRol.descripcion,
+      activo: nuevoRol.activo,
+      creadoEn: nuevoRol.creadoEn,
+    };
   }
 
   @Get(':id')

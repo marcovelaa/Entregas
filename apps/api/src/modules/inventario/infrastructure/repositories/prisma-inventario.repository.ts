@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { IInventarioRepository } from '../../domain/repositories/inventario.repository.interface';
@@ -108,7 +108,7 @@ export class PrismaInventarioRepository implements IInventarioRepository {
 
       if (stockItem) {
         if (!data.tipo_movimiento.includes('INGRESO') && stockItem.cantidad_disponible + cantidadDelta < 0) {
-          throw new Error('Stock insuficiente para realizar este movimiento negativo.');
+          throw new ConflictException('Stock insuficiente para realizar este movimiento negativo.');
         }
         await client.inventario.update({
           where: { id: stockItem.id },
@@ -116,7 +116,7 @@ export class PrismaInventarioRepository implements IInventarioRepository {
         });
       } else {
         if (!data.tipo_movimiento.includes('INGRESO')) {
-          throw new Error('Stock insuficiente, no hay registro previo para este producto.');
+          throw new ConflictException('Stock insuficiente, no hay registro previo para este producto.');
         }
         await client.inventario.create({
           data: {

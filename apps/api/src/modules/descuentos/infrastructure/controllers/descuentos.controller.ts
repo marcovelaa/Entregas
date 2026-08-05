@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Put, Patch, Delete, Body, Param, NotFoundException } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { DiscountEngineService, CartItemInput } from '../../domain/discount-engine.service';
 
@@ -17,6 +18,7 @@ function parseDiasSemana(v: unknown): number[] {
   return Array.from(new Set(v.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)));
 }
 
+@ApiTags('descuentos')
 @Controller('descuentos')
 export class DescuentosController {
   constructor(
@@ -25,6 +27,8 @@ export class DescuentosController {
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'Listar todos los descuentos con sus alcances (productos/variantes/empaques/categorías)' })
+  @ApiResponse({ status: 200, description: 'Listado de descuentos' })
   async listar() {
     const descuentos = await this.prisma.descuento.findMany({
       include: {
@@ -70,6 +74,9 @@ export class DescuentosController {
   }
 
   @Get(':id/analitica')
+  @ApiOperation({ summary: 'Obtener analítica de uso de un descuento (canjes, ahorro, productos top)' })
+  @ApiParam({ name: 'id', description: 'ID del descuento' })
+  @ApiResponse({ status: 200, description: 'Analítica del descuento' })
   async obtenerAnalitica(@Param('id') id: string) {
     const descId = BigInt(id);
 
@@ -168,6 +175,9 @@ export class DescuentosController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Obtener un descuento por ID' })
+  @ApiParam({ name: 'id', description: 'ID del descuento' })
+  @ApiResponse({ status: 200, description: 'Descuento encontrado' })
   async obtenerPorId(@Param('id') id: string) {
     const d = await this.prisma.descuento.findUnique({
       where: { id: BigInt(id) },
@@ -217,6 +227,8 @@ export class DescuentosController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'Crear un descuento o regla promocional' })
+  @ApiResponse({ status: 201, description: 'Descuento creado' })
   async crear(@Body() dto: any) {
     const {
       nombre,
@@ -291,6 +303,10 @@ export class DescuentosController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Actualizar parcialmente un descuento (ej. activar/desactivar)' })
+  @ApiParam({ name: 'id', description: 'ID del descuento' })
+  @ApiResponse({ status: 200, description: 'Descuento actualizado' })
+  @ApiResponse({ status: 404, description: 'Descuento no encontrado' })
   async toggleOActualizarParcial(@Param('id') id: string, @Body() dto: any) {
     const descId = BigInt(id);
     const existing = await this.prisma.descuento.findUnique({
@@ -326,6 +342,10 @@ export class DescuentosController {
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Reemplazar un descuento completo' })
+  @ApiParam({ name: 'id', description: 'ID del descuento' })
+  @ApiResponse({ status: 200, description: 'Descuento actualizado' })
+  @ApiResponse({ status: 404, description: 'Descuento no encontrado' })
   async actualizar(@Param('id') id: string, @Body() dto: any) {
     const descId = BigInt(id);
 
@@ -425,6 +445,9 @@ export class DescuentosController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar un descuento' })
+  @ApiParam({ name: 'id', description: 'ID del descuento' })
+  @ApiResponse({ status: 200, description: 'Descuento eliminado' })
   async eliminar(@Param('id') id: string) {
     await this.prisma.descuento.delete({
       where: { id: BigInt(id) },
@@ -433,6 +456,8 @@ export class DescuentosController {
   }
 
   @Post('validar')
+  @ApiOperation({ summary: 'Evaluar el carrito contra los descuentos/cupones activos y calcular el mejor ahorro aplicable' })
+  @ApiResponse({ status: 201, description: 'Resultado de la evaluación de descuentos' })
   async validarPromocion(
     @Body()
     body: {
