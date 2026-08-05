@@ -11,23 +11,32 @@ type TxMock = {
   };
   producto: {
     findUnique: jest.Mock;
+    findMany: jest.Mock;
     updateMany: jest.Mock;
   };
   inventario: {
     findFirst: jest.Mock;
+    findMany: jest.Mock;
     updateMany: jest.Mock;
     update: jest.Mock;
   };
   variante: {
     findFirst: jest.Mock;
     findUnique: jest.Mock;
+    findMany: jest.Mock;
   };
   empaque: {
     findUnique: jest.Mock;
+    findMany: jest.Mock;
   };
   usuario: {
     findUnique: jest.Mock;
   };
+  descuento: {
+    findUnique: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  descuentoUso: { create: jest.Mock };
   movimientosInventario: { create: jest.Mock };
 };
 
@@ -36,20 +45,23 @@ type CupoState = { cupoUsado: number };
 function createTx(): TxMock {
   return {
     venta: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
-    producto: { findUnique: jest.fn(), updateMany: jest.fn() },
-    inventario: { findFirst: jest.fn(), updateMany: jest.fn(), update: jest.fn() },
-    variante: { findFirst: jest.fn(), findUnique: jest.fn() },
-    empaque: { findUnique: jest.fn() },
+    producto: { findUnique: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
+    inventario: { findFirst: jest.fn(), findMany: jest.fn(), updateMany: jest.fn(), update: jest.fn() },
+    variante: { findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn() },
+    empaque: { findUnique: jest.fn(), findMany: jest.fn() },
     usuario: { findUnique: jest.fn() },
+    descuento: { findUnique: jest.fn(), updateMany: jest.fn() },
+    descuentoUso: { create: jest.fn() },
     movimientosInventario: { create: jest.fn() },
   };
 }
 
-function createHarness(tx: TxMock) {
+function createHarness(tx: TxMock, discountEngine?: { evaluate: jest.Mock }) {
   const prisma = {
     $transaction: jest.fn(async (fn: (t: TxMock) => unknown) => fn(tx)),
   } as unknown as PrismaService;
-  return { repo: new PrismaVentaRepository(prisma), prisma, tx };
+  const engine = (discountEngine ?? { evaluate: jest.fn().mockResolvedValue(null) }) as any;
+  return { repo: new PrismaVentaRepository(prisma, engine), prisma, tx, discountEngine: engine };
 }
 
 function comboRow(overrides: Record<string, unknown> = {}) {
@@ -145,9 +157,11 @@ function mockCupoStateful(tx: TxMock, state: CupoState) {
 
 function setupCrear(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
   tx.venta.create.mockResolvedValue(ventaRow());
-  tx.producto.findUnique.mockResolvedValue(comboRow(comboOverrides));
-  tx.variante.findFirst.mockResolvedValue({ id: 701n, producto_id: 7n, activo: true });
-  tx.inventario.findFirst.mockResolvedValue({ id: 5n, variante_id: 701n, cantidad_disponible: 100, reservado: 0 });
+  tx.producto.findMany.mockResolvedValue([comboRow(comboOverrides)]);
+  tx.variante.findMany.mockResolvedValue([{ id: 701n, producto_id: 7n, activo: true }]);
+  tx.inventario.findMany.mockResolvedValue([
+    { id: 5n, producto_id: 7n, variante_id: 701n, cantidad_disponible: 100, reservado: 0 },
+  ]);
   tx.inventario.updateMany.mockResolvedValue({ count: 1 });
   tx.movimientosInventario.create.mockResolvedValue({});
 }
@@ -190,7 +204,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     mockCupoStateful(tx, state);
     setupCrear(tx, { cupo_maximo: 10, cupo_usado: 10 });
 
-    await expectConflict(repo.crear(ventaData, 50, 0), 'Cupo agotado para el combo Combo X');
+    await expectConflict(repo.crear(ventaData), 'Cupo agotado para el combo Combo X');
 
     expect(tx.producto.updateMany).toHaveBeenCalledWith({
       where: { id: 99n, cupo_maximo: { not: null }, cupo_usado: { lte: 9 } },
@@ -208,7 +222,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
       vigencia_fin: new Date('2020-02-01T00:00:00.000Z'),
     });
 
-    await expectConflict(repo.crear(ventaData, 50, 0), 'El combo Combo X no está en vigencia');
+    await expectConflict(repo.crear(ventaData), 'El combo Combo X no está en vigencia');
 
     expect(tx.producto.updateMany).not.toHaveBeenCalled();
     expect(tx.inventario.updateMany).not.toHaveBeenCalled();
@@ -221,7 +235,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
       vigencia_inicio: new Date('2999-01-01T00:00:00.000Z'),
     });
 
-    await expectConflict(repo.crear(ventaData, 50, 0), 'El combo Combo X no está en vigencia');
+    await expectConflict(repo.crear(ventaData), 'El combo Combo X no está en vigencia');
     expect(tx.inventario.updateMany).not.toHaveBeenCalled();
   });
 
@@ -230,7 +244,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     setupCrear(tx, { modo_venta: 'MIXTO', cupo_maximo: 10, cupo_usado: 3 });
     mockCupoStateful(tx, { cupoUsado: 3 });
 
-    const result = await repo.crear(ventaData, 50, 0);
+    const result = await repo.crear(ventaData);
 
     expect(result.id).toBe('1');
     expect(tx.inventario.updateMany).toHaveBeenCalledWith(
@@ -245,7 +259,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
       vigencia_fin: new Date('2020-02-01T00:00:00.000Z'),
     });
 
-    const result = await repo.crear(ventaData, 50, 0);
+    const result = await repo.crear(ventaData);
 
     expect(result.id).toBe('1');
     expect(tx.inventario.updateMany).toHaveBeenCalled();
@@ -263,7 +277,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
       cupo_usado: 3,
     });
 
-    const result = await repo.crear(ventaData, 50, 0);
+    const result = await repo.crear(ventaData);
 
     expect(result.id).toBe('1');
     expect(state.cupoUsado).toBe(4);
@@ -285,11 +299,11 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     mockCupoStateful(tx, state);
     setupCrear(tx, { cupo_maximo: 10, cupo_usado: 9 });
 
-    const first = await repo.crear(ventaData, 50, 0);
+    const first = await repo.crear(ventaData);
     expect(first.id).toBe('1');
     expect(state.cupoUsado).toBe(10);
 
-    await expectConflict(repo.crear(ventaData, 50, 0), 'Cupo agotado para el combo Combo X');
+    await expectConflict(repo.crear(ventaData), 'Cupo agotado para el combo Combo X');
 
     expect(state.cupoUsado).toBe(10);
     expect(tx.producto.updateMany).toHaveBeenCalledTimes(2);
@@ -302,7 +316,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     setupCrear(tx, { cupo_maximo: 10, cupo_usado: 9 });
 
     await expectConflict(
-      repo.crear({ ...ventaData, detalles: [{ producto_id: '99', cantidad: 2, precio_unitario: 50 }] }, 100, 0),
+      repo.crear({ ...ventaData, monto_pagado: 100, detalles: [{ producto_id: '99', cantidad: 2, precio_unitario: 50 }] }),
       'Cupo agotado para el combo Combo X',
     );
 
@@ -317,7 +331,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     const { repo, tx } = createHarness(createTx());
     setupCrear(tx, { cupo_maximo: null, cupo_usado: 0 });
 
-    const result = await repo.crear(ventaData, 50, 0);
+    const result = await repo.crear(ventaData);
 
     expect(result.id).toBe('1');
     expect(tx.producto.updateMany).not.toHaveBeenCalled();
@@ -328,11 +342,11 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     const { repo, tx } = createHarness(createTx());
     setupCrear(tx, { cupo_maximo: null });
 
-    const result = await repo.crear(ventaData, 50, 0);
+    const result = await repo.crear(ventaData);
 
     expect(result.id).toBe('1');
-    expect(tx.variante.findFirst).toHaveBeenCalledWith({
-      where: { producto_id: 7n, activo: true },
+    expect(tx.variante.findMany).toHaveBeenCalledWith({
+      where: { producto_id: { in: [7n] }, activo: true },
       orderBy: { id: 'asc' },
     });
     expect(tx.inventario.updateMany).toHaveBeenCalledWith({
@@ -346,7 +360,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     setupCrear(tx, { cupo_maximo: null });
     tx.inventario.updateMany.mockResolvedValue({ count: 0 });
 
-    await expect(repo.crear(ventaData, 50, 0)).rejects.toThrow(
+    await expect(repo.crear(ventaData)).rejects.toThrow(
       /Conflicto de concurrencia: stock insuficiente/,
     );
   });
@@ -451,16 +465,12 @@ describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de
     const { repo, tx } = createHarness(createTx());
     setupCrear(tx, { precio_base: 50 });
 
-    const result = await repo.crear(
-      {
-        usuario_id: '1',
-        metodo_pago: 'EFECTIVO',
-        monto_pagado: 50,
-        detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 50 }],
-      },
-      50,
-      0,
-    );
+    const result = await repo.crear({
+      usuario_id: '1',
+      metodo_pago: 'EFECTIVO',
+      monto_pagado: 50,
+      detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 50 }],
+    });
 
     expect(result.id).toBe('1');
     expect(tx.venta.create).toHaveBeenCalledWith(
@@ -491,18 +501,14 @@ describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de
       rol: { nombre: 'Administrador' },
     });
 
-    const result = await repo.crear(
-      {
-        usuario_id: '1',
-        metodo_pago: 'EFECTIVO',
-        monto_pagado: 40,
-        aprobador_usuario_id: '100',
-        motivo_ajuste: 'Descuento cliente frecuente',
-        detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
-      },
-      40,
-      0,
-    );
+    const result = await repo.crear({
+      usuario_id: '1',
+      metodo_pago: 'EFECTIVO',
+      monto_pagado: 40,
+      aprobador_usuario_id: '100',
+      motivo_ajuste: 'Descuento cliente frecuente',
+      detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
+    });
 
     expect(result.id).toBe('1');
     expect(tx.usuario.findUnique).toHaveBeenCalledWith({
@@ -532,16 +538,12 @@ describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de
     setupCrear(tx, { precio_base: 50 });
 
     await expect(
-      repo.crear(
-        {
-          usuario_id: '1',
-          metodo_pago: 'EFECTIVO',
-          monto_pagado: 40,
-          detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
-        },
-        40,
-        0,
-      ),
+      repo.crear({
+        usuario_id: '1',
+        metodo_pago: 'EFECTIVO',
+        monto_pagado: 40,
+        detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
+      }),
     ).rejects.toThrow(BadRequestException);
 
     expect(tx.venta.create).not.toHaveBeenCalled();
@@ -555,17 +557,13 @@ describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de
     tx.usuario.findUnique.mockResolvedValue(null);
 
     await expect(
-      repo.crear(
-        {
-          usuario_id: '1',
-          metodo_pago: 'EFECTIVO',
-          monto_pagado: 40,
-          aprobador_usuario_id: '999',
-          detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
-        },
-        40,
-        0,
-      ),
+      repo.crear({
+        usuario_id: '1',
+        metodo_pago: 'EFECTIVO',
+        monto_pagado: 40,
+        aprobador_usuario_id: '999',
+        detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
+      }),
     ).rejects.toThrow(NotFoundException);
 
     expect(tx.venta.create).not.toHaveBeenCalled();
@@ -584,20 +582,181 @@ describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de
     });
 
     await expect(
-      repo.crear(
-        {
-          usuario_id: '1',
-          metodo_pago: 'EFECTIVO',
-          monto_pagado: 40,
-          aprobador_usuario_id: '200',
-          detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
-        },
-        40,
-        0,
-      ),
+      repo.crear({
+        usuario_id: '1',
+        metodo_pago: 'EFECTIVO',
+        monto_pagado: 40,
+        aprobador_usuario_id: '200',
+        detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
+      }),
     ).rejects.toThrow(UnauthorizedException);
 
     expect(tx.venta.create).not.toHaveBeenCalled();
     expect(tx.movimientosInventario.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('PrismaVentaRepository.crear - validación server-side del descuento (1.2)', () => {
+  it('no llama al discount engine ni aplica descuento si no se manda descuento_id ni codigo_cupon', async () => {
+    const evaluate = jest.fn();
+    const { repo, tx } = createHarness(createTx(), { evaluate });
+    setupCrear(tx, { precio_base: 50 });
+
+    await repo.crear(ventaData);
+
+    expect(evaluate).not.toHaveBeenCalled();
+    expect(tx.venta.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ descuento_total: 0, codigo_cupon: null }) }),
+    );
+    expect(tx.descuentoUso.create).not.toHaveBeenCalled();
+  });
+
+  it('ignora el descuento_total que manda el cliente y usa el monto calculado por el discount engine', async () => {
+    const evaluate = jest.fn().mockResolvedValue({
+      id: '10',
+      nombre: 'Promo Fidelidad',
+      codigo: 'FIEL10',
+      tipo: 'PORCENTAJE',
+      alcance: 'GLOBAL',
+      canal: 'POS',
+      montoDescontado: 15,
+      totalOriginal: 50,
+      totalFinal: 35,
+      itemsElegiblesCount: 1,
+    });
+    const { repo, tx } = createHarness(createTx(), { evaluate });
+    setupCrear(tx, { precio_base: 50 });
+    tx.descuento.findUnique.mockResolvedValue({ id: 10n, limite_usos: null });
+    tx.descuento.updateMany.mockResolvedValue({ count: 1 });
+
+    await repo.crear({
+      usuario_id: '1',
+      metodo_pago: 'EFECTIVO',
+      monto_pagado: 35,
+      descuento_id: '10',
+      descuento_total: 999999, // valor manipulado por el cliente, debe ser ignorado
+      detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 50 }],
+    } as any);
+
+    expect(evaluate).toHaveBeenCalledWith(
+      expect.objectContaining({ items: [expect.objectContaining({ cantidad: 1, precioUnitario: 50 })] }),
+    );
+    expect(tx.venta.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ total: 35, descuento_total: 15, codigo_cupon: 'FIEL10' }),
+      }),
+    );
+    expect(tx.descuento.updateMany).toHaveBeenCalledWith({
+      where: { id: 10n },
+      data: { usos_actuales: { increment: 1 } },
+    });
+    expect(tx.descuentoUso.create).toHaveBeenCalledWith({
+      data: { descuento_id: 10n, venta_id: 1n, cliente_id: null, monto_descontado: 15 },
+    });
+  });
+
+  it('rechaza con ConflictException cuando el cupo del descuento ya está agotado, sin registrar el uso', async () => {
+    const evaluate = jest.fn().mockResolvedValue({
+      id: '10',
+      nombre: 'Promo Agotada',
+      codigo: null,
+      tipo: 'MONTO_FIJO',
+      alcance: 'GLOBAL',
+      canal: 'POS',
+      montoDescontado: 5,
+      totalOriginal: 50,
+      totalFinal: 45,
+      itemsElegiblesCount: 1,
+    });
+    const { repo, tx } = createHarness(createTx(), { evaluate });
+    setupCrear(tx, { precio_base: 50 });
+    tx.descuento.findUnique.mockResolvedValue({ id: 10n, limite_usos: 3 });
+    tx.descuento.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      repo.crear({
+        usuario_id: '1',
+        metodo_pago: 'EFECTIVO',
+        monto_pagado: 45,
+        descuento_id: '10',
+        detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 50 }],
+      }),
+    ).rejects.toThrow(ConflictException);
+
+    expect(tx.descuento.updateMany).toHaveBeenCalledWith({
+      where: { id: 10n, usos_actuales: { lt: 3 } },
+      data: { usos_actuales: { increment: 1 } },
+    });
+    expect(tx.descuentoUso.create).not.toHaveBeenCalled();
+  });
+
+  it('si el discount engine no encuentra un descuento válido, la venta sigue sin aplicar rebaja alguna', async () => {
+    const evaluate = jest.fn().mockResolvedValue(null);
+    const { repo, tx } = createHarness(createTx(), { evaluate });
+    setupCrear(tx, { precio_base: 50 });
+
+    const result = await repo.crear({
+      usuario_id: '1',
+      metodo_pago: 'EFECTIVO',
+      monto_pagado: 50,
+      descuento_id: '999', // descuento inexistente o ya no vigente
+      detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 50 }],
+    });
+
+    expect(result.id).toBe('1');
+    expect(tx.venta.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ total: 50, descuento_total: 0 }) }),
+    );
+    expect(tx.descuento.updateMany).not.toHaveBeenCalled();
+    expect(tx.descuentoUso.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('PrismaVentaRepository.crear - batching de lecturas dentro de la transacción (2.2)', () => {
+  it('para un carrito de 2 productos distintos, batchea producto/variante/inventario en una sola llamada cada uno', async () => {
+    const { repo, tx } = createHarness(createTx());
+    tx.venta.create.mockResolvedValue(ventaRow());
+    tx.producto.findMany.mockResolvedValue([
+      { id: 99n, nombre: 'Producto A', tipo_producto: 'SIMPLE', precio_base: 10, precio_promocional: null, componentes_combo: [] },
+      { id: 55n, nombre: 'Producto B', tipo_producto: 'SIMPLE', precio_base: 20, precio_promocional: null, componentes_combo: [] },
+    ]);
+    tx.variante.findMany.mockResolvedValue([
+      { id: 701n, producto_id: 99n, activo: true },
+      { id: 702n, producto_id: 55n, activo: true },
+    ]);
+    tx.inventario.findMany.mockResolvedValue([
+      { id: 5n, producto_id: 99n, variante_id: 701n, cantidad_disponible: 100, reservado: 0 },
+      { id: 6n, producto_id: 55n, variante_id: 702n, cantidad_disponible: 100, reservado: 0 },
+    ]);
+    tx.inventario.updateMany.mockResolvedValue({ count: 1 });
+    tx.movimientosInventario.create.mockResolvedValue({});
+
+    const result = await repo.crear({
+      usuario_id: '1',
+      metodo_pago: 'EFECTIVO',
+      monto_pagado: 30,
+      detalles: [
+        { producto_id: '99', cantidad: 1, precio_unitario: 10 },
+        { producto_id: '55', cantidad: 1, precio_unitario: 20 },
+      ],
+    });
+
+    expect(result.id).toBe('1');
+
+    // Reads: one batched call per resource, regardless of cart size.
+    expect(tx.producto.findMany).toHaveBeenCalledTimes(1);
+    expect(tx.producto.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: { in: [99n, 55n] } } }),
+    );
+    expect(tx.variante.findMany).toHaveBeenCalledTimes(1);
+    expect(tx.variante.findMany).toHaveBeenCalledWith({
+      where: { producto_id: { in: [99n, 55n] }, activo: true },
+      orderBy: { id: 'asc' },
+    });
+    expect(tx.inventario.findMany).toHaveBeenCalledTimes(1);
+
+    // Writes: still one atomic call per movement — that's the concurrency guard, unchanged.
+    expect(tx.inventario.updateMany).toHaveBeenCalledTimes(2);
+    expect(tx.movimientosInventario.create).toHaveBeenCalledTimes(2);
   });
 });

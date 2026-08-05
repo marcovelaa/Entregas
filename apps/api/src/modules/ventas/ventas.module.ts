@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../common/prisma/prisma.module';
+import { DescuentosModule } from '../descuentos/descuentos.module';
 import { VentasController } from './infrastructure/controllers/ventas.controller';
 import { VENTA_REPOSITORY } from './domain/repositories/venta.repository.interface';
 import { PrismaVentaRepository } from './infrastructure/repositories/prisma-venta.repository';
@@ -9,7 +10,7 @@ import { AnularVentaUseCase } from './application/use-cases/anular-venta.use-cas
 import { RevertirAnulacionVentaUseCase } from './application/use-cases/revertir-anulacion-venta.use-case';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, DescuentosModule],
   controllers: [VentasController],
   providers: [
     {
