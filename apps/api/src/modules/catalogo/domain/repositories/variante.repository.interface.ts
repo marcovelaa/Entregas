@@ -5,6 +5,8 @@ export interface VarianteEntity {
   producto_id: bigint;
   nombre: string;
   sku_base: string;
+  precio_unitario?: any;
+  precio_promocional?: any | null;
   imagen_url?: string | null;
   activo: boolean;
   creado_en?: Date;
@@ -17,6 +19,8 @@ export interface IVarianteRepository {
   buscarPorId(id: bigint): Promise<VarianteEntity | null>;
   buscarPorSku(sku_base: string): Promise<VarianteEntity | null>;
   actualizar(id: bigint, datos: Partial<VarianteEntity>): Promise<VarianteEntity>;
+  /** Actualiza únicamente el precio de venta de la variante (ej. desde una compra). Participa en `tx` si se provee. */
+  actualizarPrecioVenta(id: bigint, precio: number, tx?: any): Promise<void>;
   desactivar(id: bigint): Promise<VarianteEntity>;
   eliminar(id: bigint): Promise<void>;
   contarDependencias(id: bigint): Promise<number>;

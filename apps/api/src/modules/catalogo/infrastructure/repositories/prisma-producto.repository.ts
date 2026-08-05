@@ -273,6 +273,14 @@ export class PrismaProductoRepository implements IProductoRepository {
     });
   }
 
+  async actualizarPrecioVenta(id: bigint, precio: number, tx?: any): Promise<void> {
+    const client = tx ?? this.prisma;
+    await client.producto.update({
+      where: { id },
+      data: { precio_base: precio },
+    });
+  }
+
   async desactivar(id: bigint): Promise<ProductoEntity> {
     return this.prisma.producto.update({
       where: { id },

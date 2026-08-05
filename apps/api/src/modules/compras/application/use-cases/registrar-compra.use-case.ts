@@ -4,6 +4,10 @@ import { RegistrarCompraDto } from '../dtos/compra.dto';
 
 import type { IInventarioRepository } from '../../../inventario/domain/repositories/inventario.repository.interface';
 import { INVENTARIO_REPOSITORY } from '../../../inventario/domain/repositories/inventario.repository.interface';
+import type { IProductoRepository } from '../../../catalogo/domain/repositories/producto.repository.interface';
+import { PRODUCTO_REPOSITORY } from '../../../catalogo/domain/repositories/producto.repository.interface';
+import type { IVarianteRepository } from '../../../catalogo/domain/repositories/variante.repository.interface';
+import { VARIANTE_REPOSITORY } from '../../../catalogo/domain/repositories/variante.repository.interface';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { Inject, Injectable } from '@nestjs/common';
@@ -13,6 +17,8 @@ export class RegistrarCompraUseCase {
   constructor(
     @Inject(COMPRA_REPOSITORY) private readonly compraRepo: ICompraRepository,
     @Inject(INVENTARIO_REPOSITORY) private readonly inventarioRepo: IInventarioRepository,
+    @Inject(PRODUCTO_REPOSITORY) private readonly productoRepo: IProductoRepository,
+    @Inject(VARIANTE_REPOSITORY) private readonly varianteRepo: IVarianteRepository,
     private readonly prisma: PrismaService // Used only for transaction boundary
   ) {}
 
@@ -55,17 +61,9 @@ export class RegistrarCompraUseCase {
 
         if (d.precio_venta !== undefined && d.precio_venta !== null) {
           if (d.variante_id) {
-            // No VarianteRepository en compras, usamos Prisma aquí temporalmente dentro de tx
-            // o idealmente Inyectar IVarianteRepository
-            await tx.variante.update({
-              where: { id: d.variante_id },
-              data: { /* El precio de venta puede ir a nivel empque/variante, por defecto null en prisma pero si hubiera: */ }
-            });
+            await this.varianteRepo.actualizarPrecioVenta(d.variante_id, d.precio_venta, tx);
           } else {
-            await tx.producto.update({
-              where: { id: d.producto_id },
-              data: { precio_base: d.precio_venta }
-            });
+            await this.productoRepo.actualizarPrecioVenta(d.producto_id, d.precio_venta, tx);
           }
         }
       }

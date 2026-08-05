@@ -118,6 +118,8 @@ import { CrearEmpaquesBulkUseCase } from './application/use-cases/empaques/crear
     ListarProductosUseCase,
     CrearMarcaUseCase,
     ListarMarcasUseCase,
+    PRODUCTO_REPOSITORY,
+    VARIANTE_REPOSITORY,
   ],
 })
 export class CatalogoModule {}

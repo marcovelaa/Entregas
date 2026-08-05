@@ -9,9 +9,12 @@ import { ListarComprasUseCase } from './application/use-cases/listar-compras.use
 import { ObtenerCompraUseCase } from './application/use-cases/obtener-compra.use-case';
 import { InventarioModule } from '../inventario/inventario.module';
 import { INVENTARIO_REPOSITORY } from '../inventario/domain/repositories/inventario.repository.interface';
+import { CatalogoModule } from '../catalogo/catalogo.module';
+import { PRODUCTO_REPOSITORY } from '../catalogo/domain/repositories/producto.repository.interface';
+import { VARIANTE_REPOSITORY } from '../catalogo/domain/repositories/variante.repository.interface';
 
 @Module({
-  imports: [PrismaModule, InventarioModule],
+  imports: [PrismaModule, InventarioModule, CatalogoModule],
   controllers: [ComprasController],
   providers: [
     {
@@ -20,8 +23,9 @@ import { INVENTARIO_REPOSITORY } from '../inventario/domain/repositories/inventa
     },
     {
       provide: RegistrarCompraUseCase,
-      useFactory: (compraRepo, inventarioRepo, prisma) => new RegistrarCompraUseCase(compraRepo, inventarioRepo, prisma),
-      inject: [COMPRA_REPOSITORY, INVENTARIO_REPOSITORY, PrismaService],
+      useFactory: (compraRepo, inventarioRepo, productoRepo, varianteRepo, prisma) =>
+        new RegistrarCompraUseCase(compraRepo, inventarioRepo, productoRepo, varianteRepo, prisma),
+      inject: [COMPRA_REPOSITORY, INVENTARIO_REPOSITORY, PRODUCTO_REPOSITORY, VARIANTE_REPOSITORY, PrismaService],
     },
     {
       provide: ListarComprasUseCase,

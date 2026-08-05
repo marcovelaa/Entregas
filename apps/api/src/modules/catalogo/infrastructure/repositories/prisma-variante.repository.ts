@@ -52,6 +52,14 @@ export class PrismaVarianteRepository implements IVarianteRepository {
     }) as unknown as VarianteEntity;
   }
 
+  async actualizarPrecioVenta(id: bigint, precio: number, tx?: any): Promise<void> {
+    const client = tx ?? this.prisma;
+    await client.variante.update({
+      where: { id },
+      data: { precio_unitario: precio },
+    });
+  }
+
   async desactivar(id: bigint): Promise<VarianteEntity> {
     return this.prisma.variante.update({
       where: { id },

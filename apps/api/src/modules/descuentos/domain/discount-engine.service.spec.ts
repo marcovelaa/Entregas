@@ -1,41 +1,60 @@
 import { DiscountEngineService } from './discount-engine.service';
-import { PrismaService } from '../../../common/prisma/prisma.service';
+import type { IDescuentoRepository, ReglaDescuentoVigente } from './repositories/descuento.repository.interface';
+
+function createMockRepo(): jest.Mocked<IDescuentoRepository> {
+  return {
+    buscarReglasVigentes: jest.fn(),
+    contarUsosPorCliente: jest.fn().mockResolvedValue(0),
+  };
+}
+
+function reglaBase(overrides: Partial<ReglaDescuentoVigente> = {}): ReglaDescuentoVigente {
+  return {
+    id: '0',
+    nombre: 'Descuento de prueba',
+    codigo_cupon: null,
+    tipo: 'MONTO_FIJO',
+    alcance: 'GLOBAL',
+    canal: 'TODOS',
+    valor: 10,
+    max_monto_descuento: null,
+    cantidad_requerida: 1,
+    cantidad_paga: 1,
+    monto_minimo_compra: null,
+    limite_usos: null,
+    limite_usos_por_cliente: null,
+    usos_actuales: 0,
+    prioridad: 0,
+    dias_semana: [],
+    hora_inicio: null,
+    hora_fin: null,
+    productos: [],
+    variantes: [],
+    empaques: [],
+    categorias: [],
+    ...overrides,
+  };
+}
 
 describe('DiscountEngineService - Item-Level & Strategy Verification', () => {
   let service: DiscountEngineService;
-  let mockPrisma: any;
+  let repo: jest.Mocked<IDescuentoRepository>;
 
   beforeEach(() => {
-    mockPrisma = {
-      descuento: {
-        findMany: jest.fn(),
-      },
-      descuentoUso: {
-        count: jest.fn().mockResolvedValue(0),
-      },
-    };
-    service = new DiscountEngineService(mockPrisma as PrismaService);
+    repo = createMockRepo();
+    service = new DiscountEngineService(repo);
   });
 
   it('calculates MONTO_FIJO_POR_UNIDAD correctly (2 books of 100 with 10 discount -> 180 total)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
-      {
-        id: BigInt(1),
+    repo.buscarReglasVigentes.mockResolvedValue([
+      reglaBase({
+        id: '1',
         nombre: '10 Bs OFF por Libro',
-        codigo_cupon: null,
         tipo: 'MONTO_FIJO_POR_UNIDAD',
         valor: 10,
-        max_monto_descuento: null,
         alcance: 'PRODUCTO',
-        canal: 'TODOS',
-        limite_usos: null,
-        limite_usos_por_cliente: null,
-        monto_minimo_compra: null,
-        productos: [{ producto_id: BigInt(101) }],
-        variantes: [],
-        empaques: [],
-        categorias: [],
-      },
+        productos: [{ producto_id: '101' }],
+      }),
     ]);
 
     const result = await service.evaluate({
@@ -56,24 +75,8 @@ describe('DiscountEngineService - Item-Level & Strategy Verification', () => {
   });
 
   it('bounds unit discount so it does not exceed unit price', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
-      {
-        id: BigInt(2),
-        nombre: '10 Bs OFF por Unidad',
-        codigo_cupon: null,
-        tipo: 'MONTO_FIJO_POR_UNIDAD',
-        valor: 10,
-        max_monto_descuento: null,
-        alcance: 'GLOBAL',
-        canal: 'TODOS',
-        limite_usos: null,
-        limite_usos_por_cliente: null,
-        monto_minimo_compra: null,
-        productos: [],
-        variantes: [],
-        empaques: [],
-        categorias: [],
-      },
+    repo.buscarReglasVigentes.mockResolvedValue([
+      reglaBase({ id: '2', nombre: '10 Bs OFF por Unidad', tipo: 'MONTO_FIJO_POR_UNIDAD', valor: 10 }),
     ]);
 
     const result = await service.evaluate({
@@ -92,24 +95,14 @@ describe('DiscountEngineService - Item-Level & Strategy Verification', () => {
   });
 
   it('respects max_monto_descuento cap on per-unit discounts', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
-      {
-        id: BigInt(3),
+    repo.buscarReglasVigentes.mockResolvedValue([
+      reglaBase({
+        id: '3',
         nombre: '10 Bs OFF por Libro con Tope 50 Bs',
-        codigo_cupon: null,
         tipo: 'MONTO_FIJO_POR_UNIDAD',
         valor: 10,
         max_monto_descuento: 50,
-        alcance: 'GLOBAL',
-        canal: 'TODOS',
-        limite_usos: null,
-        limite_usos_por_cliente: null,
-        monto_minimo_compra: null,
-        productos: [],
-        variantes: [],
-        empaques: [],
-        categorias: [],
-      },
+      }),
     ]);
 
     const result = await service.evaluate({
@@ -129,26 +122,15 @@ describe('DiscountEngineService - Item-Level & Strategy Verification', () => {
   });
 
   it('calculates 2x1 (LLEVA_X_PAGA_Y) independently per product: 2 notebooks (25 ea) + 2 pens (18 ea) = 43 Bs savings', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
-      {
-        id: BigInt(4),
+    repo.buscarReglasVigentes.mockResolvedValue([
+      reglaBase({
+        id: '4',
         nombre: '2x1 en Librería',
-        codigo_cupon: null,
         tipo: 'LLEVA_X_PAGA_Y',
         cantidad_requerida: 2,
         cantidad_paga: 1,
         valor: 0,
-        max_monto_descuento: null,
-        alcance: 'GLOBAL',
-        canal: 'TODOS',
-        limite_usos: null,
-        limite_usos_por_cliente: null,
-        monto_minimo_compra: null,
-        productos: [],
-        variantes: [],
-        empaques: [],
-        categorias: [],
-      },
+      }),
     ]);
 
     const result = await service.evaluate({
@@ -174,26 +156,15 @@ describe('DiscountEngineService - Item-Level & Strategy Verification', () => {
   });
 
   it('does NOT apply 2x1 (LLEVA_X_PAGA_Y) when buying 1 notebook and 1 pen (each below required 2 units)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
-      {
-        id: BigInt(5),
+    repo.buscarReglasVigentes.mockResolvedValue([
+      reglaBase({
+        id: '5',
         nombre: '2x1 en Librería',
-        codigo_cupon: null,
         tipo: 'LLEVA_X_PAGA_Y',
         cantidad_requerida: 2,
         cantidad_paga: 1,
         valor: 0,
-        max_monto_descuento: null,
-        alcance: 'GLOBAL',
-        canal: 'TODOS',
-        limite_usos: null,
-        limite_usos_por_cliente: null,
-        monto_minimo_compra: null,
-        productos: [],
-        variantes: [],
-        empaques: [],
-        categorias: [],
-      },
+      }),
     ]);
 
     const result = await service.evaluate({
@@ -216,24 +187,15 @@ describe('DiscountEngineService - Item-Level & Strategy Verification', () => {
   });
 
   it('evaluates COMBO bundle requiring all target products to be present in cart', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
-      {
-        id: BigInt(6),
+    repo.buscarReglasVigentes.mockResolvedValue([
+      reglaBase({
+        id: '6',
         nombre: 'Combo Escolar Mochila + Cuaderno (30 Bs OFF)',
-        codigo_cupon: null,
         tipo: 'COMBO',
         valor: 30,
-        max_monto_descuento: null,
         alcance: 'PRODUCTO',
-        canal: 'TODOS',
-        limite_usos: null,
-        limite_usos_por_cliente: null,
-        monto_minimo_compra: null,
-        productos: [{ producto_id: BigInt(100) }, { producto_id: BigInt(200) }],
-        variantes: [],
-        empaques: [],
-        categorias: [],
-      },
+        productos: [{ producto_id: '100' }, { producto_id: '200' }],
+      }),
     ]);
 
     // Scenario A: Cart has both items
@@ -260,40 +222,24 @@ describe('DiscountEngineService - Item-Level & Strategy Verification', () => {
 
 describe('DiscountEngineService - Day-of-Week Gate', () => {
   let service: DiscountEngineService;
-  let mockPrisma: any;
+  let repo: jest.Mocked<IDescuentoRepository>;
   const MONDAY = new Date(2026, 7, 3, 15, 0, 0);
 
-  const dayRow = (overrides: Record<string, unknown> = {}) => ({
-    id: BigInt(10),
-    nombre: 'Descuento con restricción semanal',
-    codigo_cupon: null,
-    tipo: 'MONTO_FIJO',
-    valor: 10,
-    max_monto_descuento: null,
-    alcance: 'GLOBAL',
-    canal: 'TODOS',
-    limite_usos: null,
-    limite_usos_por_cliente: 5,
-    monto_minimo_compra: null,
-    productos: [],
-    variantes: [],
-    empaques: [],
-    categorias: [],
-    ...overrides,
-  });
+  const dayRow = (overrides: Partial<ReglaDescuentoVigente> = {}) =>
+    reglaBase({
+      id: '10',
+      nombre: 'Descuento con restricción semanal',
+      tipo: 'MONTO_FIJO',
+      valor: 10,
+      limite_usos_por_cliente: 5,
+      ...overrides,
+    });
 
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(MONDAY);
-    mockPrisma = {
-      descuento: {
-        findMany: jest.fn(),
-      },
-      descuentoUso: {
-        count: jest.fn().mockResolvedValue(0),
-      },
-    };
-    service = new DiscountEngineService(mockPrisma as PrismaService);
+    repo = createMockRepo();
+    service = new DiscountEngineService(repo);
   });
 
   afterEach(() => {
@@ -301,7 +247,7 @@ describe('DiscountEngineService - Day-of-Week Gate', () => {
   });
 
   it('applies on any day when dias_semana is [] (REQ-DIA-01 S1.1)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([dayRow({ dias_semana: [] })]);
+    repo.buscarReglasVigentes.mockResolvedValue([dayRow({ dias_semana: [] })]);
 
     const result = await service.evaluate({
       clienteId: '1',
@@ -313,7 +259,7 @@ describe('DiscountEngineService - Day-of-Week Gate', () => {
   });
 
   it('applies when dias_semana is absent on legacy rows without crashing (REQ-DIA-01 S1.2)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([dayRow()]);
+    repo.buscarReglasVigentes.mockResolvedValue([dayRow()]);
 
     const result = await service.evaluate({
       clienteId: '1',
@@ -324,28 +270,20 @@ describe('DiscountEngineService - Day-of-Week Gate', () => {
     expect(result?.montoDescontado).toBe(10);
   });
 
-  it('filters day-restricted discounts SQL-side in findMany WHERE (REQ-DIA-03)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([dayRow({ dias_semana: [1] })]);
+  it('passes now + codigoCupon to the repository so day/date filtering happens at the data layer (REQ-DIA-03)', async () => {
+    repo.buscarReglasVigentes.mockResolvedValue([dayRow({ dias_semana: [1] })]);
 
     await service.evaluate({
+      cupon: 'promo10',
       clienteId: '1',
       items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
     });
 
-    expect(mockPrisma.descuento.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          OR: [
-            { dias_semana: { isEmpty: true } },
-            { dias_semana: { has: MONDAY.getDay() } },
-          ],
-        }),
-      }),
-    );
+    expect(repo.buscarReglasVigentes).toHaveBeenCalledWith({ now: MONDAY, codigoCupon: 'promo10' });
   });
 
   it('does NOT issue a usage-count query when the day filter yields no candidates (REQ-DIA-03)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([]);
+    repo.buscarReglasVigentes.mockResolvedValue([]);
 
     const result = await service.evaluate({
       clienteId: '1',
@@ -353,11 +291,11 @@ describe('DiscountEngineService - Day-of-Week Gate', () => {
     });
 
     expect(result).toBeNull();
-    expect(mockPrisma.descuentoUso.count).not.toHaveBeenCalled();
+    expect(repo.contarUsosPorCliente).not.toHaveBeenCalled();
   });
 
   it('applies a Monday-only discount on Monday (REQ-DIA-02 S2.1)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([dayRow({ dias_semana: [MONDAY.getDay()] })]);
+    repo.buscarReglasVigentes.mockResolvedValue([dayRow({ dias_semana: [MONDAY.getDay()] })]);
 
     const result = await service.evaluate({
       clienteId: '1',
@@ -369,7 +307,7 @@ describe('DiscountEngineService - Day-of-Week Gate', () => {
   });
 
   it('rejects a discount for another weekday before any usage query (REQ-DIA-02 S2.2)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([dayRow({ dias_semana: [2] })]);
+    repo.buscarReglasVigentes.mockResolvedValue([dayRow({ dias_semana: [2] })]);
 
     const result = await service.evaluate({
       clienteId: '1',
@@ -377,48 +315,32 @@ describe('DiscountEngineService - Day-of-Week Gate', () => {
     });
 
     expect(result).toBeNull();
-    expect(mockPrisma.descuentoUso.count).not.toHaveBeenCalled();
+    expect(repo.contarUsosPorCliente).not.toHaveBeenCalled();
   });
 });
 
 describe('DiscountEngineService - Time-of-Day Gate', () => {
   let service: DiscountEngineService;
-  let mockPrisma: any;
+  let repo: jest.Mocked<IDescuentoRepository>;
   const MONDAY = new Date(2026, 7, 3, 15, 0, 0);
   const WEDNESDAY = new Date(2026, 7, 5, 15, 0, 0);
   const TUESDAY = new Date(2026, 7, 4, 15, 0, 0);
 
-  const timeRow = (overrides: Record<string, unknown> = {}) => ({
-    id: BigInt(20),
-    nombre: 'Descuento con ventana horaria',
-    codigo_cupon: null,
-    tipo: 'MONTO_FIJO',
-    valor: 10,
-    max_monto_descuento: null,
-    alcance: 'GLOBAL',
-    canal: 'TODOS',
-    limite_usos: null,
-    limite_usos_por_cliente: 5,
-    monto_minimo_compra: null,
-    productos: [],
-    variantes: [],
-    empaques: [],
-    categorias: [],
-    ...overrides,
-  });
+  const timeRow = (overrides: Partial<ReglaDescuentoVigente> = {}) =>
+    reglaBase({
+      id: '20',
+      nombre: 'Descuento con ventana horaria',
+      tipo: 'MONTO_FIJO',
+      valor: 10,
+      limite_usos_por_cliente: 5,
+      ...overrides,
+    });
 
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(MONDAY);
-    mockPrisma = {
-      descuento: {
-        findMany: jest.fn(),
-      },
-      descuentoUso: {
-        count: jest.fn().mockResolvedValue(0),
-      },
-    };
-    service = new DiscountEngineService(mockPrisma as PrismaService);
+    repo = createMockRepo();
+    service = new DiscountEngineService(repo);
   });
 
   afterEach(() => {
@@ -426,9 +348,7 @@ describe('DiscountEngineService - Time-of-Day Gate', () => {
   });
 
   it('applies within the inclusive [14:00, 18:00] window (REQ-DIA-04)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
-      timeRow({ hora_inicio: '14:00', hora_fin: '18:00' }),
-    ]);
+    repo.buscarReglasVigentes.mockResolvedValue([timeRow({ hora_inicio: '14:00', hora_fin: '18:00' })]);
 
     jest.setSystemTime(new Date(2026, 7, 3, 14, 0, 0));
     expect((await service.evaluate({ items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }] }))?.montoDescontado).toBe(10);
@@ -444,9 +364,7 @@ describe('DiscountEngineService - Time-of-Day Gate', () => {
   });
 
   it('applies a time-only window on any weekday (REQ-DIA-05)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
-      timeRow({ dias_semana: [], hora_inicio: '14:00', hora_fin: '18:00' }),
-    ]);
+    repo.buscarReglasVigentes.mockResolvedValue([timeRow({ dias_semana: [], hora_inicio: '14:00', hora_fin: '18:00' })]);
 
     jest.setSystemTime(WEDNESDAY);
     const result = await service.evaluate({
@@ -458,9 +376,7 @@ describe('DiscountEngineService - Time-of-Day Gate', () => {
   });
 
   it('applies only when day AND time window both match (REQ-DIA-06)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
-      timeRow({ dias_semana: [1], hora_inicio: '14:00', hora_fin: '18:00' }),
-    ]);
+    repo.buscarReglasVigentes.mockResolvedValue([timeRow({ dias_semana: [1], hora_inicio: '14:00', hora_fin: '18:00' })]);
 
     jest.setSystemTime(MONDAY);
     expect((await service.evaluate({ items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }] }))?.montoDescontado).toBe(10);
@@ -473,9 +389,7 @@ describe('DiscountEngineService - Time-of-Day Gate', () => {
   });
 
   it('treats a lone hora_inicio bound as no time restriction (both-bounds rule)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
-      timeRow({ hora_inicio: '09:00' }),
-    ]);
+    repo.buscarReglasVigentes.mockResolvedValue([timeRow({ hora_inicio: '09:00' })]);
 
     jest.setSystemTime(new Date(2026, 7, 3, 9, 0, 0));
     const result = await service.evaluate({
@@ -487,9 +401,9 @@ describe('DiscountEngineService - Time-of-Day Gate', () => {
   });
 
   it('gates COMBO-typed discounts in the same loop (REQ-DIA-09)', async () => {
-    mockPrisma.descuento.findMany.mockResolvedValue([
+    repo.buscarReglasVigentes.mockResolvedValue([
       timeRow({
-        id: BigInt(21),
+        id: '21',
         nombre: 'Combo con restricción semanal',
         tipo: 'COMBO',
         valor: 30,

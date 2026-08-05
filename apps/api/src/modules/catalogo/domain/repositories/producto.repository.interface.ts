@@ -61,6 +61,8 @@ export interface IProductoRepository {
   buscarPorSku(sku: string): Promise<ProductoEntity | null>;
   buscarStocksComponentes(ids: bigint[]): Promise<InventarioStockRow[]>;
   actualizar(id: bigint, datos: ProductoActualizarInput): Promise<ProductoEntity>;
+  /** Actualiza únicamente el precio base del producto (ej. desde una compra). Participa en `tx` si se provee. */
+  actualizarPrecioVenta(id: bigint, precio: number, tx?: any): Promise<void>;
   desactivar(id: bigint): Promise<ProductoEntity>;
   eliminar(id: bigint): Promise<void>;
   contarVariantesAsociadas(id: bigint): Promise<number>;

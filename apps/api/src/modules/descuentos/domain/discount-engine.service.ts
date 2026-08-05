@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/prisma/prisma.service';
+import { Inject, Injectable } from '@nestjs/common';
+import { DESCUENTO_REPOSITORY } from './repositories/descuento.repository.interface';
+import type { IDescuentoRepository, ReglaDescuentoVigente } from './repositories/descuento.repository.interface';
 
 export interface CartItemInput {
   productoId: string;
@@ -32,7 +33,7 @@ export interface DiscountEvaluationResult {
 
 @Injectable()
 export class DiscountEngineService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(DESCUENTO_REPOSITORY) private readonly descuentoRepo: IDescuentoRepository) {}
 
   async evaluate(input: EvaluateDiscountInput): Promise<DiscountEvaluationResult | null> {
     const { cupon, canal = 'TODOS', clienteId, items } = input;
@@ -41,24 +42,7 @@ export class DiscountEngineService {
     const now = new Date();
     const totalCartOriginal = items.reduce((sum, item) => sum + item.cantidad * item.precioUnitario, 0);
 
-    // Fetch candidate discounts
-    const activeDiscounts = await this.prisma.descuento.findMany({
-      where: {
-        activo: true,
-        fecha_inicio: { lte: now },
-        fecha_fin: { gte: now },
-        codigo_cupon: cupon ? cupon.toUpperCase() : null,
-        OR: [{ dias_semana: { isEmpty: true } }, { dias_semana: { has: now.getDay() } }],
-      },
-      include: {
-        productos: true,
-        variantes: true,
-        empaques: true,
-        categorias: true,
-      },
-      orderBy: [{ prioridad: 'desc' }, { creado_en: 'desc' }],
-    });
-
+    const activeDiscounts = await this.descuentoRepo.buscarReglasVigentes({ now, codigoCupon: cupon });
     if (activeDiscounts.length === 0) return null;
 
     let bestResult: DiscountEvaluationResult | null = null;
@@ -82,22 +66,17 @@ export class DiscountEngineService {
 
       // 3. Customer Per-User Usage Limit Check
       if (clienteId && d.limite_usos_por_cliente) {
-        const clienteUsosCount = await this.prisma.descuentoUso.count({
-          where: {
-            descuento_id: d.id,
-            cliente_id: BigInt(clienteId),
-          },
-        });
+        const clienteUsosCount = await this.descuentoRepo.contarUsosPorCliente(d.id, clienteId);
         if (clienteUsosCount >= d.limite_usos_por_cliente) {
           continue;
         }
       }
 
       // 4. Match Target Items
-      const targetProductIds = new Set(d.productos.map((p: { producto_id: bigint }) => p.producto_id.toString()));
-      const targetVariantIds = new Set(d.variantes.map((v: { variante_id: bigint }) => v.variante_id.toString()));
-      const targetEmpaqueIds = new Set(d.empaques.map((e: { empaque_id: bigint }) => e.empaque_id.toString()));
-      const targetCategoryIds = new Set(d.categorias.map((c: { categoria_id: bigint }) => c.categoria_id.toString()));
+      const targetProductIds = new Set(d.productos.map((p) => p.producto_id));
+      const targetVariantIds = new Set(d.variantes.map((v) => v.variante_id));
+      const targetEmpaqueIds = new Set(d.empaques.map((e) => e.empaque_id));
+      const targetCategoryIds = new Set(d.categorias.map((c) => c.categoria_id));
 
       const matchingItems = items.filter((item) => {
         if (d.alcance === 'GLOBAL') return true;
@@ -116,7 +95,7 @@ export class DiscountEngineService {
       );
 
       // 5. Minimum Purchase Spend Check
-      if (d.monto_minimo_compra && matchingSubtotal < Number(d.monto_minimo_compra)) {
+      if (d.monto_minimo_compra && matchingSubtotal < d.monto_minimo_compra) {
         continue;
       }
 
@@ -124,24 +103,24 @@ export class DiscountEngineService {
       let savings = 0;
 
       if (d.tipo === 'PORCENTAJE') {
-        savings = (matchingSubtotal * Number(d.valor)) / 100;
+        savings = (matchingSubtotal * d.valor) / 100;
         if (d.max_monto_descuento) {
-          savings = Math.min(savings, Number(d.max_monto_descuento));
+          savings = Math.min(savings, d.max_monto_descuento);
         }
       } else if (d.tipo === 'MONTO_FIJO_POR_UNIDAD') {
-        const unitDiscount = Number(d.valor);
+        const unitDiscount = d.valor;
         let rawSavings = 0;
         for (const item of matchingItems) {
           const effectiveDiscountPerUnit = Math.min(item.precioUnitario, unitDiscount);
           rawSavings += effectiveDiscountPerUnit * item.cantidad;
         }
         if (d.max_monto_descuento) {
-          savings = Math.min(rawSavings, Number(d.max_monto_descuento));
+          savings = Math.min(rawSavings, d.max_monto_descuento);
         } else {
           savings = rawSavings;
         }
       } else if (d.tipo === 'MONTO_FIJO') {
-        savings = Math.min(matchingSubtotal, Number(d.valor));
+        savings = Math.min(matchingSubtotal, d.valor);
       } else if (d.tipo === 'LLEVA_X_PAGA_Y') {
         const req = d.cantidad_requerida || 2;
         const paga = d.cantidad_paga || 1;
@@ -166,7 +145,7 @@ export class DiscountEngineService {
         }
       } else if (d.tipo === 'COMBO') {
         // Combo bundling: requires target products to all be present in the cart
-        const requiredProductIds = d.productos.map((p: { producto_id: bigint }) => p.producto_id.toString());
+        const requiredProductIds = d.productos.map((p) => p.producto_id);
         if (requiredProductIds.length > 0) {
           // Check available quantities for each required product in the combo
           const quantitiesByProd = new Map<string, number>();
@@ -175,11 +154,11 @@ export class DiscountEngineService {
             quantitiesByProd.set(item.productoId, current + item.cantidad);
           }
 
-          const hasAllComponents = requiredProductIds.every((pId: string) => (quantitiesByProd.get(pId) || 0) >= 1);
+          const hasAllComponents = requiredProductIds.every((pId) => (quantitiesByProd.get(pId) || 0) >= 1);
 
           if (hasAllComponents) {
-            const completedSets = Math.min(...requiredProductIds.map((pId: string) => quantitiesByProd.get(pId) || 0));
-            const comboDiscountValue = Number(d.valor) || 0;
+            const completedSets = Math.min(...requiredProductIds.map((pId) => quantitiesByProd.get(pId) || 0));
+            const comboDiscountValue = d.valor || 0;
             if (comboDiscountValue > 0) {
               savings = completedSets * comboDiscountValue;
             } else {
@@ -194,7 +173,7 @@ export class DiscountEngineService {
           const totalUnits = matchingItems.reduce((sum, it) => sum + it.cantidad, 0);
           if (totalUnits >= req) {
             const sets = Math.floor(totalUnits / req);
-            savings = sets * (Number(d.valor) || 0);
+            savings = sets * (d.valor || 0);
           }
         }
       }
@@ -202,7 +181,7 @@ export class DiscountEngineService {
       if (savings > maxSavings && savings > 0) {
         maxSavings = savings;
         bestResult = {
-          id: d.id.toString(),
+          id: d.id,
           nombre: d.nombre,
           codigo: d.codigo_cupon,
           tipo: d.tipo,
@@ -219,10 +198,7 @@ export class DiscountEngineService {
     return bestResult;
   }
 
-  private isDayTimeEligible(
-    d: { dias_semana?: number[]; hora_inicio?: string | null; hora_fin?: string | null },
-    now: Date,
-  ): boolean {
+  private isDayTimeEligible(d: ReglaDescuentoVigente, now: Date): boolean {
     const dias = d.dias_semana ?? [];
     if (dias.length > 0 && !dias.includes(now.getDay())) return false;
     if (!d.hora_inicio || !d.hora_fin) return true;
