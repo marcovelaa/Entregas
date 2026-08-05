@@ -307,6 +307,10 @@ model MovimientosInventario {
   variante Variante? @relation(fields: [variante_id], references: [id], onDelete: Restrict)
   usuario  Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
 
+  @@index([producto_id])
+  @@index([variante_id])
+  @@index([documento_origen_id])
+  @@index([creado_en])
   @@map("movimientos_inventario")
 }
 
@@ -400,6 +404,7 @@ model Venta {
   detalles      VentaDetalle[]
   usosDescuento DescuentoUso[]
 
+  @@index([estado, creado_en])
   @@map("ventas")
 }
 
@@ -422,6 +427,8 @@ model VentaDetalle {
   empaque              Empaque?  @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
   aprobado_por_usuario Usuario? @relation("VentaDetalleAprobadoPor", fields: [aprobado_por_usuario_id], references: [id], onDelete: Restrict)
 
+  @@index([venta_id])
+  @@index([producto_id])
   @@map("venta_detalles")
 }
 
@@ -551,5 +558,6 @@ model DescuentoUso {
   venta     Venta     @relation(fields: [venta_id], references: [id], onDelete: Cascade)
   cliente   Cliente?  @relation(fields: [cliente_id], references: [id], onDelete: SetNull)
 
+  @@index([descuento_id, cliente_id])
   @@map("descuento_usos")
 }
