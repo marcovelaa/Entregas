@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { ICompraRepository, CompraCreateData } from '../../domain/repositories/compra.repository.interface';
-import { Compra } from '@prisma/client';
 
 @Injectable()
 export class PrismaCompraRepository implements ICompraRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async crear(data: CompraCreateData, tx?: any): Promise<Compra> {
+  async crear(data: CompraCreateData, tx?: any): Promise<Prisma.CompraGetPayload<Record<string, never>>> {
     const execute = async (client: any) => {
       // 1. Crear la compra
       const compra = await client.compra.create({
@@ -55,7 +55,7 @@ export class PrismaCompraRepository implements ICompraRepository {
     ]);
 
     // Serializar BigInt manualmente para Prisma
-    const serializedData = data.map((c) => ({
+    const serializedData = data.map((c: Prisma.CompraGetPayload<{ include: { proveedor: { select: { nombre: true } }; usuario: { select: { nombres: true; apellidos: true } } } }>) => ({
       ...c,
       id: c.id.toString(),
       proveedor_id: c.proveedor_id?.toString(),
@@ -90,7 +90,7 @@ export class PrismaCompraRepository implements ICompraRepository {
       proveedor_id: compra.proveedor_id?.toString(),
       usuario_id: compra.usuario_id?.toString() || null,
       total: Number(compra.total),
-      detalles: compra.detalles.map((d) => ({
+      detalles: compra.detalles.map((d: Prisma.CompraDetalleGetPayload<Record<string, never>>) => ({
         ...d,
         id: d.id.toString(),
         compra_id: d.compra_id.toString(),

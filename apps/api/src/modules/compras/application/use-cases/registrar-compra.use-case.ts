@@ -4,6 +4,7 @@ import { RegistrarCompraDto } from '../dtos/compra.dto';
 
 import type { IInventarioRepository } from '../../../inventario/domain/repositories/inventario.repository.interface';
 import { INVENTARIO_REPOSITORY } from '../../../inventario/domain/repositories/inventario.repository.interface';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { Inject, Injectable } from '@nestjs/common';
 
@@ -29,7 +30,7 @@ export class RegistrarCompraUseCase {
       };
     });
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Crear compra (ahora sin inventario interno)
       const compra = await this.compraRepo.crear({
         proveedor_id: dto.proveedor_id ? BigInt(dto.proveedor_id) : undefined,

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { IClienteRepository, ClienteCreateData, ClienteUpdateData } from '../../domain/repositories/cliente.repository.interface';
 
@@ -61,7 +62,7 @@ export class PrismaClienteRepository implements IClienteRepository {
       }),
     ]);
 
-    return { total, data: data.map((c) => this.serialize(c)) };
+    return { total, data: data.map((c: Prisma.ClienteGetPayload<Record<string, never>>) => this.serialize(c)) };
   }
 
   async obtenerPorId(id: string) {

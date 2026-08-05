@@ -1,4 +1,4 @@
-import { Compra, CompraDetalle } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export const COMPRA_REPOSITORY = 'COMPRA_REPOSITORY';
 
@@ -20,7 +20,7 @@ export interface CompraCreateData {
 }
 
 export interface ICompraRepository {
-  crear(data: CompraCreateData, tx?: any): Promise<Compra>;
+  crear(data: CompraCreateData, tx?: any): Promise<Prisma.CompraGetPayload<Record<string, never>>>;
   listar(params: { offset: number; limit: number }): Promise<{ total: number; data: any[] }>;
   obtenerPorId(id: string): Promise<any>;
 }

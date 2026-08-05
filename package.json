@@ -1,6 +1,7 @@
 {
-  "name": "temp_turbo",
+  "name": "entregas",
   "private": true,
+  "packageManager": "pnpm@11.20.0",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",

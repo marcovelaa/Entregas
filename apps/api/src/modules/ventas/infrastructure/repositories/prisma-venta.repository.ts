@@ -1,4 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { IVentaRepository, VentaCreateData } from '../../domain/repositories/venta.repository.interface';
 
@@ -9,7 +10,7 @@ export class PrismaVentaRepository implements IVentaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async crear(data: VentaCreateData, total: number, vuelto: number) {
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Create Venta
       const venta = await tx.venta.create({
         data: {
@@ -241,7 +242,7 @@ export class PrismaVentaRepository implements IVentaRepository {
               id: venta.cliente.id.toString(),
             }
           : null,
-        detalles: venta.detalles.map((det) => ({
+        detalles: venta.detalles.map((det: Prisma.VentaDetalleGetPayload<{ include: { producto: true; variante: true; empaque: true } }>) => ({
           ...det,
           id: det.id.toString(),
           venta_id: det.venta_id.toString(),
@@ -286,7 +287,7 @@ export class PrismaVentaRepository implements IVentaRepository {
 
     return {
       total,
-      data: data.map((v) => ({
+      data: data.map((v: Prisma.VentaGetPayload<{ include: { cliente: true; detalles: { include: { producto: true } } } }>) => ({
         ...v,
         id: v.id.toString(),
         cliente_id: v.cliente_id?.toString(),
@@ -297,7 +298,7 @@ export class PrismaVentaRepository implements IVentaRepository {
               id: v.cliente.id.toString(),
             }
           : null,
-        detalles: v.detalles.map((det) => ({
+        detalles: v.detalles.map((det: Prisma.VentaDetalleGetPayload<{ include: { producto: true } }>) => ({
           ...det,
           id: det.id.toString(),
           venta_id: det.venta_id.toString(),
@@ -314,7 +315,7 @@ export class PrismaVentaRepository implements IVentaRepository {
   }
 
   async anular(venta_id: string, usuario_id: string, motivo: string): Promise<any> {
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const id = BigInt(venta_id);
 
       const venta = await tx.venta.findUnique({
@@ -446,7 +447,7 @@ export class PrismaVentaRepository implements IVentaRepository {
   }
 
   async revertirAnulacion(venta_id: string, usuario_id: string): Promise<any> {
-    return await this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const id = BigInt(venta_id);
 
       const venta = await tx.venta.findUnique({

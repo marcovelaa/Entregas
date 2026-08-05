@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { IInventarioRepository } from '../../domain/repositories/inventario.repository.interface';
 
@@ -23,7 +24,7 @@ export class PrismaInventarioRepository implements IInventarioRepository {
       })
     ]);
 
-    const serializedData = data.map(item => ({
+    const serializedData = data.map((item: Prisma.InventarioGetPayload<{ include: { variante: { select: { nombre: true; sku_base: true } } } }>) => ({
       ...item,
       id: item.id.toString(),
       producto_id: item.producto_id.toString(),
@@ -48,7 +49,7 @@ export class PrismaInventarioRepository implements IInventarioRepository {
       })
     ]);
 
-    const serializedData = data.map(item => ({
+    const serializedData = data.map((item: Prisma.MovimientosInventarioGetPayload<{ include: { producto: { select: { nombre: true; sku: true } }; variante: { select: { nombre: true; sku_base: true } }; usuario: { select: { nombres: true; apellidos: true } } } }>) => ({
       ...item,
       id: item.id.toString(),
       producto_id: item.producto_id.toString(),

@@ -94,10 +94,10 @@ export class DiscountEngineService {
       }
 
       // 4. Match Target Items
-      const targetProductIds = new Set(d.productos.map((p) => p.producto_id.toString()));
-      const targetVariantIds = new Set(d.variantes.map((v) => v.variante_id.toString()));
-      const targetEmpaqueIds = new Set(d.empaques.map((e) => e.empaque_id.toString()));
-      const targetCategoryIds = new Set(d.categorias.map((c) => c.categoria_id.toString()));
+      const targetProductIds = new Set(d.productos.map((p: { producto_id: bigint }) => p.producto_id.toString()));
+      const targetVariantIds = new Set(d.variantes.map((v: { variante_id: bigint }) => v.variante_id.toString()));
+      const targetEmpaqueIds = new Set(d.empaques.map((e: { empaque_id: bigint }) => e.empaque_id.toString()));
+      const targetCategoryIds = new Set(d.categorias.map((c: { categoria_id: bigint }) => c.categoria_id.toString()));
 
       const matchingItems = items.filter((item) => {
         if (d.alcance === 'GLOBAL') return true;
@@ -166,7 +166,7 @@ export class DiscountEngineService {
         }
       } else if (d.tipo === 'COMBO') {
         // Combo bundling: requires target products to all be present in the cart
-        const requiredProductIds = d.productos.map((p) => p.producto_id.toString());
+        const requiredProductIds = d.productos.map((p: { producto_id: bigint }) => p.producto_id.toString());
         if (requiredProductIds.length > 0) {
           // Check available quantities for each required product in the combo
           const quantitiesByProd = new Map<string, number>();
@@ -175,10 +175,10 @@ export class DiscountEngineService {
             quantitiesByProd.set(item.productoId, current + item.cantidad);
           }
 
-          const hasAllComponents = requiredProductIds.every((pId) => (quantitiesByProd.get(pId) || 0) >= 1);
+          const hasAllComponents = requiredProductIds.every((pId: string) => (quantitiesByProd.get(pId) || 0) >= 1);
 
           if (hasAllComponents) {
-            const completedSets = Math.min(...requiredProductIds.map((pId) => quantitiesByProd.get(pId) || 0));
+            const completedSets = Math.min(...requiredProductIds.map((pId: string) => quantitiesByProd.get(pId) || 0));
             const comboDiscountValue = Number(d.valor) || 0;
             if (comboDiscountValue > 0) {
               savings = completedSets * comboDiscountValue;

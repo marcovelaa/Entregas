@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import {
   IProductoRepository,
@@ -199,7 +200,7 @@ export class PrismaProductoRepository implements IProductoRepository {
   }
 
   async actualizar(id: bigint, datos: ProductoActualizarInput): Promise<ProductoEntity> {
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (datos.precio_base !== undefined || datos.precio_promocional !== undefined) {
         const prodWithVars = await tx.producto.findUnique({
           where: { id },

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { IRolRepository } from '../../domain/repositories/rol.repository.interface';
 import { Rol } from '../../domain/entities/rol.entity';
@@ -34,7 +35,7 @@ export class PrismaRolRepository implements IRolRepository {
       orderBy: { id: 'asc' },
     });
     
-    return rolesModel.map(model => this.mapToDomain(model));
+    return rolesModel.map((model: Prisma.RolGetPayload<Record<string, never>>) => this.mapToDomain(model));
   }
 
   async save(rol: Rol): Promise<Rol> {
@@ -81,11 +82,11 @@ export class PrismaRolRepository implements IRolRepository {
     const relaciones = await this.prisma.rolPermiso.findMany({
       where: { rol_id: id },
     });
-    return relaciones.map(r => r.permiso_codigo);
+    return relaciones.map((r: Prisma.RolPermisoGetPayload<Record<string, never>>) => r.permiso_codigo);
   }
 
   async asignarPermisos(id: bigint, permisos: string[]): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Eliminar actuales
       await tx.rolPermiso.deleteMany({ where: { rol_id: id } });
       // Insertar nuevos

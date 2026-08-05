@@ -76,7 +76,7 @@ export class GetDashboardMetricsUseCase {
       }
     });
 
-    const totalVentasPeriodo = ventas7Dias.reduce((acc, v) => acc + Number(v.total), 0);
+    const totalVentasPeriodo = ventas7Dias.reduce((acc: number, v) => acc + Number(v.total), 0);
     const distribucionPagos = Object.keys(metodosMap).map((metodo) => ({
       metodo,
       monto: metodosMap[metodo],
