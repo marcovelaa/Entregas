@@ -23,6 +23,10 @@ export class VentaDetalleDto {
   @IsNumber()
   @Min(0)
   precio_unitario!: number;
+
+  @IsOptional()
+  @IsString()
+  motivo_ajuste?: string;
 }
 
 export class RegistrarVentaDto {
@@ -49,6 +53,14 @@ export class RegistrarVentaDto {
   @IsOptional()
   @IsString()
   codigo_cupon?: string;
+
+  @IsOptional()
+  @IsString()
+  aprobador_usuario_id?: string;
+
+  @IsOptional()
+  @IsString()
+  motivo_ajuste?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

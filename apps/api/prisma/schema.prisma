@@ -40,6 +40,7 @@ model Usuario {
   MovimientosInventario MovimientosInventario[]
   Compra                Compra[]
   Venta                 Venta[]
+  ventas_aprobadas      VentaDetalle[]          @relation("VentaDetalleAprobadoPor")
 
   @@map("usuarios")
 }
@@ -403,19 +404,23 @@ model Venta {
 }
 
 model VentaDetalle {
-  id              BigInt  @id @default(autoincrement())
-  venta_id        BigInt
-  producto_id     BigInt
-  variante_id     BigInt?
-  empaque_id      BigInt?
-  cantidad        Int
-  precio_unitario Decimal @db.Decimal(14, 2)
-  subtotal        Decimal @db.Decimal(14, 2)
+  id                       BigInt   @id @default(autoincrement())
+  venta_id                 BigInt
+  producto_id              BigInt
+  variante_id              BigInt?
+  empaque_id               BigInt?
+  cantidad                 Int
+  precio_unitario          Decimal  @db.Decimal(14, 2)
+  precio_unitario_catalogo Decimal  @default(0) @db.Decimal(14, 2)
+  aprobado_por_usuario_id  BigInt?
+  motivo_ajuste            String?  @db.Text
+  subtotal                 Decimal  @db.Decimal(14, 2)
 
-  venta        Venta         @relation(fields: [venta_id], references: [id], onDelete: Cascade)
-  producto     Producto      @relation(fields: [producto_id], references: [id], onDelete: Restrict)
-  variante     Variante?     @relation(fields: [variante_id], references: [id], onDelete: Restrict)
-  empaque      Empaque?      @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
+  venta                Venta    @relation(fields: [venta_id], references: [id], onDelete: Cascade)
+  producto             Producto @relation(fields: [producto_id], references: [id], onDelete: Restrict)
+  variante             Variante? @relation(fields: [variante_id], references: [id], onDelete: Restrict)
+  empaque              Empaque?  @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
+  aprobado_por_usuario Usuario? @relation("VentaDetalleAprobadoPor", fields: [aprobado_por_usuario_id], references: [id], onDelete: Restrict)
 
   @@map("venta_detalles")
 }

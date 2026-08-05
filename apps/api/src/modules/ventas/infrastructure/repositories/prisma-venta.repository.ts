@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { IVentaRepository, VentaCreateData } from '../../domain/repositories/venta.repository.interface';
@@ -11,6 +11,71 @@ export class PrismaVentaRepository implements IVentaRepository {
 
   async crear(data: VentaCreateData, total: number, vuelto: number) {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // 0. Resolve catalog prices and verify manual price overrides
+      const detallesEvaluados = await Promise.all(
+        data.detalles.map(async (d) => {
+          let precioCatalogo = 0;
+
+          if (d.empaque_id) {
+            const emp = await tx.empaque.findUnique({
+              where: { id: BigInt(d.empaque_id) },
+            });
+            if (emp) {
+              precioCatalogo = Number(emp.precio_promocional ?? emp.precio);
+            }
+          } else if (d.variante_id) {
+            const v = await tx.variante.findUnique({
+              where: { id: BigInt(d.variante_id) },
+            });
+            if (v) {
+              precioCatalogo = Number(v.precio_promocional ?? v.precio_unitario);
+            }
+          } else {
+            const p = await tx.producto.findUnique({
+              where: { id: BigInt(d.producto_id) },
+            });
+            if (p) {
+              precioCatalogo = Number(p.precio_promocional ?? p.precio_base);
+            }
+          }
+
+          const precioAplicado = d.precio_unitario;
+          const esRebaja = precioAplicado < precioCatalogo - 0.0001;
+
+          return {
+            ...d,
+            precioCatalogo,
+            precioAplicado,
+            esRebaja,
+          };
+        }),
+      );
+
+      const requiereAprobacion = detallesEvaluados.some((d) => d.esRebaja);
+      let aprobadorId: bigint | null = null;
+
+      if (requiereAprobacion) {
+        if (!data.aprobador_usuario_id) {
+          throw new BadRequestException('Debe indicar qué administrador autorizó la rebaja de precio.');
+        }
+
+        const aprobador = await tx.usuario.findUnique({
+          where: { id: BigInt(data.aprobador_usuario_id) },
+          include: { rol: true },
+        });
+
+        if (!aprobador || !aprobador.activo) {
+          throw new NotFoundException('El usuario seleccionado como aprobador no existe o está inactivo.');
+        }
+
+        const esAdmin = aprobador.rol.nombre === 'Super Usuario' || aprobador.rol.nombre === 'Administrador';
+        if (!esAdmin) {
+          throw new UnauthorizedException('El usuario seleccionado no posee permisos de Administrador para autorizar la rebaja de precio.');
+        }
+
+        aprobadorId = aprobador.id;
+      }
+
       // 1. Create Venta
       const venta = await tx.venta.create({
         data: {
@@ -24,13 +89,16 @@ export class PrismaVentaRepository implements IVentaRepository {
           vuelto,
           estado: 'COMPLETADA',
           detalles: {
-            create: data.detalles.map((d) => ({
+            create: detallesEvaluados.map((d) => ({
               producto_id: BigInt(d.producto_id),
               variante_id: d.variante_id ? BigInt(d.variante_id) : null,
               empaque_id: d.empaque_id ? BigInt(d.empaque_id) : null,
               cantidad: d.cantidad,
-              precio_unitario: d.precio_unitario,
-              subtotal: d.cantidad * d.precio_unitario,
+              precio_unitario: d.precioAplicado,
+              precio_unitario_catalogo: d.precioCatalogo,
+              aprobado_por_usuario_id: d.esRebaja ? aprobadorId : null,
+              motivo_ajuste: d.esRebaja ? (d.motivo_ajuste || data.motivo_ajuste || 'Rebaja manual POS') : null,
+              subtotal: d.cantidad * d.precioAplicado,
             })),
           },
         },
@@ -249,6 +317,7 @@ export class PrismaVentaRepository implements IVentaRepository {
           producto_id: det.producto_id.toString(),
           variante_id: det.variante_id?.toString(),
           empaque_id: det.empaque_id?.toString(),
+          aprobado_por_usuario_id: det.aprobado_por_usuario_id?.toString(),
           producto: det.producto
             ? {
                 ...det.producto,

@@ -6,6 +6,7 @@ export type VentaDetalleData = {
   empaque_id?: string;
   cantidad: number;
   precio_unitario: number;
+  motivo_ajuste?: string;
 };
 
 export type VentaCreateData = {
@@ -16,6 +17,8 @@ export type VentaCreateData = {
   descuento_id?: string;
   descuento_total?: number;
   codigo_cupon?: string;
+  aprobador_usuario_id?: string;
+  motivo_ajuste?: string;
   detalles: VentaDetalleData[];
 };
 

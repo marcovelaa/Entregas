@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { PrismaVentaRepository } from './prisma-venta.repository';
 import { VentaCreateData } from '../../domain/repositories/venta.repository.interface';
@@ -20,8 +20,12 @@ type TxMock = {
   };
   variante: {
     findFirst: jest.Mock;
+    findUnique: jest.Mock;
   };
   empaque: {
+    findUnique: jest.Mock;
+  };
+  usuario: {
     findUnique: jest.Mock;
   };
   movimientosInventario: { create: jest.Mock };
@@ -34,8 +38,9 @@ function createTx(): TxMock {
     venta: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     producto: { findUnique: jest.fn(), updateMany: jest.fn() },
     inventario: { findFirst: jest.fn(), updateMany: jest.fn(), update: jest.fn() },
-    variante: { findFirst: jest.fn() },
+    variante: { findFirst: jest.fn(), findUnique: jest.fn() },
     empaque: { findUnique: jest.fn() },
+    usuario: { findUnique: jest.fn() },
     movimientosInventario: { create: jest.fn() },
   };
 }
@@ -438,5 +443,161 @@ describe('PrismaVentaRepository.revertirAnulacion - restauración de cupo (2.8)'
 
     expect(result.success).toBe(true);
     expect(state.cupoUsado).toBe(10);
+  });
+});
+
+describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de administrador', () => {
+  it('permite venta sin rebaja (precio aplicado == catálogo) sin pedir credenciales ni aprobación', async () => {
+    const { repo, tx } = createHarness(createTx());
+    setupCrear(tx, { precio_base: 50 });
+
+    const result = await repo.crear(
+      {
+        usuario_id: '1',
+        metodo_pago: 'EFECTIVO',
+        monto_pagado: 50,
+        detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 50 }],
+      },
+      50,
+      0,
+    );
+
+    expect(result.id).toBe('1');
+    expect(tx.venta.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          detalles: {
+            create: [
+              expect.objectContaining({
+                precio_unitario: 50,
+                precio_unitario_catalogo: 50,
+                aprobado_por_usuario_id: null,
+              }),
+            ],
+          },
+        }),
+      }),
+    );
+  });
+
+  it('registra venta con rebaja cuando se selecciona un aprobador con rol Administrador', async () => {
+    const { repo, tx } = createHarness(createTx());
+    setupCrear(tx, { precio_base: 50 });
+
+    tx.usuario.findUnique.mockResolvedValue({
+      id: 100n,
+      email: 'admin@entregas.bo',
+      activo: true,
+      rol: { nombre: 'Administrador' },
+    });
+
+    const result = await repo.crear(
+      {
+        usuario_id: '1',
+        metodo_pago: 'EFECTIVO',
+        monto_pagado: 40,
+        aprobador_usuario_id: '100',
+        motivo_ajuste: 'Descuento cliente frecuente',
+        detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
+      },
+      40,
+      0,
+    );
+
+    expect(result.id).toBe('1');
+    expect(tx.usuario.findUnique).toHaveBeenCalledWith({
+      where: { id: 100n },
+      include: { rol: true },
+    });
+    expect(tx.venta.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          detalles: {
+            create: [
+              expect.objectContaining({
+                precio_unitario: 40,
+                precio_unitario_catalogo: 50,
+                aprobado_por_usuario_id: 100n,
+                motivo_ajuste: 'Descuento cliente frecuente',
+              }),
+            ],
+          },
+        }),
+      }),
+    );
+  });
+
+  it('rechaza venta con rebaja si no se selecciona ningún aprobador (BadRequestException) sin alterar DB ni inventario', async () => {
+    const { repo, tx } = createHarness(createTx());
+    setupCrear(tx, { precio_base: 50 });
+
+    await expect(
+      repo.crear(
+        {
+          usuario_id: '1',
+          metodo_pago: 'EFECTIVO',
+          monto_pagado: 40,
+          detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
+        },
+        40,
+        0,
+      ),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(tx.venta.create).not.toHaveBeenCalled();
+    expect(tx.movimientosInventario.create).not.toHaveBeenCalled();
+  });
+
+  it('rechaza venta con rebaja si el aprobador seleccionado no existe o está inactivo (NotFoundException) sin alterar DB ni inventario', async () => {
+    const { repo, tx } = createHarness(createTx());
+    setupCrear(tx, { precio_base: 50 });
+
+    tx.usuario.findUnique.mockResolvedValue(null);
+
+    await expect(
+      repo.crear(
+        {
+          usuario_id: '1',
+          metodo_pago: 'EFECTIVO',
+          monto_pagado: 40,
+          aprobador_usuario_id: '999',
+          detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
+        },
+        40,
+        0,
+      ),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(tx.venta.create).not.toHaveBeenCalled();
+    expect(tx.movimientosInventario.create).not.toHaveBeenCalled();
+  });
+
+  it('rechaza venta con rebaja si el usuario aprobador posee rol Vendedor (UnauthorizedException) sin alterar DB ni inventario', async () => {
+    const { repo, tx } = createHarness(createTx());
+    setupCrear(tx, { precio_base: 50 });
+
+    tx.usuario.findUnique.mockResolvedValue({
+      id: 200n,
+      email: 'vendedor@entregas.bo',
+      activo: true,
+      rol: { nombre: 'Vendedor' },
+    });
+
+    await expect(
+      repo.crear(
+        {
+          usuario_id: '1',
+          metodo_pago: 'EFECTIVO',
+          monto_pagado: 40,
+          aprobador_usuario_id: '200',
+          detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
+        },
+        40,
+        0,
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+
+    expect(tx.venta.create).not.toHaveBeenCalled();
+    expect(tx.movimientosInventario.create).not.toHaveBeenCalled();
   });
 });

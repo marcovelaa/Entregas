@@ -25,6 +25,13 @@ export default function CajaPage() {
   const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TARJETA' | 'QR'>('EFECTIVO');
   const [montoPagado, setMontoPagado] = useState<string>('');
   
+  // Manual Price Override Approval Modal State
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+  const [aprobadores, setAprobadores] = useState<any[]>([]);
+  const [aprobadorQuery, setAprobadorQuery] = useState('');
+  const [aprobadorSeleccionado, setAprobadorSeleccionado] = useState<any>(null);
+  const [motivoAjuste, setMotivoAjuste] = useState('');
+  
   const [toastMessage, setToastMessage] = useState<{msg: string, type: 'error'|'success'} | null>(null);
   const showToast = (msg: string, type: 'error'|'success' = 'error') => {
     setToastMessage({msg, type});
@@ -39,7 +46,21 @@ export default function CajaPage() {
     fetchClientes();
     fetchCategorias();
     fetchProductos();
+    fetchAprobadores();
   }, []);
+
+  const fetchAprobadores = async () => {
+    try {
+      const [usuariosRes, rolesRes] = await Promise.all([api.get('/usuarios'), api.get('/roles')]);
+      const rolesAdminIds = new Set(
+        (rolesRes.data || [])
+          .filter((r: any) => r.nombre === 'Administrador' || r.nombre === 'Super Usuario')
+          .map((r: any) => r.id),
+      );
+      const elegibles = (usuariosRes.data || []).filter((u: any) => u.activo && rolesAdminIds.has(u.rolId));
+      setAprobadores(elegibles);
+    } catch (err) { console.error(err); }
+  };
 
   const fetchClientes = async () => {
     try {
@@ -151,6 +172,7 @@ export default function CajaPage() {
         multiplicador,
         nombre, 
         sku: empaque ? empaque.sku : (variante ? variante.sku_base : prod.sku), 
+        precio_catalogo: precio,
         precio,
         cantidad: 1,
         maxStock: Math.floor(stockAvailable / multiplicador)
@@ -161,9 +183,14 @@ export default function CajaPage() {
   };
 
   const setCantidadValue = (cartId: string, val: string) => {
+    if (val === '') {
+      setCarrito(carrito.map(item => item.cart_id === cartId ? { ...item, cantidad: '' } : item));
+      return;
+    }
+
     const num = parseInt(val, 10);
     if (isNaN(num)) return;
-    
+
     setCarrito(carrito.map(item => {
       if (item.cart_id === cartId) {
         if (num < 1) return { ...item, cantidad: 1 };
@@ -175,6 +202,17 @@ export default function CajaPage() {
       }
       return item;
     }));
+  };
+
+  const updatePrecio = (cartId: string, val: string) => {
+    if (val === '') {
+      setCarrito(carrito.map(item => item.cart_id === cartId ? { ...item, precio: '' } : item));
+      return;
+    }
+
+    const num = parseFloat(val);
+    if (isNaN(num) || num < 0) return;
+    setCarrito(carrito.map(item => item.cart_id === cartId ? { ...item, precio: num } : item));
   };
 
   const updateCantidad = (cartId: string, delta: number) => {
@@ -197,6 +235,7 @@ export default function CajaPage() {
   };
 
   const subtotalBruto = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+  const montoRebajaManual = carrito.reduce((acc, item) => acc + (Math.max(0, (item.precio_catalogo ?? item.precio) - item.precio) * item.cantidad), 0);
   const montoDescuento = descuentoAplicado ? descuentoAplicado.montoDescontado : 0;
   const totalNeto = Math.max(0, subtotalBruto - montoDescuento);
 
@@ -207,6 +246,13 @@ export default function CajaPage() {
     if (carrito.length === 0) return showToast('El carrito está vacío');
     if (metodoPago === 'EFECTIVO' && pagado < totalNeto) return showToast('El monto pagado es insuficiente');
 
+    const tieneRebaja = carrito.some(c => Number(c.precio) < Number(c.precio_catalogo ?? c.precio) - 0.0001);
+    if (tieneRebaja && !aprobadorSeleccionado) {
+      setIsCheckoutOpen(false);
+      setIsApprovalModalOpen(true);
+      return;
+    }
+
     try {
       const payload = {
         cliente_id: clienteSeleccionado || undefined,
@@ -215,12 +261,15 @@ export default function CajaPage() {
         descuento_id: descuentoAplicado ? descuentoAplicado.id : undefined,
         descuento_total: montoDescuento,
         codigo_cupon: codigoCuponInput ? codigoCuponInput.trim().toUpperCase() : undefined,
+        aprobador_usuario_id: aprobadorSeleccionado ? String(aprobadorSeleccionado.id) : undefined,
+        motivo_ajuste: motivoAjuste ? motivoAjuste.trim() : undefined,
         detalles: carrito.map(c => ({
           producto_id: String(c.id),
           variante_id: c.variante_id ? String(c.variante_id) : undefined,
           empaque_id: c.empaque_id ? String(c.empaque_id) : undefined,
           cantidad: Number(c.cantidad) * c.multiplicador,
-          precio_unitario: Number(c.precio) / c.multiplicador
+          precio_unitario: Number(c.precio) / c.multiplicador,
+          motivo_ajuste: motivoAjuste ? motivoAjuste.trim() : undefined
         }))
       };
 
@@ -232,6 +281,10 @@ export default function CajaPage() {
       setDescuentoAplicado(null);
       setCodigoCuponInput('');
       setIsCheckoutOpen(false);
+      setIsApprovalModalOpen(false);
+      setAprobadorSeleccionado(null);
+      setAprobadorQuery('');
+      setMotivoAjuste('');
       setMontoPagado('');
       setClienteSeleccionado('');
       setMetodoPago('EFECTIVO');
@@ -484,42 +537,75 @@ export default function CajaPage() {
                 <tr>
                   <th>Producto</th>
                   <th style={{ textAlign: 'center' }}>Cant.</th>
+                  <th style={{ textAlign: 'right' }}>P. Unit (Bs.)</th>
                   <th style={{ textAlign: 'right' }}>SubT</th>
                   <th style={{ width: '40px' }}></th>
                 </tr>
               </thead>
               <tbody>
-                {carrito.map(item => (
-                  <tr key={item.cart_id}>
-                    <td>
-                      <div className={styles.cartItemName}>{item.nombre}</div>
-                      <div className={styles.cartItemSku}>{item.sku}</div>
-                    </td>
-                    <td>
-                      <div className={styles.quantityControl}>
-                        <button onClick={() => updateCantidad(item.cart_id, -1)}><Minus size={14} /></button>
-                        <input 
-                          type="number" 
-                          value={item.cantidad} 
-                          onChange={(e) => setCantidadValue(item.cart_id, e.target.value)}
-                          onBlur={(e) => {
-                            if (!e.target.value || e.target.value === '0') setCantidadValue(item.cart_id, '1');
-                          }}
-                          style={{
-                            width: '40px', textAlign: 'center', border: '1px solid #cbd5e1', 
-                            borderRadius: '4px', fontSize: '0.85rem', fontWeight: 600, color: '#0f172a',
-                            padding: '0.2rem', outline: 'none'
-                          }}
-                        />
-                        <button onClick={() => updateCantidad(item.cart_id, 1)}><Plus size={14} /></button>
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>Bs. {(item.precio * item.cantidad).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button className={styles.deleteBtn} onClick={() => removeFromCart(item.cart_id)}><Trash2 size={16} /></button>
-                    </td>
-                  </tr>
-                ))}
+                {carrito.map(item => {
+                  const tieneRebajaItem = Number(item.precio) < Number(item.precio_catalogo ?? item.precio) - 0.0001;
+                  return (
+                    <tr key={item.cart_id}>
+                      <td>
+                        <div className={styles.cartItemName}>{item.nombre}</div>
+                        <div className={styles.cartItemSku}>{item.sku}</div>
+                      </td>
+                      <td>
+                        <div className={styles.quantityControl}>
+                          <button onClick={() => updateCantidad(item.cart_id, -1)}><Minus size={14} /></button>
+                          <input 
+                            type="number" 
+                            value={item.cantidad} 
+                            onChange={(e) => setCantidadValue(item.cart_id, e.target.value)}
+                            onBlur={(e) => {
+                              if (!e.target.value || e.target.value === '0') setCantidadValue(item.cart_id, '1');
+                            }}
+                            style={{
+                              width: '36px', textAlign: 'center', border: '1px solid #cbd5e1', 
+                              borderRadius: '4px', fontSize: '0.85rem', fontWeight: 600, color: '#0f172a',
+                              padding: '0.2rem', outline: 'none'
+                            }}
+                          />
+                          <button onClick={() => updateCantidad(item.cart_id, 1)}><Plus size={14} /></button>
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                          {tieneRebajaItem && (
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', textDecoration: 'line-through' }}>
+                              Bs. {(item.precio_catalogo ?? item.precio).toFixed(2)}
+                            </span>
+                          )}
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            value={item.precio}
+                            onChange={(e) => updatePrecio(item.cart_id, e.target.value)}
+                            onBlur={(e) => {
+                              if (!e.target.value) updatePrecio(item.cart_id, String(item.precio_catalogo ?? 0));
+                            }}
+                            style={{
+                              width: '65px', textAlign: 'right', 
+                              border: tieneRebajaItem ? '1px solid #f59e0b' : '1px solid #cbd5e1', 
+                              backgroundColor: tieneRebajaItem ? '#fffbeb' : '#ffffff',
+                              borderRadius: '4px', fontSize: '0.85rem', fontWeight: 600, 
+                              color: tieneRebajaItem ? '#d97706' : '#0f172a',
+                              padding: '0.2rem', outline: 'none'
+                            }}
+                          />
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: tieneRebajaItem ? '#d97706' : '#0f172a' }}>
+                        Bs. {(item.precio * item.cantidad).toFixed(2)}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className={styles.deleteBtn} onClick={() => removeFromCart(item.cart_id)}><Trash2 size={16} /></button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -571,6 +657,12 @@ export default function CajaPage() {
             <span>Subtotal</span>
             <span>Bs. {subtotalBruto.toFixed(2)}</span>
           </div>
+          {montoRebajaManual > 0 && (
+            <div className={styles.totalRow} style={{ color: '#d97706', fontWeight: 600 }}>
+              <span>Rebaja Manual Aprobada</span>
+              <span>- Bs. {montoRebajaManual.toFixed(2)}</span>
+            </div>
+          )}
           {montoDescuento > 0 && (
             <div className={styles.totalRow} style={{ color: '#16a34a', fontWeight: 600 }}>
               <span>Descuento Aplicado</span>
@@ -590,6 +682,97 @@ export default function CajaPage() {
           </button>
         </div>
       </div>
+
+      {/* ADMIN APPROVAL MODAL FOR MANUAL PRICE OVERRIDE */}
+      <Modal isOpen={isApprovalModalOpen} onClose={() => setIsApprovalModalOpen(false)} title="Autorización de Administrador" maxWidth="450px">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem 0' }}>
+          <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '0.8rem', display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
+            <AlertTriangle size={20} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ fontSize: '0.85rem', color: '#92400e' }}>
+              <strong>Rebaja manual detectada:</strong> Uno o más productos tienen un precio menor al de catálogo. Se requiere la autorización de un Administrador o Super Usuario.
+            </div>
+          </div>
+
+          <div>
+            <label className={styles.label}>Administrador que autorizó</label>
+            {aprobadorSeleccionado ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.8rem', border: '1px solid #d97706', borderRadius: '6px', marginTop: '0.2rem', backgroundColor: '#fffbeb' }}>
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>{aprobadorSeleccionado.nombres} {aprobadorSeleccionado.apellidos}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{aprobadorSeleccionado.email}</div>
+                </div>
+                <button
+                  onClick={() => setAprobadorSeleccionado(null)}
+                  style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  Cambiar
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  placeholder="Buscar administrador por nombre o email..."
+                  value={aprobadorQuery}
+                  onChange={(e) => setAprobadorQuery(e.target.value)}
+                  className={styles.searchInput}
+                  style={{ width: '100%', marginTop: '0.2rem' }}
+                />
+                <div style={{ maxHeight: '160px', overflowY: 'auto', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  {aprobadores
+                    .filter((a) => {
+                      const q = aprobadorQuery.trim().toLowerCase();
+                      if (!q) return true;
+                      return `${a.nombres} ${a.apellidos} ${a.email}`.toLowerCase().includes(q);
+                    })
+                    .map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => setAprobadorSeleccionado(a)}
+                        style={{ textAlign: 'left', padding: '0.5rem 0.7rem', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#fff', cursor: 'pointer' }}
+                      >
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>{a.nombres} {a.apellidos}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{a.email}</div>
+                      </button>
+                    ))}
+                  {aprobadores.length === 0 && (
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', padding: '0.4rem' }}>No hay administradores disponibles.</div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div>
+            <label className={styles.label}>Motivo del Ajuste (Opcional)</label>
+            <input
+              type="text"
+              placeholder="Ej: Descuento autorizado por fidelidad"
+              value={motivoAjuste}
+              onChange={(e) => setMotivoAjuste(e.target.value)}
+              className={styles.searchInput}
+              style={{ width: '100%', marginTop: '0.2rem' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+            <button className={styles.btnSecondary} onClick={() => setIsApprovalModalOpen(false)}>
+              Cancelar
+            </button>
+            <button
+              className={styles.btnPrimary}
+              style={{ backgroundColor: '#d97706', borderColor: '#b45309' }}
+              disabled={!aprobadorSeleccionado}
+              onClick={() => {
+                if (!aprobadorSeleccionado) return showToast('Seleccione qué administrador autorizó la rebaja');
+                handleCobrar();
+              }}
+            >
+              Autorizar y Continuar
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* CHECKOUT MODAL */}
       <Modal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} title="Confirmar Venta" maxWidth="500px">
@@ -777,13 +960,23 @@ export default function CajaPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ticketData.detalles?.map((d: any, idx: number) => (
-                    <tr key={idx}>
-                      <td style={{ verticalAlign: 'top', paddingTop: '0.4rem' }}>{d.cantidad}</td>
-                      <td style={{ verticalAlign: 'top', paddingTop: '0.4rem' }}>{d.producto?.nombre || `Prod ID: ${d.producto_id}`}</td>
-                      <td style={{ verticalAlign: 'top', textAlign: 'right', paddingTop: '0.4rem' }}>{parseFloat(d.subtotal).toFixed(2)}</td>
-                    </tr>
-                  ))}
+                  {ticketData.detalles?.map((d: any, idx: number) => {
+                    const tieneRebaja = d.precio_unitario_catalogo && Number(d.precio_unitario_catalogo) > Number(d.precio_unitario) + 0.0001;
+                    return (
+                      <tr key={idx}>
+                        <td style={{ verticalAlign: 'top', paddingTop: '0.4rem' }}>{d.cantidad}</td>
+                        <td style={{ verticalAlign: 'top', paddingTop: '0.4rem' }}>
+                          <div>{d.producto?.nombre || `Prod ID: ${d.producto_id}`}</div>
+                          {tieneRebaja && (
+                            <div style={{ fontSize: '0.65rem', color: '#64748b' }}>
+                              Catálogo: <span style={{ textDecoration: 'line-through' }}>Bs. {parseFloat(d.precio_unitario_catalogo).toFixed(2)}</span>
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ verticalAlign: 'top', textAlign: 'right', paddingTop: '0.4rem' }}>{parseFloat(d.subtotal).toFixed(2)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               <div style={{ borderTop: '1px dashed #000', paddingTop: '0.5rem', fontSize: '0.8rem' }}>
