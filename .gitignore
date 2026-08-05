@@ -64,3 +64,6 @@ apps/api/clean.ts
 apps/api/clear_empaques.ts
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
+
+# Notas locales, no compartir
+AUDITORIA.md
