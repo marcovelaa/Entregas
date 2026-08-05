@@ -21,14 +21,18 @@ export class PrismaVentaRepository implements IVentaRepository {
               where: { id: BigInt(d.empaque_id) },
             });
             if (emp) {
-              precioCatalogo = Number(emp.precio_promocional ?? emp.precio);
+              const multiplicador = emp.multiplicador_unidades || 1;
+              precioCatalogo = Number(emp.precio_promocional ?? emp.precio) / multiplicador;
             }
           } else if (d.variante_id) {
             const v = await tx.variante.findUnique({
               where: { id: BigInt(d.variante_id) },
+              include: { producto: true },
             });
             if (v) {
-              precioCatalogo = Number(v.precio_promocional ?? v.precio_unitario);
+              const precioVar = Number(v.precio_promocional ?? v.precio_unitario);
+              const precioProd = Number(v.producto.precio_promocional ?? v.producto.precio_base);
+              precioCatalogo = precioVar > 0 ? precioVar : precioProd;
             }
           } else {
             const p = await tx.producto.findUnique({
