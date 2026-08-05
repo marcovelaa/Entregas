@@ -106,6 +106,7 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
       inject: [USUARIO_REPOSITORY],
     },
   ],
+  exports: [USUARIO_REPOSITORY, ROL_REPOSITORY],
 })
 export class IamModule {}
 
