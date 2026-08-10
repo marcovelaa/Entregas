@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard, seconds } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { IamModule } from './modules/iam/iam.module';
@@ -22,9 +24,14 @@ import { join } from 'path';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
+    ThrottlerModule.forRoot([{ ttl: seconds(60), limit: 100 }]),
     IamModule, AuthModule, PrismaModule, CatalogoModule, InventarioModule, ProveedoresModule, ComprasModule, ClientesModule, VentasModule, DashboardModule, DescuentosModule
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService],
+  providers: [
+    AppService,
+    PrismaService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}
