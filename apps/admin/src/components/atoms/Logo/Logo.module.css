@@ -1,7 +1,12 @@
 .logo {
   display: flex;
   align-items: center;
+  gap: 8px;
   text-decoration: none;
+}
+
+.collapsedLogo {
+  gap: 0;
 }
 
 .iconWrapper {
@@ -10,17 +15,16 @@
   justify-content: center;
 }
 
-.textWrapper {
-  display: flex;
-  align-items: center;
-  font-family: var(--font-heading);
-  font-size: 2.1rem;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  line-height: 1;
+.svgIcon {
+  transform: translateY(-2px);
 }
 
-.red { color: var(--color-red); }
-.blue { color: var(--color-blue); }
-.green { color: var(--color-green); }
-.yellow { color: var(--color-yellow); }
+.brandText {
+  color: var(--text-main);
+  font-family: var(--font-heading);
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  line-height: 1;
+  transform: translateY(5px);
+}

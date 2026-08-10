@@ -77,3 +77,15 @@
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
+
+@media (max-width: 640px) {
+  .panel {
+    width: 100% !important;
+  }
+  .header {
+    padding: 1rem;
+  }
+  .content {
+    padding: 1rem;
+  }
+}

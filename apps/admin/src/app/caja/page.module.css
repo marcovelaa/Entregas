@@ -242,3 +242,38 @@
 .toastError { background-color: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
 .toastSuccess { background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
 @keyframes slideDown { from { transform: translate(-50%, -100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+/* RESPONSIVE MEDIA QUERIES */
+@media (max-width: 1024px) {
+  .posContainer {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+  .leftPanel, .rightPanel {
+    flex: 1 1 auto;
+    width: 100%;
+    height: auto;
+    min-height: 400px;
+  }
+  .productsGrid {
+    max-height: 450px;
+  }
+}
+
+@media (max-width: 640px) {
+  .posContainer {
+    padding: 0.5rem;
+    gap: 0.75rem;
+  }
+  .productsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    padding: 0 0.5rem 1rem 0.5rem;
+  }
+  .paymentMethods {
+    grid-template-columns: 1fr;
+  }
+  .quickCashBtns {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

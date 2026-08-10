@@ -21,6 +21,7 @@
   align-items: center;
   justify-content: flex-start;
   position: relative;
+  transition: padding 0.3s ease;
 }
 
 .collapsed .logoContainer {

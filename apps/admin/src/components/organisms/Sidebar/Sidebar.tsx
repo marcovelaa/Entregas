@@ -25,9 +25,20 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsCollapsed(true);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
     document.documentElement.style.setProperty(
       '--current-sidebar-width', 
-      isCollapsed ? '80px' : '250px'
+      isCollapsed ? (window.innerWidth < 480 ? '60px' : '80px') : '250px'
     );
   }, [isCollapsed]);
 

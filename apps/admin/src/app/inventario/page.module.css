@@ -221,3 +221,27 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* RESPONSIVE MEDIA QUERIES */
+@media (max-width: 768px) {
+  .pageContainer {
+    padding: 1rem;
+  }
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .pageTitle {
+    font-size: 1.8rem;
+  }
+  .controlsWrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .filterGroup {
+    flex-wrap: wrap;
+  }
+}
