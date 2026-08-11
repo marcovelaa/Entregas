@@ -53,16 +53,6 @@ export default function LevelsGrid() {
           </div>
         </div>
 
-        <div className={styles.levelCardImage} tabIndex={0} role="button" aria-label="Libros">
-          <div className={styles.levelImgWrapper}>
-            <Image src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=600&auto=format&fit=crop" alt="Colección de libros" fill sizes="(max-width: 768px) 100vw, 250px" className={styles.levelImg} />
-            <div className={styles.levelColorBar} style={{ background: 'var(--color-orange, #f97316)' }}></div>
-          </div>
-          <div className={styles.levelCardBody}>
-            <h3 style={{ color: 'var(--color-orange, #f97316)', fontWeight: 800, fontSize: '1.25rem', marginBottom: '0.5rem' }}>LIBROS</h3>
-            <p>Literatura, enciclopedias, novelas y cuentos para todas las edades.</p>
-          </div>
-        </div>
       </div>
     </section>
   );

@@ -196,10 +196,10 @@ export default function Header() {
 
         <nav className={styles.categoryNav} aria-label="Navegación principal">
           <Link href="/" className={pathname === '/' ? styles.activeCategory : ''}>Inicio</Link>
-          <Link href="/destacados" className={pathname === '/destacados' ? styles.activeCategory : ''}>Destacados</Link>
           <Link href="/textosescolares" className={pathname.startsWith('/textosescolares') ? styles.activeCategory : ''}>Textos Escolares</Link>
           <Link href="/plan-lector" className={pathname === '/plan-lector' ? styles.activeCategory : ''}>Plan Lector</Link>
           <Link href="/material-escolar" className={pathname === '/material-escolar' ? styles.activeCategory : ''}>Material Escolar</Link>
+          <Link href="/cuadernos" className={pathname === '/cuadernos' ? styles.activeCategory : ''}>Cuadernos</Link>
           <Link href="/papel" className={pathname === '/papel' ? styles.activeCategory : ''}>Papel</Link>
           <Link href="/ofertas" className={styles.redLink}>Ofertas</Link>
         </nav>

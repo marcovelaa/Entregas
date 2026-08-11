@@ -7,14 +7,14 @@ import PageHeader from '@/components/organisms/PageHeader/PageHeader';
 
 // Mock Data
 const categories = [
-  { id: 'all', name: 'Todos los Materiales' },
-  { id: 'cuadernos', name: 'Cuadernos y Blocs' },
-  { id: 'escritura', name: 'Escritura' },
-  { id: 'arte', name: 'Arte y Dibujo' }
+  { id: 'all', name: 'Todos los Cuadernos' },
+  { id: 'anillados', name: 'Anillados / Espiral' },
+  { id: 'cosidos', name: 'Cosidos / Empastados' },
+  { id: 'universitarios', name: 'Universitarios' }
 ];
 
 
-export default function MaterialEscolarPage() {
+export default function CuadernosPage() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [products, setProducts] = useState<any[]>([]);
   
@@ -25,7 +25,7 @@ export default function MaterialEscolarPage() {
       .then(data => {
         if (data && data.data) {
           const filtered = data.data.filter((p: any) => 
-            p.categoria?.slug === 'material-escolar'
+            p.categoria?.slug === 'cuadernos'
           );
           setProducts(filtered);
         }
@@ -54,8 +54,8 @@ export default function MaterialEscolarPage() {
   return (
     <div className={styles.pageWrapper}>
       <PageHeader 
-        title="Material Escolar"
-        subtitle="La papelería más completa. Compra por unidad para el colegio, o por paquete y pallet para tu negocio."
+        title="Cuadernos"
+        subtitle="Encontrá los mejores cuadernos para este ciclo lectivo: anillados, cosidos, universitarios y más."
       />
 
       <div className={styles.layoutContainer}>
@@ -88,7 +88,7 @@ export default function MaterialEscolarPage() {
             </div>
 
             {/* Filtros Dinámicos */}
-            {(activeCategory === 'all') && (
+            {(activeCategory === 'all' || activeCategory === 'anillados' || activeCategory === 'cosidos' || activeCategory === 'universitarios') && (
               <>
                 <div className={styles.filterSection}>
                   <h3 className={styles.filterTitle}>Tamaño (Cuadernos)</h3>
