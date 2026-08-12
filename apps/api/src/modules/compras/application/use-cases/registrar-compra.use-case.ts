@@ -10,7 +10,7 @@ import type { IVarianteRepository } from '../../../catalogo/domain/repositories/
 import { VARIANTE_REPOSITORY } from '../../../catalogo/domain/repositories/variante.repository.interface';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 
 @Injectable()
 export class RegistrarCompraUseCase {
@@ -22,7 +22,11 @@ export class RegistrarCompraUseCase {
     private readonly prisma: PrismaService // Used only for transaction boundary
   ) {}
 
-  async execute(dto: RegistrarCompraDto, usuario_id: string = '1') {
+  async execute(dto: RegistrarCompraDto, usuario_id: string) {
+    if (!usuario_id) {
+      throw new UnauthorizedException('Authenticated user is required');
+    }
+
     let total = 0;
     const detalles = dto.detalles.map(d => {
       total += d.cantidad * d.costo_unitario;

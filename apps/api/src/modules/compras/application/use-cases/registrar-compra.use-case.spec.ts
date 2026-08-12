@@ -3,6 +3,7 @@ import type { ICompraRepository } from '../../domain/repositories/compra.reposit
 import type { IInventarioRepository } from '../../../inventario/domain/repositories/inventario.repository.interface';
 import type { IProductoRepository } from '../../../catalogo/domain/repositories/producto.repository.interface';
 import type { IVarianteRepository } from '../../../catalogo/domain/repositories/variante.repository.interface';
+import { UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 
 function createHarness() {
@@ -25,11 +26,19 @@ describe('RegistrarCompraUseCase', () => {
 
     await useCase.execute({
       detalles: [{ producto_id: '1', cantidad: 10, costo_unitario: 5 }],
-    } as any);
+    } as any, '42');
 
-    expect(compraRepo.crear).toHaveBeenCalledWith(expect.objectContaining({ total: 50 }), FAKE_TX);
+    expect(compraRepo.crear).toHaveBeenCalledWith(
+      expect.objectContaining({ total: 50, usuario_id: 42n }),
+      FAKE_TX,
+    );
     expect(inventarioRepo.registrarMovimiento).toHaveBeenCalledWith(
-      expect.objectContaining({ producto_id: 1n, tipo_movimiento: 'INGRESO_COMPRA', cantidad: 10 }),
+      expect.objectContaining({
+        producto_id: 1n,
+        tipo_movimiento: 'INGRESO_COMPRA',
+        cantidad: 10,
+        usuario_id: 42n,
+      }),
       FAKE_TX,
     );
   });
@@ -39,7 +48,7 @@ describe('RegistrarCompraUseCase', () => {
 
     await useCase.execute({
       detalles: [{ producto_id: '1', cantidad: 10, costo_unitario: 5, precio_venta: 12 }],
-    } as any);
+    } as any, '42');
 
     expect(productoRepo.actualizarPrecioVenta).toHaveBeenCalledWith(1n, 12, FAKE_TX);
     expect(varianteRepo.actualizarPrecioVenta).not.toHaveBeenCalled();
@@ -52,7 +61,7 @@ describe('RegistrarCompraUseCase', () => {
 
     await useCase.execute({
       detalles: [{ producto_id: '1', variante_id: '701', cantidad: 10, costo_unitario: 5, precio_venta: 15 }],
-    } as any);
+    } as any, '42');
 
     expect(varianteRepo.actualizarPrecioVenta).toHaveBeenCalledWith(701n, 15, FAKE_TX);
     expect(productoRepo.actualizarPrecioVenta).not.toHaveBeenCalled();
@@ -63,9 +72,21 @@ describe('RegistrarCompraUseCase', () => {
 
     await useCase.execute({
       detalles: [{ producto_id: '1', cantidad: 10, costo_unitario: 5 }],
-    } as any);
+    } as any, '42');
 
     expect(productoRepo.actualizarPrecioVenta).not.toHaveBeenCalled();
     expect(varianteRepo.actualizarPrecioVenta).not.toHaveBeenCalled();
+  });
+
+  it('rejects a missing actor instead of recording the fallback user', async () => {
+    const { useCase, prisma } = createHarness();
+
+    await expect(
+      useCase.execute(
+        { detalles: [{ producto_id: '1', cantidad: 10, costo_unitario: 5 }] } as any,
+        undefined as never,
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });
