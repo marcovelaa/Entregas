@@ -8,6 +8,7 @@ type TxMock = {
     create: jest.Mock;
     findUnique: jest.Mock;
     update: jest.Mock;
+    updateMany: jest.Mock;
   };
   producto: {
     findUnique: jest.Mock;
@@ -38,13 +39,14 @@ type TxMock = {
   };
   descuentoUso: { create: jest.Mock };
   movimientosInventario: { create: jest.Mock };
+  $executeRaw: jest.Mock;
 };
 
 type CupoState = { cupoUsado: number };
 
 function createTx(): TxMock {
   return {
-    venta: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+    venta: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
     producto: { findUnique: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
     inventario: { findFirst: jest.fn(), findMany: jest.fn(), updateMany: jest.fn(), update: jest.fn() },
     variante: { findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn() },
@@ -53,11 +55,22 @@ function createTx(): TxMock {
     descuento: { findUnique: jest.fn(), updateMany: jest.fn() },
     descuentoUso: { create: jest.fn() },
     movimientosInventario: { create: jest.fn() },
+    $executeRaw: jest.fn(),
   };
 }
 
 function createHarness(tx: TxMock, discountEngine?: { evaluate: jest.Mock }) {
   const prisma = {
+    venta: tx.venta,
+    producto: tx.producto,
+    empaque: tx.empaque,
+    variante: tx.variante,
+    inventario: tx.inventario,
+    usuario: tx.usuario,
+    descuento: tx.descuento,
+    descuentoUso: tx.descuentoUso,
+    movimientosInventario: tx.movimientosInventario,
+    $executeRaw: tx.$executeRaw,
     $transaction: jest.fn(async (fn: (t: TxMock) => unknown) => fn(tx)),
   } as unknown as PrismaService;
   const engine = (discountEngine ?? { evaluate: jest.fn().mockResolvedValue(null) }) as any;
@@ -168,18 +181,20 @@ function setupCrear(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
 
 function setupAnular(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
   tx.venta.findUnique.mockResolvedValue(completadaRow());
-  tx.producto.findUnique.mockResolvedValue(comboRow(comboOverrides));
-  tx.variante.findFirst.mockResolvedValue({ id: 701n, producto_id: 7n, activo: true });
-  tx.inventario.findFirst.mockResolvedValue({ id: 5n, variante_id: 701n, cantidad_disponible: 8, reservado: 0 });
+  tx.producto.findMany.mockResolvedValue([comboRow(comboOverrides)]);
+  tx.variante.findMany.mockResolvedValue([{ id: 701n, producto_id: 7n, activo: true }]);
+  tx.inventario.findMany.mockResolvedValue([{ id: 5n, producto_id: 7n, variante_id: 701n, cantidad_disponible: 8, reservado: 0 }]);
+  tx.venta.updateMany.mockResolvedValue({ count: 1 });
   tx.inventario.update.mockResolvedValue({});
   tx.movimientosInventario.create.mockResolvedValue({});
 }
 
 function setupRevertir(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
   tx.venta.findUnique.mockResolvedValue(anuladaRow());
-  tx.producto.findUnique.mockResolvedValue(comboRow(comboOverrides));
-  tx.variante.findFirst.mockResolvedValue({ id: 701n, producto_id: 7n, activo: true });
-  tx.inventario.findFirst.mockResolvedValue({ id: 5n, variante_id: 701n, cantidad_disponible: 10, reservado: 0 });
+  tx.producto.findMany.mockResolvedValue([comboRow(comboOverrides)]);
+  tx.variante.findMany.mockResolvedValue([{ id: 701n, producto_id: 7n, activo: true }]);
+  tx.inventario.findMany.mockResolvedValue([{ id: 5n, producto_id: 7n, variante_id: 701n, cantidad_disponible: 10, reservado: 0 }]);
+  tx.venta.updateMany.mockResolvedValue({ count: 1 });
   tx.inventario.updateMany.mockResolvedValue({ count: 1 });
   tx.movimientosInventario.create.mockResolvedValue({});
 }
@@ -355,6 +370,34 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     });
   });
 
+  it('preloads catalog and discount evaluation before the write transaction starts', async () => {
+    const discountEngine = { evaluate: jest.fn() };
+    const { repo, tx, prisma } = createHarness(createTx(), discountEngine);
+    const transactionMock = prisma.$transaction as unknown as jest.Mock;
+    discountEngine.evaluate.mockImplementation(async () => {
+      expect(transactionMock).not.toHaveBeenCalled();
+      return null;
+    });
+    setupCrear(tx, { precio_base: 50 });
+
+    const result = await repo.crear({
+      ...ventaData,
+      descuento_id: '9',
+    });
+
+    expect(result.id).toBe('1');
+    expect(discountEngine.evaluate).toHaveBeenCalledTimes(1);
+    expect(tx.producto.findMany.mock.invocationCallOrder[0]).toBeLessThan(
+      transactionMock.mock.invocationCallOrder[0],
+    );
+    expect(tx.variante.findMany.mock.invocationCallOrder[0]).toBeLessThan(
+      transactionMock.mock.invocationCallOrder[0],
+    );
+    expect(tx.inventario.findMany.mock.invocationCallOrder[0]).toBeLessThan(
+      transactionMock.mock.invocationCallOrder[0],
+    );
+  });
+
   it('throws error when concurrent update decreases stock below required units', async () => {
     const { repo, tx } = createHarness(createTx());
     setupCrear(tx, { cupo_maximo: null });
@@ -388,11 +431,36 @@ describe('PrismaVentaRepository.anular - liberación de cupo (2.8)', () => {
     expect(tx.movimientosInventario.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ tipo_movimiento: 'ENTRADA' }) }),
     );
-    expect(tx.venta.update).toHaveBeenCalledWith({
-      where: { id: 5n },
+    expect(tx.venta.updateMany).toHaveBeenCalledWith({
+      where: { id: 5n, estado: 'COMPLETADA' },
       data: { estado: 'ANULADA', motivo_anulacion: 'Devolución' },
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('preloads cancellation reads before the transaction and keeps only atomic writes inside it', async () => {
+    const { repo, tx, prisma } = createHarness(createTx());
+    setupAnular(tx, { cupo_maximo: 10, cupo_usado: 10 });
+    tx.producto.updateMany.mockResolvedValue({ count: 1 });
+
+    await repo.anular('5', '1', 'Devolución');
+
+    const transactionMock = prisma.$transaction as unknown as jest.Mock;
+    for (const query of [tx.venta.findUnique, tx.producto.findMany, tx.variante.findMany, tx.inventario.findMany]) {
+      expect(query.mock.invocationCallOrder[0]).toBeLessThan(transactionMock.mock.invocationCallOrder[0]);
+    }
+    expect(tx.producto.findUnique).not.toHaveBeenCalled();
+    expect(tx.variante.findFirst).not.toHaveBeenCalled();
+    expect(tx.inventario.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('does not return stock when the conditional cancellation state transition loses a race', async () => {
+    const { repo, tx } = createHarness(createTx());
+    setupAnular(tx);
+    tx.venta.updateMany.mockResolvedValue({ count: 0 });
+
+    await expectConflict(repo.anular('5', '1', 'Devolución'), 'La venta ya se encuentra anulada');
+    expect(tx.inventario.update).not.toHaveBeenCalled();
   });
 
   it('clamps cupo_usado at 0 when anulando has no usage left (never goes negative)', async () => {
@@ -440,11 +508,27 @@ describe('PrismaVentaRepository.revertirAnulacion - restauración de cupo (2.8)'
         data: expect.objectContaining({ tipo_movimiento: 'SALIDA', motivo: 'REVERSION_ANULACION_COMBO (Combo X)' }),
       }),
     );
-    expect(tx.venta.update).toHaveBeenCalledWith({
-      where: { id: 5n },
+    expect(tx.venta.updateMany).toHaveBeenCalledWith({
+      where: { id: 5n, estado: 'ANULADA' },
       data: { estado: 'COMPLETADA', motivo_anulacion: null },
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('preloads reversal reads before the transaction and retains the conditional stock guard', async () => {
+    const { repo, tx, prisma } = createHarness(createTx());
+    setupRevertir(tx, { cupo_maximo: 10, cupo_usado: 9 });
+
+    await repo.revertirAnulacion('5', '1');
+
+    const transactionMock = prisma.$transaction as unknown as jest.Mock;
+    for (const query of [tx.venta.findUnique, tx.producto.findMany, tx.variante.findMany, tx.inventario.findMany]) {
+      expect(query.mock.invocationCallOrder[0]).toBeLessThan(transactionMock.mock.invocationCallOrder[0]);
+    }
+    expect(tx.inventario.updateMany).toHaveBeenCalledWith({
+      where: { id: 5n, cantidad_disponible: { gte: 2 } },
+      data: { cantidad_disponible: { decrement: 2 } },
+    });
   });
 
   it('restores cupo even when cupo_maximo was later lowered below usage (Open Q1: no cap validation)', async () => {
@@ -626,8 +710,7 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
     });
     const { repo, tx } = createHarness(createTx(), { evaluate });
     setupCrear(tx, { precio_base: 50 });
-    tx.descuento.findUnique.mockResolvedValue({ id: 10n, limite_usos: null });
-    tx.descuento.updateMany.mockResolvedValue({ count: 1 });
+    tx.$executeRaw.mockResolvedValue(1);
 
     await repo.crear({
       usuario_id: '1',
@@ -646,10 +729,9 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
         data: expect.objectContaining({ total: 35, descuento_total: 15, codigo_cupon: 'FIEL10' }),
       }),
     );
-    expect(tx.descuento.updateMany).toHaveBeenCalledWith({
-      where: { id: 10n },
-      data: { usos_actuales: { increment: 1 } },
-    });
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(tx.descuento.findUnique).not.toHaveBeenCalled();
+    expect(tx.descuento.updateMany).not.toHaveBeenCalled();
     expect(tx.descuentoUso.create).toHaveBeenCalledWith({
       data: { descuento_id: 10n, venta_id: 1n, cliente_id: null, monto_descontado: 15 },
     });
@@ -670,8 +752,7 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
     });
     const { repo, tx } = createHarness(createTx(), { evaluate });
     setupCrear(tx, { precio_base: 50 });
-    tx.descuento.findUnique.mockResolvedValue({ id: 10n, limite_usos: 3 });
-    tx.descuento.updateMany.mockResolvedValue({ count: 0 });
+    tx.$executeRaw.mockResolvedValue(0);
 
     await expect(
       repo.crear({
@@ -683,11 +764,42 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
       }),
     ).rejects.toThrow(ConflictException);
 
-    expect(tx.descuento.updateMany).toHaveBeenCalledWith({
-      where: { id: 10n, usos_actuales: { lt: 3 } },
-      data: { usos_actuales: { increment: 1 } },
-    });
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
     expect(tx.descuentoUso.create).not.toHaveBeenCalled();
+  });
+
+  it('permite solo una venta cuando dos checkouts compiten por el último uso del descuento', async () => {
+    const evaluate = jest.fn().mockResolvedValue({
+      id: '10',
+      nombre: 'Último uso',
+      codigo: 'ULTIMO',
+      tipo: 'MONTO_FIJO',
+      alcance: 'GLOBAL',
+      canal: 'POS',
+      montoDescontado: 5,
+      totalOriginal: 50,
+      totalFinal: 45,
+      itemsElegiblesCount: 1,
+    });
+    const { repo, tx } = createHarness(createTx(), { evaluate });
+    setupCrear(tx, { precio_base: 50 });
+    tx.$executeRaw.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+
+    const venta = {
+      usuario_id: '1',
+      metodo_pago: 'EFECTIVO',
+      monto_pagado: 45,
+      descuento_id: '10',
+      detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 50 }],
+    } as any;
+
+    const [primera, segunda] = await Promise.allSettled([repo.crear(venta), repo.crear(venta)]);
+
+    expect(primera.status).toBe('fulfilled');
+    expect(segunda.status).toBe('rejected');
+    if (segunda.status === 'rejected') expect(segunda.reason).toBeInstanceOf(ConflictException);
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(2);
+    expect(tx.descuentoUso.create).toHaveBeenCalledTimes(1);
   });
 
   it('si el discount engine no encuentra un descuento válido, la venta sigue sin aplicar rebaja alguna', async () => {
