@@ -11,9 +11,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
 import * as path from 'path';
-import * as fs from 'fs';
+import {
+  finalizeUploadedImage,
+  imageUploadOptions,
+} from '../../../../common/uploads/image-upload.config';
 import { CrearVarianteUseCase } from '../../application/use-cases/variantes/crear-variante.use-case';
 import { ListarVariantesUseCase } from '../../application/use-cases/variantes/listar-variantes.use-case';
 import { ActualizarVarianteUseCase } from '../../application/use-cases/variantes/actualizar-variante.use-case';
@@ -27,9 +29,6 @@ import { ParseBigIntPipe } from '../../../../common/pipes';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
 
 const variantesDir = path.join(process.cwd(), 'uploads', 'variantes');
-if (!fs.existsSync(variantesDir)) {
-  fs.mkdirSync(variantesDir, { recursive: true });
-}
 
 const serializeVariante = (v: any) => ({
   ...v,
@@ -92,36 +91,14 @@ export class VariantesController {
 
   @Post('upload-imagen/:id')
   @RequierePermiso('catalogo:gestionar')
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: path.join(process.cwd(), 'uploads', 'variantes'),
-        filename: (req, file, cb) => {
-          const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
-          cb(null, uniqueName);
-        },
-      }),
-      limits: { fileSize: 5 * 1024 * 1024 },
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.match(/^image\/(jpeg|png|webp|gif)$/)) {
-          cb(
-            new BadRequestException(
-              'Solo imágenes JPG, PNG, WebP o GIF',
-            ) as any,
-            false,
-          );
-          return;
-        }
-        cb(null, true);
-      },
-    }),
-  )
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions(variantesDir)))
   async uploadImagen(
     @Param('id', ParseBigIntPipe) id: bigint,
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException('No se recibió ningún archivo');
-    const imageUrl = `/uploads/variantes/${file.filename}`;
+    const finalFilename = await finalizeUploadedImage(file);
+    const imageUrl = `/uploads/variantes/${finalFilename}`;
     const v = await this.actualizarVarianteUseCase.execute(id, {
       imagen_url: imageUrl,
     } as any);

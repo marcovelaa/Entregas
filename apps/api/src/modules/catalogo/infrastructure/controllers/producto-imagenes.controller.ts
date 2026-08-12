@@ -11,9 +11,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import * as fs from 'fs';
+import {
+  finalizeUploadedImage,
+  imageUploadOptions,
+} from '../../../../common/uploads/image-upload.config';
 import { CrearProductoImagenUseCase } from '../../application/use-cases/productos/crear-producto-imagen.use-case';
 import { CrearProductoImagenDto } from '../../application/dtos/producto-imagen.dto';
 import { PRODUCTO_IMAGEN_REPOSITORY } from '../../domain/repositories/producto-imagen.repository.interface';
@@ -21,11 +22,7 @@ import type { IProductoImagenRepository } from '../../domain/repositories/produc
 import { ParseBigIntPipe } from '../../../../common/pipes';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
 
-// Asegurar que la carpeta existe
 const uploadDir = './uploads/productos';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
 
 @Controller('producto-imagenes')
 export class ProductoImagenesController {
@@ -43,24 +40,14 @@ export class ProductoImagenesController {
 
   @Post('upload/:producto_id')
   @RequierePermiso('catalogo:gestionar')
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: uploadDir,
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, uniqueSuffix + extname(file.originalname));
-        },
-      }),
-    }),
-  )
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions(uploadDir)))
   async uploadImagen(
     @Param('producto_id') producto_id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException('No se recibió ninguna imagen');
-    const url = `/uploads/productos/${file.filename}`;
+    const finalFilename = await finalizeUploadedImage(file);
+    const url = `/uploads/productos/${finalFilename}`;
 
     return this.crearProductoImagenUseCase.execute({
       producto_id: BigInt(producto_id),
