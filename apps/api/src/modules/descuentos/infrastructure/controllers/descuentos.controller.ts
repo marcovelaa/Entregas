@@ -80,7 +80,6 @@ export class DescuentosController {
       limiteUsos: d.limite_usos,
       limiteUsosPorCliente: d.limite_usos_por_cliente,
       usosActuales: d.usos_actuales,
-      esAcumulable: d.es_acumulable,
       prioridad: d.prioridad,
       fechaInicio: d.fecha_inicio,
       fechaFin: d.fecha_fin,
@@ -268,7 +267,6 @@ export class DescuentosController {
       limiteUsos: d.limite_usos,
       limiteUsosPorCliente: d.limite_usos_por_cliente,
       usosActuales: d.usos_actuales,
-      esAcumulable: d.es_acumulable,
       prioridad: d.prioridad,
       fechaInicio: d.fecha_inicio,
       fechaFin: d.fecha_fin,
@@ -316,7 +314,6 @@ export class DescuentosController {
       montoMinimoCompra,
       limiteUsos,
       limiteUsosPorCliente,
-      esAcumulable,
       prioridad,
       fechaInicio,
       fechaFin,
@@ -352,7 +349,6 @@ export class DescuentosController {
         limite_usos_por_cliente: limiteUsosPorCliente
           ? parseInt(limiteUsosPorCliente, 10)
           : 1,
-        es_acumulable: esAcumulable ?? false,
         prioridad: prioridad ? parseInt(prioridad, 10) : 0,
         fecha_inicio: new Date(fechaInicio),
         fecha_fin: new Date(fechaFin),
@@ -468,7 +464,6 @@ export class DescuentosController {
       montoMinimoCompra,
       limiteUsos,
       limiteUsosPorCliente,
-      esAcumulable,
       prioridad,
       fechaInicio,
       fechaFin,
@@ -535,10 +530,6 @@ export class DescuentosController {
             ? parseInt(limiteUsosPorCliente, 10)
             : 1
           : existing.limite_usos_por_cliente,
-      es_acumulable:
-        esAcumulable !== undefined
-          ? Boolean(esAcumulable)
-          : existing.es_acumulable,
       prioridad:
         prioridad !== undefined ? parseInt(prioridad, 10) : existing.prioridad,
       fecha_inicio: fechaInicio ? new Date(fechaInicio) : existing.fecha_inicio,

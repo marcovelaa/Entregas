@@ -27,7 +27,6 @@ interface Descuento {
   limiteUsos?: number;
   limiteUsosPorCliente?: number;
   usosActuales: number;
-  esAcumulable: boolean;
   prioridad: number;
   fechaInicio: string;
   fechaFin: string;

@@ -58,10 +58,18 @@ El backend ya tiene módulos de catálogo, inventario, compras, clientes, provee
 - `test/catalogo.e2e-spec.ts`: fallaba con 401 en los 4 tests (nunca autenticaba, roto desde el hardening de auth global) y su `afterAll` hacía `deleteMany()` sin filtro sobre tablas completas de la base de desarrollo compartida — no solo un bug de orden de FK. Fix: el test ahora crea un usuario/rol propio y firma un JWT con permiso `catalogo:gestionar`; el `afterAll` borra únicamente los IDs que el propio test creó. **Nota de incidente:** al iterar el fix original (solo reordenar deletes) se ejecutó `movimientosInventario.deleteMany()` sin scope contra `entregas_db` (dev compartida) y borró las filas reales de esa tabla antes de detectar el problema; no era dato de seed y no se pudo recuperar. Corregido y sin nuevas corridas destructivas desde entonces.
 
 | 1.2 | **Validar cargas de imágenes** [Backend][ERP] | Aplicar una política única de MIME permitido, límite de tamaño, nombre/almacenamiento seguro y respuestas HTTP correctas a todos los endpoints de imágenes. | JPEG/PNG/WebP/GIF válidos dentro del límite son aceptados; SVG, HTML, MIME falsificado y archivos sobredimensionados son rechazados. | Tests de controller o e2e para cada caso; prueba manual de descarga desde `/uploads`. | **P0 / S** |
-| 1.3 | **Decidir descuentos acumulables** [Producto][Backend][ERP] | Resolver el significado de `es_acumulable`: permitir acumulación con reglas explícitas o retirar el campo y su control visual. | La regla queda escrita y aprobada: combinaciones permitidas, orden por prioridad, topes, incompatibilidades y redondeo. No hay checkbox ni dato persistido sin efecto. | Casos de ejemplo aprobados por negocio y pruebas que reproduzcan cada combinación permitida/prohibida. | **P0 / S (decisión)** |
+| 1.3 | **Decidir descuentos acumulables** [Producto][Backend][ERP] ✅ | Resolver el significado de `es_acumulable`: permitir acumulación con reglas explícitas o retirar el campo y su control visual. | La regla queda escrita y aprobada: combinaciones permitidas, orden por prioridad, topes, incompatibilidades y redondeo. No hay checkbox ni dato persistido sin efecto. | Casos de ejemplo aprobados por negocio y pruebas que reproduzcan cada combinación permitida/prohibida. | **P0 / S (decisión)** |
 | 1.4 | **Implementar la política de descuentos elegida** [Backend][ERP] | Ajustar `DiscountEngineService`, venta, cupos y UI administrativa según 1.3; completar descuentos por ítem, canal, destinatario y límite definidos en el cambio OpenSpec de descuentos cuando sean parte de la decisión. | El total siempre se calcula en servidor; el cupo global/por cliente se mantiene atómico; el desglose explica qué regla se aplicó o por qué no. | Unit tests de reglas y límites; e2e concurrente; prueba POS de cupón y prueba administrativa de creación/edición. | **P0 / L** |
 
-**No iniciar:** rediseño visual de descuentos, promociones complejas (por ejemplo, monto fijo por unidad o Buy X Get Y) ni integraciones de checkout hasta cerrar 1.3. Primero se define la regla; después se construye la interfaz.
+**Cierre de 1.3 — Regla adoptada: sin acumulación.**
+- **Combinaciones permitidas:** ninguna. Por venta se aplica un único descuento: el de mayor ahorro entre todas las reglas vigentes y elegibles (ya era el comportamiento real de `DiscountEngineService.evaluate()`; ahora es la regla formal, no un efecto colateral).
+- **Orden/prioridad:** en empates de ahorro, gana la regla con `prioridad` más alta (`buscarReglasVigentes` ya ordena por `prioridad desc, creado_en desc`, y el engine solo reemplaza el resultado con `savings > maxSavings` estricto). No requirió cambios de motor.
+- **Topes:** el tope por regla (`max_monto_descuento`) sigue vigente sin cambios; no aplica un tope global adicional porque nunca se combinan reglas.
+- **Incompatibilidades:** aplicar una regla excluye automáticamente a todas las demás (implícito en "un solo descuento gana").
+- **Redondeo:** 2 decimales vía `toFixed(2)`, ya implementado, sin cambios.
+- **Implementación:** columna `es_acumulable` eliminada (`prisma/migrations/20260812222354_remove_descuento_es_acumulable`); mapeo retirado de `descuentos.controller.ts`; checkbox retirado de `DiscountForm.tsx` y del tipo en `apps/admin/src/app/descuentos/page.tsx`. Verificado: 143/143 unit + 13/13 e2e (API), tipos y build limpios en `apps/api` y `apps/admin`.
+
+**No iniciar:** rediseño visual de descuentos, promociones complejas (por ejemplo, Buy X Get Y) ni integraciones de checkout hasta evaluar 1.4. Con 1.3 cerrado, el engine ya cumple la regla decidida — 1.4 queda para lo que falte de descuentos por ítem/canal/destinatario del cambio OpenSpec, no para acumulación.
 
 ## Fase 2 — Fundamentos del pedido digital
 
@@ -110,7 +118,7 @@ El backend ya tiene módulos de catálogo, inventario, compras, clientes, provee
 
 | Decisión | Debe definir | Bloquea |
 |---|---|---|
-| **Acumulación de descuentos** | Si se apilan promociones; orden/prioridad, topes, exclusiones, redondeo y presentación del desglose. | 1.4 y cualquier UI final de descuentos. |
+| ~~**Acumulación de descuentos**~~ | ✅ Resuelta (1.3): sin acumulación, un solo descuento por venta. Ver cierre de 1.3 en Fase 1. | — |
 | **Política de envío** | Cobertura, tarifas, zonas, umbral de envío gratis y responsable de despacho. | Checkout final y estados de pedido. |
 | **Política de devoluciones** | Plazo, elegibilidad, quién absorbe el costo, tratamiento de producto dañado y compensación permitida. | 3.1. |
 | **Contrato BISA** | Ambiente, autenticación de webhook, SLA, conciliación y manejo de caídas. | 2.3 y salida productiva. |

@@ -57,7 +57,6 @@ export function DiscountForm({
     montoMinimoCompra: initialData?.montoMinimoCompra ?? '',
     limiteUsos: initialData?.limiteUsos ?? '',
     limiteUsosPorCliente: initialData?.limiteUsosPorCliente ?? '1',
-    esAcumulable: Boolean(initialData?.esAcumulable),
     prioridad: initialData?.prioridad ?? '0',
     fechaInicio: initialData?.fechaInicio
       ? new Date(initialData.fechaInicio).toISOString().split('T')[0]
@@ -561,17 +560,6 @@ export function DiscountForm({
                 </div>
               </div>
             )}
-
-            <label className={styles.checkboxGroup}>
-              <input
-                type="checkbox"
-                className={styles.checkboxInput}
-                checked={Boolean(formData.esAcumulable)}
-                onChange={(e) => setFormData({ ...formData, esAcumulable: e.target.checked })}
-                disabled={submitting}
-              />
-              <span className={styles.checkboxLabel}>¿Es acumulable con otros cupones o promociones activas?</span>
-            </label>
           </div>
         </div>
 

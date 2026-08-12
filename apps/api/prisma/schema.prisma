@@ -509,7 +509,6 @@ model Descuento {
   limite_usos_por_cliente Int?           @default(1)
   usos_actuales         Int              @default(0)
 
-  es_acumulable         Boolean          @default(false)
   prioridad             Int              @default(0)
 
   fecha_inicio          DateTime
