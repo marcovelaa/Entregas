@@ -18,6 +18,7 @@ export default function CajaPage() {
   // Discount & Coupon State
   const [codigoCuponInput, setCodigoCuponInput] = useState('');
   const [descuentoAplicado, setDescuentoAplicado] = useState<any>(null);
+  const [descuentoInfo, setDescuentoInfo] = useState<{ message: string; esErrorCupon: boolean } | null>(null);
 
   // Checkout Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -87,6 +88,7 @@ export default function CajaPage() {
   useEffect(() => {
     if (carrito.length === 0) {
       setDescuentoAplicado(null);
+      setDescuentoInfo(null);
       return;
     }
 
@@ -107,8 +109,16 @@ export default function CajaPage() {
       .then((res) => {
         if (res.data.success && res.data.data) {
           setDescuentoAplicado(res.data.data);
+          setDescuentoInfo(null);
+          return;
+        }
+        setDescuentoAplicado(null);
+        if (res.data.success === false && res.data.error) {
+          setDescuentoInfo({ message: res.data.error, esErrorCupon: true });
+        } else if (res.data.message) {
+          setDescuentoInfo({ message: res.data.message, esErrorCupon: false });
         } else {
-          setDescuentoAplicado(null);
+          setDescuentoInfo(null);
         }
       })
       .catch((err) => console.error(err));
@@ -650,6 +660,20 @@ export default function CajaPage() {
             }}>
               <span>🏷️ {descuentoAplicado.nombre}</span>
               <span>- Bs. {descuentoAplicado.montoDescontado.toFixed(2)}</span>
+            </div>
+          )}
+
+          {!descuentoAplicado && descuentoInfo && (
+            <div style={{
+              backgroundColor: descuentoInfo.esErrorCupon ? '#fef2f2' : '#f8fafc',
+              border: `1px solid ${descuentoInfo.esErrorCupon ? '#fecaca' : '#e2e8f0'}`,
+              borderRadius: '6px',
+              padding: '0.4rem 0.6rem',
+              fontSize: '0.75rem',
+              color: descuentoInfo.esErrorCupon ? '#991b1b' : '#64748b',
+              marginBottom: '0.5rem',
+            }}>
+              {descuentoInfo.message}
             </div>
           )}
 

@@ -3,7 +3,7 @@ import { PrismaService } from '../../../../common/prisma/prisma.service';
 
 function createMockPrisma() {
   return {
-    descuento: { findMany: jest.fn() },
+    descuento: { findMany: jest.fn(), findUnique: jest.fn() },
     descuentoUso: { count: jest.fn() },
   };
 }
@@ -40,7 +40,9 @@ describe('PrismaDescuentoRepository.buscarReglasVigentes', () => {
   it('filtra por activo/vigencia/cupón/día en el WHERE (SQL-side, no en memoria) — cierra 3.1', async () => {
     const prisma = createMockPrisma();
     prisma.descuento.findMany.mockResolvedValue([]);
-    const repo = new PrismaDescuentoRepository(prisma as unknown as PrismaService);
+    const repo = new PrismaDescuentoRepository(
+      prisma as unknown as PrismaService,
+    );
 
     const now = new Date(2026, 7, 3, 15, 0, 0); // lunes
     await repo.buscarReglasVigentes({ now, codigoCupon: 'promo10' });
@@ -52,7 +54,10 @@ describe('PrismaDescuentoRepository.buscarReglasVigentes', () => {
           fecha_inicio: { lte: now },
           fecha_fin: { gte: now },
           codigo_cupon: 'PROMO10',
-          OR: [{ dias_semana: { isEmpty: true } }, { dias_semana: { has: now.getDay() } }],
+          OR: [
+            { dias_semana: { isEmpty: true } },
+            { dias_semana: { has: now.getDay() } },
+          ],
         },
       }),
     );
@@ -61,21 +66,32 @@ describe('PrismaDescuentoRepository.buscarReglasVigentes', () => {
   it('usa codigo_cupon: null en el WHERE cuando no se pasa cupón', async () => {
     const prisma = createMockPrisma();
     prisma.descuento.findMany.mockResolvedValue([]);
-    const repo = new PrismaDescuentoRepository(prisma as unknown as PrismaService);
+    const repo = new PrismaDescuentoRepository(
+      prisma as unknown as PrismaService,
+    );
 
     await repo.buscarReglasVigentes({ now: new Date() });
 
     expect(prisma.descuento.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ codigo_cupon: null }) }),
+      expect.objectContaining({
+        where: expect.objectContaining({ codigo_cupon: null }),
+      }),
     );
   });
 
   it('mapea BigInt -> string y Decimal -> number, sin filtrar en memoria', async () => {
     const prisma = createMockPrisma();
     prisma.descuento.findMany.mockResolvedValue([
-      descuentoRow({ id: 10n, valor: 15.5, max_monto_descuento: 50, monto_minimo_compra: 20 }),
+      descuentoRow({
+        id: 10n,
+        valor: 15.5,
+        max_monto_descuento: 50,
+        monto_minimo_compra: 20,
+      }),
     ]);
-    const repo = new PrismaDescuentoRepository(prisma as unknown as PrismaService);
+    const repo = new PrismaDescuentoRepository(
+      prisma as unknown as PrismaService,
+    );
 
     const [regla] = await repo.buscarReglasVigentes({ now: new Date() });
 
@@ -94,11 +110,53 @@ describe('PrismaDescuentoRepository.buscarReglasVigentes', () => {
   });
 });
 
+describe('PrismaDescuentoRepository.buscarDescuentoPorCupon', () => {
+  it('busca por código en mayúsculas, sin filtrar por activo/vigencia', async () => {
+    const prisma = createMockPrisma();
+    prisma.descuento.findUnique.mockResolvedValue({
+      activo: false,
+      fecha_inicio: new Date(2000, 0, 1),
+      fecha_fin: new Date(2000, 0, 31),
+      dias_semana: [],
+    });
+    const repo = new PrismaDescuentoRepository(
+      prisma as unknown as PrismaService,
+    );
+
+    const result = await repo.buscarDescuentoPorCupon('promo10');
+
+    expect(prisma.descuento.findUnique).toHaveBeenCalledWith({
+      where: { codigo_cupon: 'PROMO10' },
+      select: {
+        activo: true,
+        fecha_inicio: true,
+        fecha_fin: true,
+        dias_semana: true,
+      },
+    });
+    expect(result?.activo).toBe(false);
+  });
+
+  it('devuelve null cuando el código no existe', async () => {
+    const prisma = createMockPrisma();
+    prisma.descuento.findUnique.mockResolvedValue(null);
+    const repo = new PrismaDescuentoRepository(
+      prisma as unknown as PrismaService,
+    );
+
+    const result = await repo.buscarDescuentoPorCupon('NOPE');
+
+    expect(result).toBeNull();
+  });
+});
+
 describe('PrismaDescuentoRepository.contarUsosPorCliente', () => {
   it('cuenta los usos de un descuento filtrando por descuento_id y cliente_id (ambos como BigInt)', async () => {
     const prisma = createMockPrisma();
     prisma.descuentoUso.count.mockResolvedValue(2);
-    const repo = new PrismaDescuentoRepository(prisma as unknown as PrismaService);
+    const repo = new PrismaDescuentoRepository(
+      prisma as unknown as PrismaService,
+    );
 
     const count = await repo.contarUsosPorCliente('10', '55');
 

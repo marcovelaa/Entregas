@@ -21,12 +21,17 @@ describe('DescuentosController - Scheduling Fields Parse & Round-trip', () => {
     mockPrisma = {
       descuento: {
         create: jest.fn().mockResolvedValue({ id: BigInt(999) }),
-        findUnique: jest.fn().mockResolvedValue({ id: BigInt(5), activo: true }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ id: BigInt(5), activo: true }),
         update: jest.fn().mockResolvedValue({ id: BigInt(5), activo: true }),
       },
     };
     mockEngine = { evaluate: jest.fn() };
-    controller = new DescuentosController(mockPrisma as PrismaService, mockEngine as DiscountEngineService);
+    controller = new DescuentosController(
+      mockPrisma as PrismaService,
+      mockEngine as DiscountEngineService,
+    );
   });
 
   it('coerces malformed or out-of-range HH:MM to null on create, never a 400 (REQ-DIA-07)', async () => {
@@ -96,5 +101,68 @@ describe('DescuentosController - Scheduling Fields Parse & Round-trip', () => {
         }),
       }),
     );
+  });
+});
+
+describe('DescuentosController - validarPromocion', () => {
+  let controller: DescuentosController;
+  let mockEngine: { evaluateWithReason: jest.Mock };
+
+  beforeEach(() => {
+    mockEngine = { evaluateWithReason: jest.fn() };
+    controller = new DescuentosController(
+      {} as PrismaService,
+      mockEngine as unknown as DiscountEngineService,
+    );
+  });
+
+  it('returns the discount when one applies', async () => {
+    mockEngine.evaluateWithReason.mockResolvedValue({
+      discount: { id: '1', montoDescontado: 10 },
+    });
+
+    const result = await controller.validarPromocion({ items: [] });
+
+    expect(result).toEqual({
+      success: true,
+      data: { id: '1', montoDescontado: 10 },
+    });
+  });
+
+  it('returns success:false with the reason when a coupon was tried and failed', async () => {
+    mockEngine.evaluateWithReason.mockResolvedValue({
+      discount: null,
+      rejectionReason: 'CUPON_INACTIVO',
+      rejectionMessage: 'El cupón existe pero está desactivado.',
+    });
+
+    const result = await controller.validarPromocion({
+      cupon: 'OFF10',
+      items: [],
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: 'El cupón existe pero está desactivado.',
+      reason: 'CUPON_INACTIVO',
+    });
+  });
+
+  it('returns success:true with data:null and a reason when no coupon was tried', async () => {
+    mockEngine.evaluateWithReason.mockResolvedValue({
+      discount: null,
+      rejectionReason: 'MONTO_MINIMO_NO_ALCANZADO',
+      rejectionMessage:
+        'El carrito no alcanza el monto mínimo de compra requerido.',
+    });
+
+    const result = await controller.validarPromocion({ items: [] });
+
+    expect(result).toEqual({
+      success: true,
+      data: null,
+      reason: 'MONTO_MINIMO_NO_ALCANZADO',
+      message: 'El carrito no alcanza el monto mínimo de compra requerido.',
+    });
   });
 });

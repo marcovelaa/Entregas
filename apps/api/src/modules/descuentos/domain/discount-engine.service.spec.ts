@@ -1,14 +1,20 @@
 import { DiscountEngineService } from './discount-engine.service';
-import type { IDescuentoRepository, ReglaDescuentoVigente } from './repositories/descuento.repository.interface';
+import type {
+  IDescuentoRepository,
+  ReglaDescuentoVigente,
+} from './repositories/descuento.repository.interface';
 
 function createMockRepo(): jest.Mocked<IDescuentoRepository> {
   return {
     buscarReglasVigentes: jest.fn(),
     contarUsosPorCliente: jest.fn().mockResolvedValue(0),
+    buscarDescuentoPorCupon: jest.fn().mockResolvedValue(null),
   };
 }
 
-function reglaBase(overrides: Partial<ReglaDescuentoVigente> = {}): ReglaDescuentoVigente {
+function reglaBase(
+  overrides: Partial<ReglaDescuentoVigente> = {},
+): ReglaDescuentoVigente {
   return {
     id: '0',
     nombre: 'Descuento de prueba',
@@ -76,7 +82,12 @@ describe('DiscountEngineService - Item-Level & Strategy Verification', () => {
 
   it('bounds unit discount so it does not exceed unit price', async () => {
     repo.buscarReglasVigentes.mockResolvedValue([
-      reglaBase({ id: '2', nombre: '10 Bs OFF por Unidad', tipo: 'MONTO_FIJO_POR_UNIDAD', valor: 10 }),
+      reglaBase({
+        id: '2',
+        nombre: '10 Bs OFF por Unidad',
+        tipo: 'MONTO_FIJO_POR_UNIDAD',
+        valor: 10,
+      }),
     ]);
 
     const result = await service.evaluate({
@@ -220,6 +231,157 @@ describe('DiscountEngineService - Item-Level & Strategy Verification', () => {
   });
 });
 
+describe('DiscountEngineService - evaluateWithReason', () => {
+  let service: DiscountEngineService;
+  let repo: jest.Mocked<IDescuentoRepository>;
+
+  beforeEach(() => {
+    repo = createMockRepo();
+    service = new DiscountEngineService(repo);
+  });
+
+  it('returns the discount with no rejection when one applies', async () => {
+    repo.buscarReglasVigentes.mockResolvedValue([
+      reglaBase({ id: '1', valor: 10 }),
+    ]);
+
+    const evaluacion = await service.evaluateWithReason({
+      items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+    });
+
+    expect(evaluacion.discount).not.toBeNull();
+    expect(evaluacion.rejectionReason).toBeUndefined();
+  });
+
+  it('reports SIN_ITEMS_ELEGIBLES when no active rule targets the cart contents', async () => {
+    repo.buscarReglasVigentes.mockResolvedValue([
+      reglaBase({
+        id: '1',
+        alcance: 'PRODUCTO',
+        productos: [{ producto_id: '999' }],
+      }),
+    ]);
+
+    const evaluacion = await service.evaluateWithReason({
+      items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+    });
+
+    expect(evaluacion.discount).toBeNull();
+    expect(evaluacion.rejectionReason).toBe('SIN_ITEMS_ELEGIBLES');
+  });
+
+  it('reports MONTO_MINIMO_NO_ALCANZADO over a scope mismatch from another rule', async () => {
+    repo.buscarReglasVigentes.mockResolvedValue([
+      reglaBase({ id: '1', monto_minimo_compra: 500 }),
+      reglaBase({
+        id: '2',
+        alcance: 'PRODUCTO',
+        productos: [{ producto_id: '999' }],
+      }),
+    ]);
+
+    const evaluacion = await service.evaluateWithReason({
+      items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+    });
+
+    expect(evaluacion.discount).toBeNull();
+    expect(evaluacion.rejectionReason).toBe('MONTO_MINIMO_NO_ALCANZADO');
+  });
+
+  it('reports CANAL_NO_VALIDO when the only rule targets a different channel', async () => {
+    repo.buscarReglasVigentes.mockResolvedValue([
+      reglaBase({ id: '1', canal: 'ECOMMERCE' }),
+    ]);
+
+    const evaluacion = await service.evaluateWithReason({
+      canal: 'POS',
+      items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+    });
+
+    expect(evaluacion.discount).toBeNull();
+    expect(evaluacion.rejectionReason).toBe('CANAL_NO_VALIDO');
+  });
+
+  it('reports SIN_PROMOCIONES_ACTIVAS when nothing is configured and no coupon was given', async () => {
+    repo.buscarReglasVigentes.mockResolvedValue([]);
+
+    const evaluacion = await service.evaluateWithReason({
+      items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+    });
+
+    expect(evaluacion.discount).toBeNull();
+    expect(evaluacion.rejectionReason).toBe('SIN_PROMOCIONES_ACTIVAS');
+  });
+
+  it('reports CUPON_NO_ENCONTRADO when the code does not exist at all', async () => {
+    repo.buscarReglasVigentes.mockResolvedValue([]);
+    repo.buscarDescuentoPorCupon.mockResolvedValue(null);
+
+    const evaluacion = await service.evaluateWithReason({
+      cupon: 'NOPE',
+      items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+    });
+
+    expect(evaluacion.discount).toBeNull();
+    expect(evaluacion.rejectionReason).toBe('CUPON_NO_ENCONTRADO');
+  });
+
+  it('reports CUPON_INACTIVO when the coupon exists but is disabled', async () => {
+    repo.buscarReglasVigentes.mockResolvedValue([]);
+    repo.buscarDescuentoPorCupon.mockResolvedValue({
+      activo: false,
+      fecha_inicio: new Date(2000, 0, 1),
+      fecha_fin: new Date(2999, 0, 1),
+      dias_semana: [],
+    });
+
+    const evaluacion = await service.evaluateWithReason({
+      cupon: 'OFF10',
+      items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+    });
+
+    expect(evaluacion.discount).toBeNull();
+    expect(evaluacion.rejectionReason).toBe('CUPON_INACTIVO');
+  });
+
+  it('reports CUPON_FUERA_DE_VIGENCIA when the coupon dates do not cover today', async () => {
+    repo.buscarReglasVigentes.mockResolvedValue([]);
+    repo.buscarDescuentoPorCupon.mockResolvedValue({
+      activo: true,
+      fecha_inicio: new Date(2000, 0, 1),
+      fecha_fin: new Date(2000, 0, 31),
+      dias_semana: [],
+    });
+
+    const evaluacion = await service.evaluateWithReason({
+      cupon: 'OLD10',
+      items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+    });
+
+    expect(evaluacion.discount).toBeNull();
+    expect(evaluacion.rejectionReason).toBe('CUPON_FUERA_DE_VIGENCIA');
+  });
+
+  it('reports CUPON_DIA_NO_HABILITADO when the coupon excludes the current weekday', async () => {
+    repo.buscarReglasVigentes.mockResolvedValue([]);
+    const notToday = (new Date().getDay() + 1) % 7;
+    repo.buscarDescuentoPorCupon.mockResolvedValue({
+      activo: true,
+      fecha_inicio: new Date(2000, 0, 1),
+      fecha_fin: new Date(2999, 0, 1),
+      dias_semana: [notToday],
+    });
+
+    const evaluacion = await service.evaluateWithReason({
+      cupon: 'WEEKEND',
+      items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+    });
+
+    expect(evaluacion.discount).toBeNull();
+    expect(evaluacion.rejectionReason).toBe('CUPON_DIA_NO_HABILITADO');
+  });
+});
+
 describe('DiscountEngineService - Day-of-Week Gate', () => {
   let service: DiscountEngineService;
   let repo: jest.Mocked<IDescuentoRepository>;
@@ -279,7 +441,10 @@ describe('DiscountEngineService - Day-of-Week Gate', () => {
       items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
     });
 
-    expect(repo.buscarReglasVigentes).toHaveBeenCalledWith({ now: MONDAY, codigoCupon: 'promo10' });
+    expect(repo.buscarReglasVigentes).toHaveBeenCalledWith({
+      now: MONDAY,
+      codigoCupon: 'promo10',
+    });
   });
 
   it('does NOT issue a usage-count query when the day filter yields no candidates (REQ-DIA-03)', async () => {
@@ -295,7 +460,9 @@ describe('DiscountEngineService - Day-of-Week Gate', () => {
   });
 
   it('applies a Monday-only discount on Monday (REQ-DIA-02 S2.1)', async () => {
-    repo.buscarReglasVigentes.mockResolvedValue([dayRow({ dias_semana: [MONDAY.getDay()] })]);
+    repo.buscarReglasVigentes.mockResolvedValue([
+      dayRow({ dias_semana: [MONDAY.getDay()] }),
+    ]);
 
     const result = await service.evaluate({
       clienteId: '1',
@@ -348,23 +515,47 @@ describe('DiscountEngineService - Time-of-Day Gate', () => {
   });
 
   it('applies within the inclusive [14:00, 18:00] window (REQ-DIA-04)', async () => {
-    repo.buscarReglasVigentes.mockResolvedValue([timeRow({ hora_inicio: '14:00', hora_fin: '18:00' })]);
+    repo.buscarReglasVigentes.mockResolvedValue([
+      timeRow({ hora_inicio: '14:00', hora_fin: '18:00' }),
+    ]);
 
     jest.setSystemTime(new Date(2026, 7, 3, 14, 0, 0));
-    expect((await service.evaluate({ items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }] }))?.montoDescontado).toBe(10);
+    expect(
+      (
+        await service.evaluate({
+          items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+        })
+      )?.montoDescontado,
+    ).toBe(10);
 
     jest.setSystemTime(new Date(2026, 7, 3, 18, 0, 0));
-    expect((await service.evaluate({ items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }] }))?.montoDescontado).toBe(10);
+    expect(
+      (
+        await service.evaluate({
+          items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+        })
+      )?.montoDescontado,
+    ).toBe(10);
 
     jest.setSystemTime(new Date(2026, 7, 3, 13, 59, 0));
-    expect(await service.evaluate({ items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }] })).toBeNull();
+    expect(
+      await service.evaluate({
+        items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+      }),
+    ).toBeNull();
 
     jest.setSystemTime(new Date(2026, 7, 3, 18, 1, 0));
-    expect(await service.evaluate({ items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }] })).toBeNull();
+    expect(
+      await service.evaluate({
+        items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+      }),
+    ).toBeNull();
   });
 
   it('applies a time-only window on any weekday (REQ-DIA-05)', async () => {
-    repo.buscarReglasVigentes.mockResolvedValue([timeRow({ dias_semana: [], hora_inicio: '14:00', hora_fin: '18:00' })]);
+    repo.buscarReglasVigentes.mockResolvedValue([
+      timeRow({ dias_semana: [], hora_inicio: '14:00', hora_fin: '18:00' }),
+    ]);
 
     jest.setSystemTime(WEDNESDAY);
     const result = await service.evaluate({
@@ -376,20 +567,38 @@ describe('DiscountEngineService - Time-of-Day Gate', () => {
   });
 
   it('applies only when day AND time window both match (REQ-DIA-06)', async () => {
-    repo.buscarReglasVigentes.mockResolvedValue([timeRow({ dias_semana: [1], hora_inicio: '14:00', hora_fin: '18:00' })]);
+    repo.buscarReglasVigentes.mockResolvedValue([
+      timeRow({ dias_semana: [1], hora_inicio: '14:00', hora_fin: '18:00' }),
+    ]);
 
     jest.setSystemTime(MONDAY);
-    expect((await service.evaluate({ items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }] }))?.montoDescontado).toBe(10);
+    expect(
+      (
+        await service.evaluate({
+          items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+        })
+      )?.montoDescontado,
+    ).toBe(10);
 
     jest.setSystemTime(TUESDAY);
-    expect(await service.evaluate({ items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }] })).toBeNull();
+    expect(
+      await service.evaluate({
+        items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+      }),
+    ).toBeNull();
 
     jest.setSystemTime(new Date(2026, 7, 3, 19, 0, 0));
-    expect(await service.evaluate({ items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }] })).toBeNull();
+    expect(
+      await service.evaluate({
+        items: [{ productoId: '100', cantidad: 1, precioUnitario: 100 }],
+      }),
+    ).toBeNull();
   });
 
   it('treats a lone hora_inicio bound as no time restriction (both-bounds rule)', async () => {
-    repo.buscarReglasVigentes.mockResolvedValue([timeRow({ hora_inicio: '09:00' })]);
+    repo.buscarReglasVigentes.mockResolvedValue([
+      timeRow({ hora_inicio: '09:00' }),
+    ]);
 
     jest.setSystemTime(new Date(2026, 7, 3, 9, 0, 0));
     const result = await service.evaluate({
@@ -421,7 +630,9 @@ describe('DiscountEngineService - Time-of-Day Gate', () => {
 
     jest.setSystemTime(TUESDAY);
     expect(
-      await service.evaluate({ items: [{ productoId: '100', cantidad: 2, precioUnitario: 100 }] }),
+      await service.evaluate({
+        items: [{ productoId: '100', cantidad: 2, precioUnitario: 100 }],
+      }),
     ).toBeNull();
   });
 });

@@ -642,22 +642,27 @@ export class DescuentosController {
       items: CartItemInput[];
     },
   ) {
-    const result = await this.discountEngine.evaluate(body);
+    const evaluacion = await this.discountEngine.evaluateWithReason(body);
 
-    if (!result) {
+    if (!evaluacion.discount) {
       if (body.cupon) {
         return {
           success: false,
-          error:
-            'Cupón inválido, expirado o no aplicable a los productos elegidos',
+          error: evaluacion.rejectionMessage,
+          reason: evaluacion.rejectionReason,
         };
       }
-      return { success: true, data: null };
+      return {
+        success: true,
+        data: null,
+        reason: evaluacion.rejectionReason,
+        message: evaluacion.rejectionMessage,
+      };
     }
 
     return {
       success: true,
-      data: result,
+      data: evaluacion.discount,
     };
   }
 }

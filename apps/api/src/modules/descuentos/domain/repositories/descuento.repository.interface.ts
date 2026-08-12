@@ -25,9 +25,23 @@ export type ReglaDescuentoVigente = {
   categorias: { categoria_id: string }[];
 };
 
+export type DescuentoPorCupon = {
+  activo: boolean;
+  fecha_inicio: Date;
+  fecha_fin: Date;
+  dias_semana: number[];
+};
+
 export interface IDescuentoRepository {
   /** Descuentos activos, vigentes por fecha, y con el código de cupón indicado (o sin cupón). */
-  buscarReglasVigentes(params: { now: Date; codigoCupon?: string }): Promise<ReglaDescuentoVigente[]>;
+  buscarReglasVigentes(params: {
+    now: Date;
+    codigoCupon?: string;
+  }): Promise<ReglaDescuentoVigente[]>;
   /** Cuántas veces un cliente ya usó un descuento, para el límite de uso por cliente. */
   contarUsosPorCliente(descuentoId: string, clienteId: string): Promise<number>;
+  /** Busca un descuento por su código de cupón sin filtrar por vigencia/actividad, para explicar por qué no aplicó. */
+  buscarDescuentoPorCupon(
+    codigoCupon: string,
+  ): Promise<DescuentoPorCupon | null>;
 }
