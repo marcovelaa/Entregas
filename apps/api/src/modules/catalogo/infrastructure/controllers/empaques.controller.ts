@@ -3,7 +3,12 @@ import { CrearEmpaqueUseCase } from '../../application/use-cases/empaques/crear-
 import { ActualizarEmpaqueUseCase } from '../../application/use-cases/empaques/actualizar-empaque.use-case';
 import { ListarEmpaquesPorVarianteUseCase } from '../../application/use-cases/empaques/listar-empaques.use-case';
 import { CrearEmpaquesBulkUseCase } from '../../application/use-cases/empaques/crear-empaques-bulk.use-case';
-import { CrearEmpaqueDto, ActualizarEmpaqueDto, CrearEmpaquesBulkDto } from '../../application/dtos/empaque.dto';
+import {
+  CrearEmpaqueDto,
+  ActualizarEmpaqueDto,
+  CrearEmpaquesBulkDto,
+} from '../../application/dtos/empaque.dto';
+import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
 
 @Controller('empaques')
 export class EmpaquesController {
@@ -17,28 +22,34 @@ export class EmpaquesController {
   @Get('variante/:id')
   async listarPorVariante(@Param('id') id: string) {
     const empaques = await this.listarEmpaquesUc.execute(BigInt(id));
-    return empaques.map(e => ({
+    return empaques.map((e) => ({
       ...e,
       id: e.id.toString(),
       variante_id: e.variante_id.toString(),
       precio: e.precio.toString(),
-      precio_promocional: e.precio_promocional ? e.precio_promocional.toString() : null,
+      precio_promocional: e.precio_promocional
+        ? e.precio_promocional.toString()
+        : null,
     }));
   }
 
   @Post('bulk')
+  @RequierePermiso('catalogo:gestionar')
   async crearBulk(@Body() dto: CrearEmpaquesBulkDto) {
     const empaques = await this.crearBulkUc.execute(dto);
-    return empaques.map(e => ({
+    return empaques.map((e) => ({
       ...e,
       id: e.id.toString(),
       variante_id: e.variante_id.toString(),
       precio: e.precio.toString(),
-      precio_promocional: e.precio_promocional ? e.precio_promocional.toString() : null,
+      precio_promocional: e.precio_promocional
+        ? e.precio_promocional.toString()
+        : null,
     }));
   }
 
   @Post()
+  @RequierePermiso('catalogo:gestionar')
   async crear(@Body() dto: CrearEmpaqueDto) {
     const emp = await this.crearEmpaqueUc.execute(dto);
     return {
@@ -50,6 +61,7 @@ export class EmpaquesController {
   }
 
   @Patch(':id')
+  @RequierePermiso('catalogo:gestionar')
   async actualizar(@Param('id') id: string, @Body() dto: ActualizarEmpaqueDto) {
     const emp = await this.actualizarEmpaqueUc.execute(BigInt(id), dto);
     return {
