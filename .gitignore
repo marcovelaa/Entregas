@@ -58,12 +58,16 @@ apps/api/test.json
 apps/api/clear-compras.js
 apps/api/fix_bigint.js
 apps/api/run-der.js
-apps/api/test-delete.ts
-apps/api/test-data.ts
-apps/api/clean.ts
-apps/api/clear_empaques.ts
+apps/api/clean.*
+apps/api/clear_empaques.*
+apps/api/seed-categorias.*
+apps/api/test-data.*
+apps/api/test-delete.*
+apps/api/update-categories.*
+apps/api/prisma/seed.js*
+apps/api/prisma/seed.d.ts
 apps/api/uploads/*
-!apps/api/uploads/.gitkeep
+!.apps/api/uploads/.gitkeep
 
 # Notas locales, no compartir
 AUDITORIA.md
