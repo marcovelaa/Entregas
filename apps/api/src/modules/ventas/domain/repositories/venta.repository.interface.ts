@@ -18,12 +18,16 @@ export type VentaCreateData = {
   codigo_cupon?: string;
   aprobador_usuario_id?: string;
   motivo_ajuste?: string;
+  reserva_id?: string;
   detalles: VentaDetalleData[];
 };
 
 export interface IVentaRepository {
   crear(data: VentaCreateData): Promise<any>;
-  listar(params: { offset: number; limit: number }): Promise<{ total: number; data: any[] }>;
+  listar(params: {
+    offset: number;
+    limit: number;
+  }): Promise<{ total: number; data: any[] }>;
   anular(venta_id: string, usuario_id: string, motivo: string): Promise<any>;
   revertirAnulacion(venta_id: string, usuario_id: string): Promise<any>;
 }

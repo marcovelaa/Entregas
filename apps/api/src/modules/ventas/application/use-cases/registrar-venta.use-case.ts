@@ -14,6 +14,7 @@ export class RegistrarVentaUseCase {
       codigo_cupon: dto.codigo_cupon,
       aprobador_usuario_id: dto.aprobador_usuario_id,
       motivo_ajuste: dto.motivo_ajuste,
+      reserva_id: dto.reserva_id,
       detalles: dto.detalles,
     };
 

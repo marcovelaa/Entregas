@@ -15,7 +15,9 @@ import { RevertirAnulacionVentaUseCase } from '../../application/use-cases/rever
 import {
   RegistrarVentaDto,
   ListarVentasDto,
+  CrearReservaInventarioDto,
 } from '../../application/dtos/venta.dto';
+import { InventoryReservationsService } from '../../application/services/inventory-reservations.service';
 import {
   CurrentUser,
   requireAuthenticatedUser,
@@ -31,6 +33,7 @@ export class VentasController {
     private readonly listarVentasUseCase: ListarVentasUseCase,
     private readonly anularVentaUseCase: AnularVentaUseCase,
     private readonly revertirAnulacionVentaUseCase: RevertirAnulacionVentaUseCase,
+    private readonly inventoryReservations?: InventoryReservationsService,
   ) {}
 
   @Post()
@@ -58,6 +61,68 @@ export class VentasController {
   ) {
     return this.registrarVentaUseCase.execute(
       dto,
+      requireAuthenticatedUser(usuario).id,
+    );
+  }
+
+  @Post('reservas')
+  @RequierePermiso('ventas:crear')
+  @ApiOperation({
+    summary: 'Reservar stock por 15 minutos mientras se completa un pago QR',
+  })
+  @ApiResponse({
+    status: 201,
+    description:
+      'Reserva creada; usar su public_id al registrar la venta pagada',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Stock insuficiente o conflicto concurrente',
+  })
+  async reservarInventario(
+    @Body() dto: CrearReservaInventarioDto,
+    @CurrentUser() usuario: AuthenticatedUser | undefined,
+  ) {
+    if (!this.inventoryReservations)
+      throw new BadRequestException(
+        'Las reservas de inventario no están disponibles en este entorno.',
+      );
+    return this.inventoryReservations.create(
+      requireAuthenticatedUser(usuario).id,
+      dto.detalles,
+    );
+  }
+
+  @Post('reservas/expirar')
+  @RequierePermiso('ventas:crear')
+  @ApiOperation({
+    summary:
+      'Liberar reservas de inventario vencidas; apto para cron o webhook',
+  })
+  async expirarReservas() {
+    if (!this.inventoryReservations)
+      throw new BadRequestException(
+        'Las reservas de inventario no están disponibles en este entorno.',
+      );
+    return this.inventoryReservations.expire();
+  }
+
+  @Post('reservas/:publicId/cancelar')
+  @RequierePermiso('ventas:crear')
+  @ApiOperation({
+    summary: 'Cancelar una reserva activa y liberar inmediatamente su stock',
+  })
+  @ApiParam({ name: 'publicId', description: 'ID público UUID de la reserva' })
+  async cancelarReserva(
+    @Param('publicId') publicId: string,
+    @CurrentUser() usuario: AuthenticatedUser | undefined,
+  ) {
+    if (!this.inventoryReservations)
+      throw new BadRequestException(
+        'Las reservas de inventario no están disponibles en este entorno.',
+      );
+    return this.inventoryReservations.cancel(
+      publicId,
       requireAuthenticatedUser(usuario).id,
     );
   }

@@ -13,11 +13,13 @@ describe('authenticated actor attribution', () => {
     const revertirVenta = { execute: jest.fn() };
     const registrarMovimiento = { execute: jest.fn() };
     const registrarCompra = { execute: jest.fn() };
+    const reservations = { cancel: jest.fn() };
     const ventas = new VentasController(
       registrarVenta as never,
       { execute: jest.fn() } as never,
       anularVenta as never,
       revertirVenta as never,
+      reservations as never,
     );
     const inventario = new InventarioController(
       { execute: jest.fn() } as never,
@@ -34,6 +36,7 @@ describe('authenticated actor attribution', () => {
     await ventas.registrar({} as never, user);
     await ventas.anular('7', 'devolución', user);
     await ventas.revertirAnulacion('7', user);
+    await ventas.cancelarReserva('reservation-7', user);
     await inventario.registrarMovimiento({} as never, user);
     await compras.registrar({} as never, user);
 
@@ -43,6 +46,7 @@ describe('authenticated actor attribution', () => {
     );
     expect(anularVenta.execute).toHaveBeenCalledWith('7', '42', 'devolución');
     expect(revertirVenta.execute).toHaveBeenCalledWith('7', '42');
+    expect(reservations.cancel).toHaveBeenCalledWith('reservation-7', '42');
     expect(registrarMovimiento.execute).toHaveBeenCalledWith(
       expect.anything(),
       42n,
@@ -59,6 +63,7 @@ describe('authenticated actor attribution', () => {
       { execute: jest.fn() } as never,
       { execute: jest.fn() } as never,
       { execute: jest.fn() } as never,
+      { cancel: jest.fn() } as never,
     );
     const inventario = new InventarioController(
       { execute: jest.fn() } as never,
@@ -74,6 +79,9 @@ describe('authenticated actor attribution', () => {
 
     await expect(
       ventas.registrar({} as never, undefined as never),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(
+      ventas.cancelarReserva('reservation-7', undefined as never),
     ).rejects.toBeInstanceOf(UnauthorizedException);
     await expect(
       inventario.registrarMovimiento({} as never, undefined as never),

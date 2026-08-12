@@ -40,6 +40,7 @@ model Usuario {
   MovimientosInventario MovimientosInventario[]
   Compra                Compra[]
   Venta                 Venta[]
+  reservas_inventario   ReservaInventario[]
   ventas_aprobadas      VentaDetalle[]          @relation("VentaDetalleAprobadoPor")
 
   @@map("usuarios")
@@ -286,6 +287,7 @@ model Inventario {
 
   producto Producto @relation(fields: [producto_id], references: [id], onDelete: Cascade)
   variante Variante? @relation(fields: [variante_id], references: [id], onDelete: Cascade)
+  reservas ReservaInventarioDetalle[]
 
   @@unique([producto_id, variante_id, ubicacion])
   @@map("inventario")
@@ -403,6 +405,7 @@ model Venta {
   usuario       Usuario        @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
   detalles      VentaDetalle[]
   usosDescuento DescuentoUso[]
+  reserva_inventario ReservaInventario?
 
   @@index([estado, creado_en])
   @@map("ventas")
@@ -430,6 +433,38 @@ model VentaDetalle {
   @@index([venta_id])
   @@index([producto_id])
   @@map("venta_detalles")
+}
+
+model ReservaInventario {
+  id             BigInt   @id @default(autoincrement())
+  public_id      String   @unique @default(uuid()) @db.Uuid
+  usuario_id     BigInt
+  venta_id       BigInt?  @unique
+  estado         String   @default("ACTIVA") @db.VarChar(20) // ACTIVA, CONSUMIDA, LIBERADA, EXPIRADA
+  expira_en      DateTime
+  creado_en      DateTime @default(now())
+  actualizado_en DateTime @updatedAt
+
+  usuario  Usuario                      @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  venta    Venta?                        @relation(fields: [venta_id], references: [id], onDelete: SetNull)
+  detalles ReservaInventarioDetalle[]
+
+  @@index([estado, expira_en])
+  @@map("reservas_inventario")
+}
+
+model ReservaInventarioDetalle {
+  id            BigInt @id @default(autoincrement())
+  reserva_id    BigInt
+  inventario_id BigInt
+  cantidad      Int
+
+  reserva    ReservaInventario @relation(fields: [reserva_id], references: [id], onDelete: Cascade)
+  inventario Inventario        @relation(fields: [inventario_id], references: [id], onDelete: Restrict)
+
+  @@unique([reserva_id, inventario_id])
+  @@index([inventario_id])
+  @@map("reservas_inventario_detalles")
 }
 
 enum TipoDescuento {

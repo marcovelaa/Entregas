@@ -8,36 +8,38 @@ import { RegistrarVentaUseCase } from './application/use-cases/registrar-venta.u
 import { ListarVentasUseCase } from './application/use-cases/listar-ventas.use-case';
 import { AnularVentaUseCase } from './application/use-cases/anular-venta.use-case';
 import { RevertirAnulacionVentaUseCase } from './application/use-cases/revertir-anulacion-venta.use-case';
+import { InventoryReservationsService } from './application/services/inventory-reservations.service';
 
 @Module({
   imports: [PrismaModule, DescuentosModule],
   controllers: [VentasController],
   providers: [
+    InventoryReservationsService,
     {
       provide: VENTA_REPOSITORY,
-      useClass: PrismaVentaRepository
+      useClass: PrismaVentaRepository,
     },
     {
       provide: RegistrarVentaUseCase,
       useFactory: (repo) => new RegistrarVentaUseCase(repo),
-      inject: [VENTA_REPOSITORY]
+      inject: [VENTA_REPOSITORY],
     },
     {
       provide: ListarVentasUseCase,
       useFactory: (repo) => new ListarVentasUseCase(repo),
-      inject: [VENTA_REPOSITORY]
+      inject: [VENTA_REPOSITORY],
     },
     {
       provide: AnularVentaUseCase,
       useFactory: (repo) => new AnularVentaUseCase(repo),
-      inject: [VENTA_REPOSITORY]
+      inject: [VENTA_REPOSITORY],
     },
     {
       provide: RevertirAnulacionVentaUseCase,
       useFactory: (repo) => new RevertirAnulacionVentaUseCase(repo),
-      inject: [VENTA_REPOSITORY]
-    }
+      inject: [VENTA_REPOSITORY],
+    },
   ],
-  exports: [VENTA_REPOSITORY]
+  exports: [VENTA_REPOSITORY],
 })
 export class VentasModule {}

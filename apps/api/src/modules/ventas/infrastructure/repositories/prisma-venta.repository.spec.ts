@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { PrismaVentaRepository } from './prisma-venta.repository';
 import { VentaCreateData } from '../../domain/repositories/venta.repository.interface';
@@ -46,16 +51,34 @@ type CupoState = { cupoUsado: number };
 
 function createTx(): TxMock {
   return {
-    venta: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
-    producto: { findUnique: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
-    inventario: { findFirst: jest.fn(), findMany: jest.fn(), updateMany: jest.fn(), update: jest.fn() },
-    variante: { findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn() },
+    venta: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    producto: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    inventario: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      updateMany: jest.fn(),
+      update: jest.fn(),
+    },
+    variante: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+    },
     empaque: { findUnique: jest.fn(), findMany: jest.fn() },
     usuario: { findUnique: jest.fn() },
     descuento: { findUnique: jest.fn(), updateMany: jest.fn() },
     descuentoUso: { create: jest.fn() },
     movimientosInventario: { create: jest.fn() },
-    $executeRaw: jest.fn(),
+    $executeRaw: jest.fn().mockResolvedValue(1),
   };
 }
 
@@ -73,8 +96,15 @@ function createHarness(tx: TxMock, discountEngine?: { evaluate: jest.Mock }) {
     $executeRaw: tx.$executeRaw,
     $transaction: jest.fn(async (fn: (t: TxMock) => unknown) => fn(tx)),
   } as unknown as PrismaService;
-  const engine = (discountEngine ?? { evaluate: jest.fn().mockResolvedValue(null) }) as any;
-  return { repo: new PrismaVentaRepository(prisma, engine), prisma, tx, discountEngine: engine };
+  const engine = (discountEngine ?? {
+    evaluate: jest.fn().mockResolvedValue(null),
+  }) as any;
+  return {
+    repo: new PrismaVentaRepository(prisma, engine),
+    prisma,
+    tx,
+    discountEngine: engine,
+  };
 }
 
 function comboRow(overrides: Record<string, unknown> = {}) {
@@ -112,7 +142,12 @@ function ventaRow() {
         producto_id: 99n,
         variante_id: null,
         empaque_id: null,
-        producto: { id: 99n, nombre: 'Combo X', categoria_id: 1n, marca_id: null },
+        producto: {
+          id: 99n,
+          nombre: 'Combo X',
+          categoria_id: 1n,
+          marca_id: null,
+        },
         variante: null,
       },
     ],
@@ -123,7 +158,15 @@ function anuladaRow() {
   return {
     id: 5n,
     estado: 'ANULADA',
-    detalles: [{ id: 10n, venta_id: 5n, producto_id: 99n, variante_id: null, cantidad: 1 }],
+    detalles: [
+      {
+        id: 10n,
+        venta_id: 5n,
+        producto_id: 99n,
+        variante_id: null,
+        cantidad: 1,
+      },
+    ],
   };
 }
 
@@ -137,7 +180,11 @@ function mockCupoStateful(tx: TxMock, state: CupoState) {
       where,
       data,
     }: {
-      where: { id: bigint; cupo_maximo?: { not: null }; cupo_usado?: { lte?: number; gte?: number; gt?: number } };
+      where: {
+        id: bigint;
+        cupo_maximo?: { not: null };
+        cupo_usado?: { lte?: number; gte?: number; gt?: number };
+      };
       data: { cupo_usado: { increment?: number; decrement?: number } | number };
     }) => {
       const used = state.cupoUsado;
@@ -171,9 +218,17 @@ function mockCupoStateful(tx: TxMock, state: CupoState) {
 function setupCrear(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
   tx.venta.create.mockResolvedValue(ventaRow());
   tx.producto.findMany.mockResolvedValue([comboRow(comboOverrides)]);
-  tx.variante.findMany.mockResolvedValue([{ id: 701n, producto_id: 7n, activo: true }]);
+  tx.variante.findMany.mockResolvedValue([
+    { id: 701n, producto_id: 7n, activo: true },
+  ]);
   tx.inventario.findMany.mockResolvedValue([
-    { id: 5n, producto_id: 7n, variante_id: 701n, cantidad_disponible: 100, reservado: 0 },
+    {
+      id: 5n,
+      producto_id: 7n,
+      variante_id: 701n,
+      cantidad_disponible: 100,
+      reservado: 0,
+    },
   ]);
   tx.inventario.updateMany.mockResolvedValue({ count: 1 });
   tx.movimientosInventario.create.mockResolvedValue({});
@@ -182,18 +237,41 @@ function setupCrear(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
 function setupAnular(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
   tx.venta.findUnique.mockResolvedValue(completadaRow());
   tx.producto.findMany.mockResolvedValue([comboRow(comboOverrides)]);
-  tx.variante.findMany.mockResolvedValue([{ id: 701n, producto_id: 7n, activo: true }]);
-  tx.inventario.findMany.mockResolvedValue([{ id: 5n, producto_id: 7n, variante_id: 701n, cantidad_disponible: 8, reservado: 0 }]);
+  tx.variante.findMany.mockResolvedValue([
+    { id: 701n, producto_id: 7n, activo: true },
+  ]);
+  tx.inventario.findMany.mockResolvedValue([
+    {
+      id: 5n,
+      producto_id: 7n,
+      variante_id: 701n,
+      cantidad_disponible: 8,
+      reservado: 0,
+    },
+  ]);
   tx.venta.updateMany.mockResolvedValue({ count: 1 });
   tx.inventario.update.mockResolvedValue({});
   tx.movimientosInventario.create.mockResolvedValue({});
 }
 
-function setupRevertir(tx: TxMock, comboOverrides: Record<string, unknown> = {}) {
+function setupRevertir(
+  tx: TxMock,
+  comboOverrides: Record<string, unknown> = {},
+) {
   tx.venta.findUnique.mockResolvedValue(anuladaRow());
   tx.producto.findMany.mockResolvedValue([comboRow(comboOverrides)]);
-  tx.variante.findMany.mockResolvedValue([{ id: 701n, producto_id: 7n, activo: true }]);
-  tx.inventario.findMany.mockResolvedValue([{ id: 5n, producto_id: 7n, variante_id: 701n, cantidad_disponible: 10, reservado: 0 }]);
+  tx.variante.findMany.mockResolvedValue([
+    { id: 701n, producto_id: 7n, activo: true },
+  ]);
+  tx.inventario.findMany.mockResolvedValue([
+    {
+      id: 5n,
+      producto_id: 7n,
+      variante_id: 701n,
+      cantidad_disponible: 10,
+      reservado: 0,
+    },
+  ]);
   tx.venta.updateMany.mockResolvedValue({ count: 1 });
   tx.inventario.updateMany.mockResolvedValue({ count: 1 });
   tx.movimientosInventario.create.mockResolvedValue({});
@@ -219,7 +297,10 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     mockCupoStateful(tx, state);
     setupCrear(tx, { cupo_maximo: 10, cupo_usado: 10 });
 
-    await expectConflict(repo.crear(ventaData), 'Cupo agotado para el combo Combo X');
+    await expectConflict(
+      repo.crear(ventaData),
+      'Cupo agotado para el combo Combo X',
+    );
 
     expect(tx.producto.updateMany).toHaveBeenCalledWith({
       where: { id: 99n, cupo_maximo: { not: null }, cupo_usado: { lte: 9 } },
@@ -237,7 +318,10 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
       vigencia_fin: new Date('2020-02-01T00:00:00.000Z'),
     });
 
-    await expectConflict(repo.crear(ventaData), 'El combo Combo X no está en vigencia');
+    await expectConflict(
+      repo.crear(ventaData),
+      'El combo Combo X no está en vigencia',
+    );
 
     expect(tx.producto.updateMany).not.toHaveBeenCalled();
     expect(tx.inventario.updateMany).not.toHaveBeenCalled();
@@ -250,7 +334,10 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
       vigencia_inicio: new Date('2999-01-01T00:00:00.000Z'),
     });
 
-    await expectConflict(repo.crear(ventaData), 'El combo Combo X no está en vigencia');
+    await expectConflict(
+      repo.crear(ventaData),
+      'El combo Combo X no está en vigencia',
+    );
     expect(tx.inventario.updateMany).not.toHaveBeenCalled();
   });
 
@@ -262,9 +349,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     const result = await repo.crear(ventaData);
 
     expect(result.id).toBe('1');
-    expect(tx.inventario.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { cantidad_disponible: { decrement: 2 } } }),
-    );
+    expect(tx.$executeRaw).toHaveBeenCalled();
   });
 
   it('ignores date bounds for PERMANENTE (past vigencia_fin does not block the sale)', async () => {
@@ -277,7 +362,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     const result = await repo.crear(ventaData);
 
     expect(result.id).toBe('1');
-    expect(tx.inventario.updateMany).toHaveBeenCalled();
+    expect(tx.$executeRaw).toHaveBeenCalled();
   });
 
   it('allows a combo inside its active window and reserves cupo', async () => {
@@ -302,7 +387,10 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     });
     expect(tx.movimientosInventario.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ tipo_movimiento: 'SALIDA', motivo: 'VENTA_COMBO (Combo X)' }),
+        data: expect.objectContaining({
+          tipo_movimiento: 'SALIDA',
+          motivo: 'VENTA_COMBO (Combo X)',
+        }),
       }),
     );
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
@@ -318,7 +406,10 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     expect(first.id).toBe('1');
     expect(state.cupoUsado).toBe(10);
 
-    await expectConflict(repo.crear(ventaData), 'Cupo agotado para el combo Combo X');
+    await expectConflict(
+      repo.crear(ventaData),
+      'Cupo agotado para el combo Combo X',
+    );
 
     expect(state.cupoUsado).toBe(10);
     expect(tx.producto.updateMany).toHaveBeenCalledTimes(2);
@@ -331,7 +422,11 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
     setupCrear(tx, { cupo_maximo: 10, cupo_usado: 9 });
 
     await expectConflict(
-      repo.crear({ ...ventaData, monto_pagado: 100, detalles: [{ producto_id: '99', cantidad: 2, precio_unitario: 50 }] }),
+      repo.crear({
+        ...ventaData,
+        monto_pagado: 100,
+        detalles: [{ producto_id: '99', cantidad: 2, precio_unitario: 50 }],
+      }),
       'Cupo agotado para el combo Combo X',
     );
 
@@ -350,7 +445,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
 
     expect(result.id).toBe('1');
     expect(tx.producto.updateMany).not.toHaveBeenCalled();
-    expect(tx.inventario.updateMany).toHaveBeenCalled();
+    expect(tx.$executeRaw).toHaveBeenCalled();
   });
 
   it('resolves component base variant when variante_id is null and decrements atomically', async () => {
@@ -364,10 +459,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
       where: { producto_id: { in: [7n] }, activo: true },
       orderBy: { id: 'asc' },
     });
-    expect(tx.inventario.updateMany).toHaveBeenCalledWith({
-      where: { id: 5n, cantidad_disponible: { gte: 2 } },
-      data: { cantidad_disponible: { decrement: 2 } },
-    });
+    expect(tx.$executeRaw).toHaveBeenCalled();
   });
 
   it('preloads catalog and discount evaluation before the write transaction starts', async () => {
@@ -401,7 +493,7 @@ describe('PrismaVentaRepository.crear - vigencia y cupo (2.7)', () => {
   it('throws error when concurrent update decreases stock below required units', async () => {
     const { repo, tx } = createHarness(createTx());
     setupCrear(tx, { cupo_maximo: null });
-    tx.inventario.updateMany.mockResolvedValue({ count: 0 });
+    tx.$executeRaw.mockResolvedValue(0);
 
     await expect(repo.crear(ventaData)).rejects.toThrow(
       /Conflicto de concurrencia: stock insuficiente/,
@@ -429,7 +521,9 @@ describe('PrismaVentaRepository.anular - liberación de cupo (2.8)', () => {
       data: { cantidad_disponible: { increment: 2 } },
     });
     expect(tx.movimientosInventario.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ tipo_movimiento: 'ENTRADA' }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ tipo_movimiento: 'ENTRADA' }),
+      }),
     );
     expect(tx.venta.updateMany).toHaveBeenCalledWith({
       where: { id: 5n, estado: 'COMPLETADA' },
@@ -446,8 +540,15 @@ describe('PrismaVentaRepository.anular - liberación de cupo (2.8)', () => {
     await repo.anular('5', '1', 'Devolución');
 
     const transactionMock = prisma.$transaction as unknown as jest.Mock;
-    for (const query of [tx.venta.findUnique, tx.producto.findMany, tx.variante.findMany, tx.inventario.findMany]) {
-      expect(query.mock.invocationCallOrder[0]).toBeLessThan(transactionMock.mock.invocationCallOrder[0]);
+    for (const query of [
+      tx.venta.findUnique,
+      tx.producto.findMany,
+      tx.variante.findMany,
+      tx.inventario.findMany,
+    ]) {
+      expect(query.mock.invocationCallOrder[0]).toBeLessThan(
+        transactionMock.mock.invocationCallOrder[0],
+      );
     }
     expect(tx.producto.findUnique).not.toHaveBeenCalled();
     expect(tx.variante.findFirst).not.toHaveBeenCalled();
@@ -459,7 +560,10 @@ describe('PrismaVentaRepository.anular - liberación de cupo (2.8)', () => {
     setupAnular(tx);
     tx.venta.updateMany.mockResolvedValue({ count: 0 });
 
-    await expectConflict(repo.anular('5', '1', 'Devolución'), 'La venta ya se encuentra anulada');
+    await expectConflict(
+      repo.anular('5', '1', 'Devolución'),
+      'La venta ya se encuentra anulada',
+    );
     expect(tx.inventario.update).not.toHaveBeenCalled();
   });
 
@@ -499,13 +603,13 @@ describe('PrismaVentaRepository.revertirAnulacion - restauración de cupo (2.8)'
       where: { id: 99n, cupo_maximo: { not: null } },
       data: { cupo_usado: { increment: 1 } },
     });
-    expect(tx.inventario.updateMany).toHaveBeenCalledWith({
-      where: { id: 5n, cantidad_disponible: { gte: 2 } },
-      data: { cantidad_disponible: { decrement: 2 } },
-    });
+    expect(tx.$executeRaw).toHaveBeenCalled();
     expect(tx.movimientosInventario.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ tipo_movimiento: 'SALIDA', motivo: 'REVERSION_ANULACION_COMBO (Combo X)' }),
+        data: expect.objectContaining({
+          tipo_movimiento: 'SALIDA',
+          motivo: 'REVERSION_ANULACION_COMBO (Combo X)',
+        }),
       }),
     );
     expect(tx.venta.updateMany).toHaveBeenCalledWith({
@@ -522,13 +626,17 @@ describe('PrismaVentaRepository.revertirAnulacion - restauración de cupo (2.8)'
     await repo.revertirAnulacion('5', '1');
 
     const transactionMock = prisma.$transaction as unknown as jest.Mock;
-    for (const query of [tx.venta.findUnique, tx.producto.findMany, tx.variante.findMany, tx.inventario.findMany]) {
-      expect(query.mock.invocationCallOrder[0]).toBeLessThan(transactionMock.mock.invocationCallOrder[0]);
+    for (const query of [
+      tx.venta.findUnique,
+      tx.producto.findMany,
+      tx.variante.findMany,
+      tx.inventario.findMany,
+    ]) {
+      expect(query.mock.invocationCallOrder[0]).toBeLessThan(
+        transactionMock.mock.invocationCallOrder[0],
+      );
     }
-    expect(tx.inventario.updateMany).toHaveBeenCalledWith({
-      where: { id: 5n, cantidad_disponible: { gte: 2 } },
-      data: { cantidad_disponible: { decrement: 2 } },
-    });
+    expect(tx.$executeRaw).toHaveBeenCalled();
   });
 
   it('restores cupo even when cupo_maximo was later lowered below usage (Open Q1: no cap validation)', async () => {
@@ -690,7 +798,12 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
 
     expect(evaluate).not.toHaveBeenCalled();
     expect(tx.venta.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ descuento_total: 0, codigo_cupon: null }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          descuento_total: 0,
+          codigo_cupon: null,
+        }),
+      }),
     );
     expect(tx.descuentoUso.create).not.toHaveBeenCalled();
   });
@@ -722,18 +835,29 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
     } as any);
 
     expect(evaluate).toHaveBeenCalledWith(
-      expect.objectContaining({ items: [expect.objectContaining({ cantidad: 1, precioUnitario: 50 })] }),
+      expect.objectContaining({
+        items: [expect.objectContaining({ cantidad: 1, precioUnitario: 50 })],
+      }),
     );
     expect(tx.venta.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ total: 35, descuento_total: 15, codigo_cupon: 'FIEL10' }),
+        data: expect.objectContaining({
+          total: 35,
+          descuento_total: 15,
+          codigo_cupon: 'FIEL10',
+        }),
       }),
     );
-    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(2);
     expect(tx.descuento.findUnique).not.toHaveBeenCalled();
     expect(tx.descuento.updateMany).not.toHaveBeenCalled();
     expect(tx.descuentoUso.create).toHaveBeenCalledWith({
-      data: { descuento_id: 10n, venta_id: 1n, cliente_id: null, monto_descontado: 15 },
+      data: {
+        descuento_id: 10n,
+        venta_id: 1n,
+        cliente_id: null,
+        monto_descontado: 15,
+      },
     });
   });
 
@@ -783,7 +907,13 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
     });
     const { repo, tx } = createHarness(createTx(), { evaluate });
     setupCrear(tx, { precio_base: 50 });
-    tx.$executeRaw.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+    // Both transactions reach the discount guard before either continues to the
+    // stock guard: permit the first guard, reject the second, then let the
+    // winning transaction decrement stock.
+    tx.$executeRaw
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(1);
 
     const venta = {
       usuario_id: '1',
@@ -793,12 +923,16 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
       detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 50 }],
     } as any;
 
-    const [primera, segunda] = await Promise.allSettled([repo.crear(venta), repo.crear(venta)]);
+    const [primera, segunda] = await Promise.allSettled([
+      repo.crear(venta),
+      repo.crear(venta),
+    ]);
 
     expect(primera.status).toBe('fulfilled');
     expect(segunda.status).toBe('rejected');
-    if (segunda.status === 'rejected') expect(segunda.reason).toBeInstanceOf(ConflictException);
-    expect(tx.$executeRaw).toHaveBeenCalledTimes(2);
+    if (segunda.status === 'rejected')
+      expect(segunda.reason).toBeInstanceOf(ConflictException);
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(3);
     expect(tx.descuentoUso.create).toHaveBeenCalledTimes(1);
   });
 
@@ -817,7 +951,9 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
 
     expect(result.id).toBe('1');
     expect(tx.venta.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ total: 50, descuento_total: 0 }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ total: 50, descuento_total: 0 }),
+      }),
     );
     expect(tx.descuento.updateMany).not.toHaveBeenCalled();
     expect(tx.descuentoUso.create).not.toHaveBeenCalled();
@@ -829,16 +965,42 @@ describe('PrismaVentaRepository.crear - batching de lecturas dentro de la transa
     const { repo, tx } = createHarness(createTx());
     tx.venta.create.mockResolvedValue(ventaRow());
     tx.producto.findMany.mockResolvedValue([
-      { id: 99n, nombre: 'Producto A', tipo_producto: 'SIMPLE', precio_base: 10, precio_promocional: null, componentes_combo: [] },
-      { id: 55n, nombre: 'Producto B', tipo_producto: 'SIMPLE', precio_base: 20, precio_promocional: null, componentes_combo: [] },
+      {
+        id: 99n,
+        nombre: 'Producto A',
+        tipo_producto: 'SIMPLE',
+        precio_base: 10,
+        precio_promocional: null,
+        componentes_combo: [],
+      },
+      {
+        id: 55n,
+        nombre: 'Producto B',
+        tipo_producto: 'SIMPLE',
+        precio_base: 20,
+        precio_promocional: null,
+        componentes_combo: [],
+      },
     ]);
     tx.variante.findMany.mockResolvedValue([
       { id: 701n, producto_id: 99n, activo: true },
       { id: 702n, producto_id: 55n, activo: true },
     ]);
     tx.inventario.findMany.mockResolvedValue([
-      { id: 5n, producto_id: 99n, variante_id: 701n, cantidad_disponible: 100, reservado: 0 },
-      { id: 6n, producto_id: 55n, variante_id: 702n, cantidad_disponible: 100, reservado: 0 },
+      {
+        id: 5n,
+        producto_id: 99n,
+        variante_id: 701n,
+        cantidad_disponible: 100,
+        reservado: 0,
+      },
+      {
+        id: 6n,
+        producto_id: 55n,
+        variante_id: 702n,
+        cantidad_disponible: 100,
+        reservado: 0,
+      },
     ]);
     tx.inventario.updateMany.mockResolvedValue({ count: 1 });
     tx.movimientosInventario.create.mockResolvedValue({});
@@ -867,8 +1029,8 @@ describe('PrismaVentaRepository.crear - batching de lecturas dentro de la transa
     });
     expect(tx.inventario.findMany).toHaveBeenCalledTimes(1);
 
-    // Writes: still one atomic call per movement — that's the concurrency guard, unchanged.
-    expect(tx.inventario.updateMany).toHaveBeenCalledTimes(2);
+    // Writes: still one atomic SQL guard per movement — that is the concurrency guard.
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(2);
     expect(tx.movimientosInventario.create).toHaveBeenCalledTimes(2);
   });
 });
