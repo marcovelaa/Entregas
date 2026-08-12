@@ -5,6 +5,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { IamModule } from './modules/iam/iam.module';
 import { AuthModule } from './modules/iam/auth/auth.module';
+import { JwtAuthGuard } from './modules/iam/auth/guards/jwt-auth.guard';
+import { RolesGuard } from './modules/iam/auth/guards/roles.guard';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { PrismaService } from './common/prisma/prisma.service';
 import { CatalogoModule } from './modules/catalogo/catalogo.module';
@@ -25,13 +27,25 @@ import { join } from 'path';
       serveRoot: '/uploads',
     }),
     ThrottlerModule.forRoot([{ ttl: seconds(60), limit: 100 }]),
-    IamModule, AuthModule, PrismaModule, CatalogoModule, InventarioModule, ProveedoresModule, ComprasModule, ClientesModule, VentasModule, DashboardModule, DescuentosModule
+    IamModule,
+    AuthModule,
+    PrismaModule,
+    CatalogoModule,
+    InventarioModule,
+    ProveedoresModule,
+    ComprasModule,
+    ClientesModule,
+    VentasModule,
+    DashboardModule,
+    DescuentosModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     PrismaService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AppModule {}

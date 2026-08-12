@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Patch, Delete, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { CrearUsuarioUseCase } from '../../application/use-cases/usuarios/crear-usuario.use-case';
 import { ListarUsuariosUseCase } from '../../application/use-cases/usuarios/listar-usuarios.use-case';
 import { VerDetalleUsuarioUseCase } from '../../application/use-cases/usuarios/ver-detalle-usuario.use-case';
@@ -6,6 +16,7 @@ import { EditarUsuarioUseCase } from '../../application/use-cases/usuarios/edita
 import { EliminarUsuarioUseCase } from '../../application/use-cases/usuarios/eliminar-usuario.use-case';
 import { CrearUsuarioDto } from '../../application/dtos/crear-usuario.dto';
 import { UpdateUsuarioDto } from '../../application/dtos/update-usuario.dto';
+import { RequierePermiso } from '../../auth/decorators/require-permiso.decorator';
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -18,9 +29,10 @@ export class UsuariosController {
   ) {}
 
   @Get()
+  @RequierePermiso('iam:usuarios:ver')
   async findAll() {
     const usuarios = await this.listarUsuariosUseCase.execute();
-    return usuarios.map(u => ({
+    return usuarios.map((u) => ({
       id: u.id.toString(),
       publicId: u.publicId,
       rolId: u.rolId.toString(),
@@ -36,6 +48,7 @@ export class UsuariosController {
   }
 
   @Post()
+  @RequierePermiso('iam:usuarios:cambiar_rol')
   async create(@Body() dto: CrearUsuarioDto) {
     const usuario = await this.crearUsuarioUseCase.execute(dto);
     return {
@@ -53,6 +66,7 @@ export class UsuariosController {
   }
 
   @Get(':id')
+  @RequierePermiso('iam:usuarios:ver')
   async findOne(@Param('id') id: string) {
     const usuario = await this.verDetalleUsuarioUseCase.execute(BigInt(id));
     return {
@@ -71,6 +85,7 @@ export class UsuariosController {
   }
 
   @Patch(':id')
+  @RequierePermiso('iam:usuarios:cambiar_rol')
   async update(@Param('id') id: string, @Body() dto: UpdateUsuarioDto) {
     const usuario = await this.editarUsuarioUseCase.execute(BigInt(id), dto);
     return {
@@ -89,6 +104,7 @@ export class UsuariosController {
   }
 
   @Delete(':id')
+  @RequierePermiso('iam:usuarios:cambiar_estado')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string) {
     await this.eliminarUsuarioUseCase.execute(BigInt(id));
