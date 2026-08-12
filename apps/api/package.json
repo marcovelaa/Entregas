@@ -25,16 +25,17 @@
     "db:seed": "prisma db seed"
   },
   "dependencies": {
-    "@repo/combo-rules": "workspace:*",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/schedule": "^6.1.3",
     "@nestjs/serve-static": "^5.0.5",
     "@nestjs/swagger": "^11.4.6",
     "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "^5.22.0",
+    "@repo/combo-rules": "workspace:*",
     "@types/multer": "^2.2.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",

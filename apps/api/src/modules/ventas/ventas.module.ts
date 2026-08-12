@@ -9,12 +9,14 @@ import { ListarVentasUseCase } from './application/use-cases/listar-ventas.use-c
 import { AnularVentaUseCase } from './application/use-cases/anular-venta.use-case';
 import { RevertirAnulacionVentaUseCase } from './application/use-cases/revertir-anulacion-venta.use-case';
 import { InventoryReservationsService } from './application/services/inventory-reservations.service';
+import { InventoryReservationExpirationJob } from './application/services/inventory-reservation-expiration.job';
 
 @Module({
   imports: [PrismaModule, DescuentosModule],
   controllers: [VentasController],
   providers: [
     InventoryReservationsService,
+    InventoryReservationExpirationJob,
     {
       provide: VENTA_REPOSITORY,
       useClass: PrismaVentaRepository,

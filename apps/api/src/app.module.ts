@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard, seconds } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { IamModule } from './modules/iam/iam.module';
@@ -27,6 +28,7 @@ import { join } from 'path';
       serveRoot: '/uploads',
     }),
     ThrottlerModule.forRoot([{ ttl: seconds(60), limit: 100 }]),
+    ScheduleModule.forRoot(),
     IamModule,
     AuthModule,
     PrismaModule,
