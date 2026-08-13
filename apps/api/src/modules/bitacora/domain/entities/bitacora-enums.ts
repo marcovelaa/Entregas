@@ -1,0 +1,17 @@
+export enum TipoActorBitacora {
+  USUARIO = 'USUARIO',
+  CLIENTE = 'CLIENTE',
+  SISTEMA = 'SISTEMA',
+  WEBHOOK = 'WEBHOOK',
+}
+
+export enum EntidadBitacora {
+  SEGURIDAD = 'SEGURIDAD',
+  PRODUCTO = 'PRODUCTO',
+  INVENTARIO = 'INVENTARIO',
+  PAGO = 'PAGO',
+  DESCUENTO = 'DESCUENTO',
+  DEVOLUCION = 'DEVOLUCION',
+  PEDIDO = 'PEDIDO',
+  COMPRA = 'COMPRA',
+}

@@ -44,6 +44,7 @@ model Usuario {
   ventas_aprobadas      VentaDetalle[]          @relation("VentaDetalleAprobadoPor")
   pedido_historiales    PedidoHistorialEstado[] @relation("PedidoHistorialCambiadoPorUsuario")
   devolucionesEvaluadas Devolucion[]            @relation("DevolucionEvaluadaPorUsuario")
+  bitacoraEventos       Bitacora[]              @relation("BitacoraUsuario")
 
   @@map("usuarios")
 }
@@ -84,8 +85,12 @@ model RolPermiso {
 
 model Bitacora {
   id               BigInt   @id @default(autoincrement())
+  public_id        String   @unique @default(uuid()) @db.Uuid
+  tipo_actor       String   @default("USUARIO") @db.VarChar(20)
   usuario_id       BigInt?
-  ip               String?  @db.Inet
+  cliente_id       BigInt?
+  request_id       String?  @db.VarChar(100)
+  ip               String?  @db.VarChar(50)
   user_agent       String?  @db.Text
   entidad          String   @db.VarChar(50)
   entidad_id       String?  @db.VarChar(50)
@@ -94,6 +99,13 @@ model Bitacora {
   datos_nuevos     Json?    @db.JsonB
   creado_en        DateTime @default(now())
 
+  usuario Usuario? @relation("BitacoraUsuario", fields: [usuario_id], references: [id], onDelete: SetNull)
+  cliente Cliente? @relation("BitacoraCliente", fields: [cliente_id], references: [id], onDelete: SetNull)
+
+  @@index([entidad, entidad_id])
+  @@index([usuario_id])
+  @@index([cliente_id])
+  @@index([creado_en])
   @@map("bitacora")
 }
 
@@ -393,6 +405,7 @@ model Cliente {
   pedidos                Pedido[]
   historialEstadoCliente PedidoHistorialEstado[] @relation("PedidoHistorialCambiadoPorCliente")
   devoluciones           Devolucion[]
+  bitacoraEventos        Bitacora[]              @relation("BitacoraCliente")
 
   @@map("clientes")
 }

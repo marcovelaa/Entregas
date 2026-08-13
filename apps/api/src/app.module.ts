@@ -22,6 +22,7 @@ import { DescuentosModule } from './modules/descuentos/descuentos.module';
 import { PedidosModule } from './modules/pedidos/pedidos.module';
 import { PagosModule } from './modules/pagos/pagos.module';
 import { DevolucionesModule } from './modules/devoluciones/devoluciones.module';
+import { BitacoraModule } from './modules/bitacora/bitacora.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -48,6 +49,7 @@ import { join } from 'path';
     PedidosModule,
     PagosModule,
     DevolucionesModule,
+    BitacoraModule,
   ],
   controllers: [AppController],
   providers: [
