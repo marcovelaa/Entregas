@@ -356,6 +356,113 @@
   height: 16px;
 }
 
+.errorAlert {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.addressGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.addressCard {
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 1rem;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.addressCard:hover {
+  border-color: var(--color-blue);
+}
+
+.addressCardSelected {
+  border-color: var(--color-blue);
+  background: #f0fdf4;
+  box-shadow: 0 2px 8px rgba(43, 188, 238, 0.15);
+}
+
+.qrContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.timerBadge {
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  color: #873800;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.qrBox {
+  padding: 1rem;
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-bottom: 1.5rem;
+}
+
+.qrImage {
+  width: 220px;
+  height: 220px;
+  display: block;
+}
+
+.pollingNotice {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.sandboxBlock {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  padding: 1rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.sandboxBtn {
+  margin-top: 0.5rem;
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sandboxBtn:hover {
+  background: #0284c7;
+}
+
 @media (max-width: 1024px) {
   .checkoutLayout {
     grid-template-columns: 1fr;
@@ -371,3 +478,4 @@
     gap: 0;
   }
 }
+
