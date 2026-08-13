@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
-import { IClienteRepository, ClienteCreateData, ClienteUpdateData } from '../../domain/repositories/cliente.repository.interface';
+import { IClienteRepository, ClienteCreateData, ClienteUpdateData, ClienteConCredenciales, ClienteCredencialesCreateData } from '../../domain/repositories/cliente.repository.interface';
 
 @Injectable()
 export class PrismaClienteRepository implements IClienteRepository {
@@ -75,13 +75,60 @@ export class PrismaClienteRepository implements IClienteRepository {
     const parts = nombreStr.split(' ');
     const nombres = parts[0] || nombreStr;
     const apellidos = parts.slice(1).join(' ');
+    const { password_hash, ...clienteSinPassword } = cliente;
 
     return {
-      ...cliente,
+      ...clienteSinPassword,
       id: cliente.id.toString(),
       nombre: nombreStr,
       nombres: nombres,
       apellidos: apellidos,
+    };
+  }
+
+  async crearConCredenciales(data: ClienteCredencialesCreateData): Promise<ClienteConCredenciales> {
+    const cliente = await this.prisma.cliente.create({
+      data: {
+        nombre: `${data.nombres} ${data.apellidos}`.trim(),
+        email: data.email,
+        telefono: data.telefono || null,
+        password_hash: data.passwordHash,
+        activo: true,
+      },
+    });
+    return this.serializeConCredenciales(cliente, data.nombres, data.apellidos);
+  }
+
+  async buscarPorEmailConCredenciales(email: string): Promise<ClienteConCredenciales | null> {
+    const cliente = await this.prisma.cliente.findFirst({ where: { email } });
+    if (!cliente || !cliente.password_hash) return null;
+    return this.serializeConCredenciales(cliente);
+  }
+
+  async obtenerConCredencialesPorId(id: string): Promise<ClienteConCredenciales | null> {
+    const cliente = await this.prisma.cliente.findUnique({ where: { id: BigInt(id) } });
+    if (!cliente || !cliente.password_hash) return null;
+    return this.serializeConCredenciales(cliente);
+  }
+
+  async actualizarPassword(id: string, passwordHash: string): Promise<void> {
+    await this.prisma.cliente.update({
+      where: { id: BigInt(id) },
+      data: { password_hash: passwordHash },
+    });
+  }
+
+  private serializeConCredenciales(cliente: any, nombresHint?: string, apellidosHint?: string): ClienteConCredenciales {
+    const nombreStr = cliente.nombre || '';
+    const parts = nombreStr.split(' ');
+    return {
+      id: cliente.id.toString(),
+      nombres: nombresHint ?? parts[0] ?? nombreStr,
+      apellidos: apellidosHint ?? parts.slice(1).join(' '),
+      email: cliente.email ?? '',
+      telefono: cliente.telefono,
+      passwordHash: cliente.password_hash,
+      activo: cliente.activo,
     };
   }
 }
