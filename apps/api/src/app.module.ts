@@ -21,6 +21,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DescuentosModule } from './modules/descuentos/descuentos.module';
 import { PedidosModule } from './modules/pedidos/pedidos.module';
 import { PagosModule } from './modules/pagos/pagos.module';
+import { DevolucionesModule } from './modules/devoluciones/devoluciones.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -46,6 +47,7 @@ import { join } from 'path';
     DescuentosModule,
     PedidosModule,
     PagosModule,
+    DevolucionesModule,
   ],
   controllers: [AppController],
   providers: [
