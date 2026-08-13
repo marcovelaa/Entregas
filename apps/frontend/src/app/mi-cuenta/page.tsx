@@ -25,6 +25,25 @@ interface Direccion {
   es_principal: boolean;
 }
 
+interface PedidoDetalle {
+  id: string;
+  nombre_producto: string;
+  precio_unitario: number;
+  cantidad: number;
+  subtotal: number;
+}
+
+interface Pedido {
+  id: string;
+  numero_pedido: string;
+  estado: string;
+  total: number;
+  costo_envio: number;
+  direccion_envio_snapshot: any;
+  creado_en: string;
+  detalles: PedidoDetalle[];
+}
+
 const DIRECCION_FORM_INICIAL = {
   alias: '',
   destinatario_nombre: '',
@@ -48,6 +67,11 @@ export default function MiCuentaPage() {
   const [direccionEditandoId, setDireccionEditandoId] = useState<string | null>(null);
   const [direccionForm, setDireccionForm] = useState(DIRECCION_FORM_INICIAL);
 
+  // Pedidos del cliente
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [pedidosCargando, setPedidosCargando] = useState(false);
+  const [pedidoExpandidoId, setPedidoExpandidoId] = useState<string | null>(null);
+
   useEffect(() => {
     async function cargarPerfil() {
       try {
@@ -58,6 +82,7 @@ export default function MiCuentaPage() {
           apellidos: response.data.apellidos,
           telefono: response.data.telefono ?? '',
         });
+        cargarPedidos();
       } catch {
         router.push('/ingresar');
       }
@@ -68,12 +93,30 @@ export default function MiCuentaPage() {
   useEffect(() => {
     if (activeTab === 'direcciones') {
       cargarDirecciones();
+    } else if (activeTab === 'pedidos') {
+      cargarPedidos();
     }
   }, [activeTab]);
 
   async function cargarDirecciones() {
-    const response = await api.get<Direccion[]>('/clientes/me/direcciones');
-    setDirecciones(response.data);
+    try {
+      const response = await api.get<Direccion[]>('/clientes/me/direcciones');
+      setDirecciones(response.data);
+    } catch {
+      // Ignorar si no hay sesión
+    }
+  }
+
+  async function cargarPedidos() {
+    setPedidosCargando(true);
+    try {
+      const response = await api.get<Pedido[]>('/clientes/me/pedidos');
+      setPedidos(response.data);
+    } catch {
+      // Ignorar si aún no hay pedidos
+    } finally {
+      setPedidosCargando(false);
+    }
   }
 
   async function handleCerrarSesion() {
@@ -136,6 +179,33 @@ export default function MiCuentaPage() {
     await cargarDirecciones();
   }
 
+  function getBadgeColor(estado: string) {
+    switch (estado) {
+      case 'PENDIENTE_PAGO':
+        return { bg: '#fffbe6', text: '#873800', border: '#ffe58f' };
+      case 'PAGADO':
+        return { bg: '#e6f7ff', text: '#0050b3', border: '#91d5ff' };
+      case 'EN_PREPARACION':
+        return { bg: '#f9f0ff', text: '#531dab', border: '#d3ade6' };
+      case 'ENVIADO':
+        return { bg: '#e6fffb', text: '#006d75', border: '#87e8de' };
+      case 'ENTREGADO':
+        return { bg: '#f6ffed', text: '#237804', border: '#b7eb8f' };
+      case 'CANCELADO':
+        return { bg: '#fff2f0', text: '#a8071a', border: '#ffccc7' };
+      default:
+        return { bg: '#f5f5f5', text: '#595959', border: '#d9d9d9' };
+    }
+  }
+
+  const pedidosActivosCount = pedidos.filter(
+    (p) => p.estado !== 'ENTREGADO' && p.estado !== 'CANCELADO',
+  ).length;
+
+  const totalComprado = pedidos
+    .filter((p) => p.estado !== 'CANCELADO')
+    .reduce((acc, p) => acc + Number(p.total), 0);
+
   return (
     <main className={styles.container}>
       <h1 className={styles.title}>Mi Cuenta</h1>
@@ -164,7 +234,7 @@ export default function MiCuentaPage() {
               <path d="M20 16.2A2 2 0 0 1 18.2 18H5.8A2 2 0 0 1 4 16.2V7.8A2 2 0 0 1 5.8 6h12.4a2 2 0 0 1 1.8 1.8v8.4z"></path>
               <path d="M12 12h.01"></path>
             </svg>
-            Mis Pedidos
+            Mis Pedidos ({pedidos.length})
           </button>
 
           <button
@@ -198,22 +268,21 @@ export default function MiCuentaPage() {
 
         {/* Main Content Area */}
         <section className={styles.content}>
-
           {activeTab === 'resumen' && (
             <div>
               <h2 className={styles.sectionTitle}>Hola, {cliente?.nombres ?? '...'}</h2>
               <p style={{ color: '#475569', marginBottom: '2rem', lineHeight: '1.6' }}>
-                Desde el panel de control de tu cuenta podés ver tus pedidos recientes, gestionar tus direcciones de envío y editar tu contraseña y los detalles de tu cuenta.
+                Desde el panel de control de tu cuenta podés ver tus pedidos recientes, gestionar tus direcciones de envío y editar tu perfil.
               </p>
 
               <div className={styles.statsGrid}>
                 <div className={styles.statCard}>
                   <div className={styles.statLabel}>Pedidos Activos</div>
-                  <div className={styles.statValue}>0</div>
+                  <div className={styles.statValue}>{pedidosActivosCount}</div>
                 </div>
                 <div className={styles.statCard}>
                   <div className={styles.statLabel}>Total Comprado</div>
-                  <div className={styles.statValue}>Bs. 0.00</div>
+                  <div className={styles.statValue}>Bs. {totalComprado.toFixed(2)}</div>
                 </div>
               </div>
             </div>
@@ -222,14 +291,99 @@ export default function MiCuentaPage() {
           {activeTab === 'pedidos' && (
             <div>
               <h2 className={styles.sectionTitle}>Historial de Pedidos</h2>
-              <div className={styles.emptyState}>
-                <svg className={styles.emptyIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 16.2A2 2 0 0 1 18.2 18H5.8A2 2 0 0 1 4 16.2V7.8A2 2 0 0 1 5.8 6h12.4a2 2 0 0 1 1.8 1.8v8.4z"></path>
-                  <path d="M12 12h.01"></path>
-                </svg>
-                <p className={styles.emptyText}>Aún no has realizado ningún pedido.</p>
-                <Link href="/" className={styles.primaryBtn}>Empezar a comprar</Link>
-              </div>
+
+              {pedidosCargando ? (
+                <p>Cargando tus pedidos...</p>
+              ) : pedidos.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <svg className={styles.emptyIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 16.2A2 2 0 0 1 18.2 18H5.8A2 2 0 0 1 4 16.2V7.8A2 2 0 0 1 5.8 6h12.4a2 2 0 0 1 1.8 1.8v8.4z"></path>
+                    <path d="M12 12h.01"></path>
+                  </svg>
+                  <p className={styles.emptyText}>Aún no has realizado ningún pedido.</p>
+                  <Link href="/" className={styles.primaryBtn}>Empezar a comprar</Link>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {pedidos.map((pedido) => {
+                    const badge = getBadgeColor(pedido.estado);
+                    const expandido = pedidoExpandidoId === pedido.id;
+                    const fecha = new Date(pedido.creado_en).toLocaleDateString('es-BO', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
+
+                    return (
+                      <div
+                        key={pedido.id}
+                        className={styles.direccionCard}
+                        style={{ padding: '1.25rem' }}
+                      >
+                        <div className={styles.direccionCardHeader}>
+                          <div>
+                            <strong style={{ fontSize: '1.1rem' }}>#{pedido.numero_pedido}</strong>
+                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{fecha}</div>
+                          </div>
+
+                          <span
+                            style={{
+                              background: badge.bg,
+                              color: badge.text,
+                              border: `1px solid ${badge.border}`,
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '20px',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {pedido.estado.replace('_', ' ')}
+                          </span>
+                        </div>
+
+                        <div style={{ marginTop: '0.75rem', fontSize: '0.95rem', fontWeight: 600 }}>
+                          Total: Bs. {Number(pedido.total).toFixed(2)} BOB
+                        </div>
+
+                        <button
+                          className={styles.secondaryBtn}
+                          style={{ marginTop: '0.75rem' }}
+                          onClick={() => setPedidoExpandidoId(expandido ? null : pedido.id)}
+                        >
+                          {expandido ? 'Ocultar Detalle' : 'Ver Detalle del Pedido'}
+                        </button>
+
+                        {expandido && (
+                          <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
+                            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>Productos del Pedido:</h4>
+                            <ul style={{ paddingLeft: '1.25rem', margin: '0 0 1rem 0', color: '#334155' }}>
+                              {pedido.detalles?.map((det) => (
+                                <li key={det.id}>
+                                  <strong>{det.nombre_producto}</strong> x {det.cantidad} — Bs. {Number(det.subtotal).toFixed(2)}
+                                </li>
+                              ))}
+                            </ul>
+
+                            {pedido.direccion_envio_snapshot && (
+                              <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '4px', color: '#475569' }}>
+                                <strong>Dirección de Entrega:</strong>
+                                <br />
+                                {pedido.direccion_envio_snapshot.destinatario_nombre} {pedido.direccion_envio_snapshot.destinatario_apellidos}
+                                <br />
+                                {pedido.direccion_envio_snapshot.direccion_completa}, {pedido.direccion_envio_snapshot.ciudad}
+                                <br />
+                                Tel: {pedido.direccion_envio_snapshot.telefono}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -419,7 +573,6 @@ export default function MiCuentaPage() {
               )}
             </div>
           )}
-
         </section>
       </div>
     </main>
