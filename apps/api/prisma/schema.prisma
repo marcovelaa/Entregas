@@ -492,6 +492,7 @@ model ReservaInventario {
   venta    Venta?                        @relation(fields: [venta_id], references: [id], onDelete: SetNull)
   detalles ReservaInventarioDetalle[]
   pedido   Pedido?
+  pagosQr  PagoQR[]
 
   @@index([estado, expira_en])
   @@map("reservas_inventario")
@@ -531,6 +532,7 @@ model Pedido {
   reserva         ReservaInventario?      @relation(fields: [reserva_id], references: [id], onDelete: SetNull)
   detalles        PedidoDetalle[]
   historialEstado PedidoHistorialEstado[]
+  pagoQr          PagoQR?
 
   @@index([cliente_id])
   @@index([estado, creado_en])
@@ -576,6 +578,44 @@ model PedidoHistorialEstado {
 
   @@index([pedido_id])
   @@map("pedido_historial_estados")
+}
+
+model PagoQR {
+  id               BigInt    @id @default(autoincrement())
+  public_id        String    @unique @default(uuid()) @db.Uuid
+  pedido_id        BigInt    @unique
+  reserva_id       BigInt?
+  idempotency_key  String    @unique @db.VarChar(100)
+  qr_contenido     String    @db.Text
+  monto            Decimal   @db.Decimal(14, 2)
+  moneda           String    @default("BOB") @db.VarChar(10)
+  estado           String    @default("PENDIENTE") @db.VarChar(30)
+  referencia_bisa  String?   @unique @db.VarChar(100)
+  expira_en        DateTime
+  confirmado_en    DateTime?
+  creado_en        DateTime  @default(now())
+  actualizado_en   DateTime  @updatedAt
+
+  pedido  Pedido             @relation(fields: [pedido_id], references: [id], onDelete: Restrict)
+  reserva ReservaInventario? @relation(fields: [reserva_id], references: [id], onDelete: SetNull)
+
+  @@index([estado, expira_en])
+  @@map("pagos_qr")
+}
+
+model PagoWebhookLog {
+  id            BigInt   @id @default(autoincrement())
+  event_id      String?  @db.VarChar(100)
+  origen        String   @default("BANCO_BISA") @db.VarChar(50)
+  payload       Json     @db.JsonB
+  headers       Json?    @db.JsonB
+  procesado     Boolean  @default(false)
+  error_mensaje String?  @db.Text
+  creado_en     DateTime @default(now())
+
+  @@index([event_id])
+  @@index([creado_en])
+  @@map("pagos_webhook_logs")
 }
 
 enum TipoDescuento {
