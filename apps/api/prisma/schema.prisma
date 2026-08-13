@@ -371,18 +371,55 @@ model CompraDetalle {
 model Cliente {
   id             BigInt   @id @default(autoincrement())
   nombre         String   @default("Cliente Generico") @db.VarChar(255)
-  documento_id   String?  @unique @db.VarChar(50) // Cédula de Identidad, NIT (Opcional)
+  documento_id   String?  @unique @db.VarChar(50)
   email          String?  @db.VarChar(255)
   telefono       String?  @db.VarChar(50)
   direccion      String?  @db.Text
+  password_hash  String?  @db.Text
   activo         Boolean  @default(true)
   creado_en      DateTime @default(now())
   actualizado_en DateTime @updatedAt
 
   ventas        Venta[]
   usosDescuento DescuentoUso[]
+  direcciones   Direccion[]
+  resetTokens   ClienteResetToken[]
 
   @@map("clientes")
+}
+
+model Direccion {
+  id                     BigInt   @id @default(autoincrement())
+  cliente_id             BigInt
+  alias                  String   @db.VarChar(100)
+  destinatario_nombre    String   @db.VarChar(255)
+  destinatario_apellidos String   @db.VarChar(255)
+  direccion_completa     String   @db.Text
+  ciudad                 String   @db.VarChar(100)
+  telefono               String   @db.VarChar(50)
+  referencia             String?  @db.Text
+  es_principal           Boolean  @default(false)
+  creado_en              DateTime @default(now())
+  actualizado_en         DateTime @updatedAt
+
+  cliente Cliente @relation(fields: [cliente_id], references: [id])
+
+  @@index([cliente_id])
+  @@map("direcciones")
+}
+
+model ClienteResetToken {
+  id         BigInt   @id @default(autoincrement())
+  cliente_id BigInt
+  token_hash String   @unique @db.VarChar(64)
+  expira_en  DateTime
+  usado      Boolean  @default(false)
+  creado_en  DateTime @default(now())
+
+  cliente Cliente @relation(fields: [cliente_id], references: [id])
+
+  @@index([cliente_id])
+  @@map("cliente_reset_tokens")
 }
 
 model Venta {
