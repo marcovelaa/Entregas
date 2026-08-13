@@ -42,6 +42,7 @@ model Usuario {
   Venta                 Venta[]
   reservas_inventario   ReservaInventario[]
   ventas_aprobadas      VentaDetalle[]          @relation("VentaDetalleAprobadoPor")
+  pedido_historiales    PedidoHistorialEstado[] @relation("PedidoHistorialCambiadoPorUsuario")
 
   @@map("usuarios")
 }
@@ -185,6 +186,7 @@ model Producto {
   descuentos            DescuentoProducto[]
   componentes_combo     ProductoComponente[]    @relation("ComboPadre")
   usado_en_combos       ProductoComponente[]    @relation("ComponenteHijo")
+  pedidoDetalles        PedidoDetalle[]
 
   @@index([activo, tipo_producto, vigencia_fin])
   @@map("productos")
@@ -229,6 +231,7 @@ model Variante {
   VentaDetalle           VentaDetalle[]
   descuentos             DescuentoVariante[]
   usado_en_combos        ProductoComponente[]
+  pedidoDetalles         PedidoDetalle[]
 
   @@unique([producto_id, nombre])
   @@map("variantes")
@@ -252,6 +255,7 @@ model Empaque {
   VentaDetalle  VentaDetalle[]
   descuentos    DescuentoEmpaque[]
   usado_en_combos ProductoComponente[]
+  pedidoDetalles  PedidoDetalle[]
 
   @@unique([variante_id, nombre])
   @@map("empaques")
@@ -384,6 +388,8 @@ model Cliente {
   usosDescuento DescuentoUso[]
   direcciones   Direccion[]
   resetTokens   ClienteResetToken[]
+  pedidos       Pedido[]
+  pedido_historiales PedidoHistorialEstado[] @relation("PedidoHistorialCambiadoPorCliente")
 
   @@map("clientes")
 }
@@ -485,6 +491,7 @@ model ReservaInventario {
   usuario  Usuario                      @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
   venta    Venta?                        @relation(fields: [venta_id], references: [id], onDelete: SetNull)
   detalles ReservaInventarioDetalle[]
+  pedido   Pedido?
 
   @@index([estado, expira_en])
   @@map("reservas_inventario")
@@ -502,6 +509,73 @@ model ReservaInventarioDetalle {
   @@unique([reserva_id, inventario_id])
   @@index([inventario_id])
   @@map("reservas_inventario_detalles")
+}
+
+model Pedido {
+  id                       BigInt   @id @default(autoincrement())
+  numero_pedido            String   @unique @default(cuid()) @db.VarChar(100)
+  cliente_id               BigInt?
+  reserva_id               BigInt?  @unique
+  estado                   String   @default("PENDIENTE_PAGO") @db.VarChar(50)
+  direccion_envio_snapshot Json     @db.JsonB
+  costo_envio              Decimal  @default(0) @db.Decimal(14, 2)
+  subtotal                 Decimal  @default(0) @db.Decimal(14, 2)
+  descuento_total          Decimal  @default(0) @db.Decimal(14, 2)
+  total                    Decimal  @default(0) @db.Decimal(14, 2)
+  metodo_pago              String   @default("QR") @db.VarChar(50)
+  notas                    String?  @db.Text
+  creado_en                DateTime @default(now())
+  actualizado_en           DateTime @updatedAt
+
+  cliente         Cliente?                @relation(fields: [cliente_id], references: [id], onDelete: Restrict)
+  reserva         ReservaInventario?      @relation(fields: [reserva_id], references: [id], onDelete: SetNull)
+  detalles        PedidoDetalle[]
+  historialEstado PedidoHistorialEstado[]
+
+  @@index([cliente_id])
+  @@index([estado, creado_en])
+  @@map("pedidos")
+}
+
+model PedidoDetalle {
+  id              BigInt   @id @default(autoincrement())
+  pedido_id       BigInt
+  producto_id     BigInt
+  variante_id     BigInt?
+  empaque_id      BigInt?
+  nombre_producto String   @db.VarChar(255)
+  sku             String?  @db.VarChar(100)
+  precio_unitario Decimal  @db.Decimal(14, 2)
+  cantidad        Int
+  subtotal        Decimal  @db.Decimal(14, 2)
+  imagen_url      String?  @db.Text
+
+  pedido   Pedido    @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+  producto Producto  @relation(fields: [producto_id], references: [id], onDelete: Restrict)
+  variante Variante? @relation(fields: [variante_id], references: [id], onDelete: Restrict)
+  empaque  Empaque?  @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
+
+  @@index([pedido_id])
+  @@index([producto_id])
+  @@map("pedido_detalles")
+}
+
+model PedidoHistorialEstado {
+  id                      BigInt   @id @default(autoincrement())
+  pedido_id               BigInt
+  estado_anterior         String?  @db.VarChar(50)
+  estado_nuevo            String   @db.VarChar(50)
+  cambiado_por_usuario_id BigInt?
+  cambiado_por_cliente_id BigInt?
+  motivo                  String?  @db.Text
+  creado_en               DateTime @default(now())
+
+  pedido               Pedido   @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+  cambiado_por_usuario Usuario? @relation("PedidoHistorialCambiadoPorUsuario", fields: [cambiado_por_usuario_id], references: [id], onDelete: Restrict)
+  cambiado_por_cliente Cliente? @relation("PedidoHistorialCambiadoPorCliente", fields: [cambiado_por_cliente_id], references: [id], onDelete: Restrict)
+
+  @@index([pedido_id])
+  @@map("pedido_historial_estados")
 }
 
 enum TipoDescuento {
