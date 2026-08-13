@@ -15,6 +15,7 @@ import { InventarioModule } from './modules/inventario/inventario.module';
 import { ProveedoresModule } from './modules/proveedores/proveedores.module';
 import { ComprasModule } from './modules/compras/compras.module';
 import { ClientesModule } from './modules/clientes/clientes.module';
+import { ClienteAuthModule } from './modules/clientes/auth/cliente-auth.module';
 import { VentasModule } from './modules/ventas/ventas.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DescuentosModule } from './modules/descuentos/descuentos.module';
@@ -37,6 +38,7 @@ import { join } from 'path';
     ProveedoresModule,
     ComprasModule,
     ClientesModule,
+    ClienteAuthModule,
     VentasModule,
     DashboardModule,
     DescuentosModule,
