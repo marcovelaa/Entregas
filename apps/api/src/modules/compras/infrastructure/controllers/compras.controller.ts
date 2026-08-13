@@ -1,9 +1,13 @@
-import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Query, Param } from '@nestjs/common';
 import { RegistrarCompraUseCase } from '../../application/use-cases/registrar-compra.use-case';
+import { RecibirCompraUseCase } from '../../application/use-cases/recibir-compra.use-case';
+import { ActualizarEstadoCompraUseCase } from '../../application/use-cases/actualizar-estado-compra.use-case';
 import { ListarComprasUseCase } from '../../application/use-cases/listar-compras.use-case';
 import { ObtenerCompraUseCase } from '../../application/use-cases/obtener-compra.use-case';
 import {
   RegistrarCompraDto,
+  RecibirCompraDto,
+  ActualizarEstadoCompraDto,
   ListarComprasDto,
 } from '../../application/dtos/compra.dto';
 import {
@@ -17,6 +21,8 @@ import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.de
 export class ComprasController {
   constructor(
     private readonly registrarCompraUseCase: RegistrarCompraUseCase,
+    private readonly recibirCompraUseCase: RecibirCompraUseCase,
+    private readonly actualizarEstadoCompraUseCase: ActualizarEstadoCompraUseCase,
     private readonly listarComprasUseCase: ListarComprasUseCase,
     private readonly obtenerCompraUseCase: ObtenerCompraUseCase,
   ) {}
@@ -28,6 +34,34 @@ export class ComprasController {
     @CurrentUser() usuario: AuthenticatedUser | undefined,
   ) {
     return this.registrarCompraUseCase.execute(
+      dto,
+      requireAuthenticatedUser(usuario).id,
+    );
+  }
+
+  @Patch(':id/recibir')
+  @RequierePermiso('compras:crear')
+  async recibir(
+    @Param('id') id: string,
+    @Body() dto: RecibirCompraDto,
+    @CurrentUser() usuario: AuthenticatedUser | undefined,
+  ) {
+    return this.recibirCompraUseCase.execute(
+      id,
+      dto,
+      requireAuthenticatedUser(usuario).id,
+    );
+  }
+
+  @Patch(':id/estado')
+  @RequierePermiso('compras:crear')
+  async cambiarEstado(
+    @Param('id') id: string,
+    @Body() dto: ActualizarEstadoCompraDto,
+    @CurrentUser() usuario: AuthenticatedUser | undefined,
+  ) {
+    return this.actualizarEstadoCompraUseCase.execute(
+      id,
       dto,
       requireAuthenticatedUser(usuario).id,
     );

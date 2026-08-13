@@ -126,7 +126,7 @@ El backend ya tiene módulos de catálogo, inventario, compras, clientes, provee
 |---|---|---|---|---|---|
 | 3.1 | **Devoluciones / RMA** [Backend][ERP][E-commerce] ✅ | Implementar solicitud, evaluación, resolución (reembolso/cambio/sin compensación), destino físico (inventario, baja o revisión), nota de crédito y trazabilidad. | Una devolución solo referencia ítems entregados y cantidades disponibles; el restock y Kardex son atómicos; la compensación no se duplica. | E2e de devolución parcial/completa, producto dañado, restock y reintento idempotente. | **P1 / L** |
 | 3.2 | **Bitácora de negocio** [Backend][ERP] ✅ | Registrar actor, request ID, origen, IP/user-agent y antes/después de operaciones críticas de seguridad, precio, stock, pagos, descuentos y devoluciones. | Los eventos críticos son inmutables, consultables solo por rol autorizado y no exponen secretos. | E2e de evento por acción crítica; revisión de permisos y redacción de datos sensibles. | **P1 / M** |
-| 3.3 | **Compras y proveedores operables** [ERP][Backend] | Cerrar el flujo de orden de compra, recepción parcial/total, costo de transporte, costo promedio, kardex y pantallas pendientes del rediseño/refactor de compras. | Las transiciones de orden son válidas; recibir no duplica inventario; costo promedio y movimientos coinciden. | E2e de orden → recepción parcial → finalización; prueba de UI administrativa. | **P1 / L** |
+| 3.3 | **Compras y proveedores operables** [ERP][Backend] ✅ | Cerrar el flujo de orden de compra, recepción parcial/total, costo de transporte, costo promedio, kardex y pantallas pendientes del rediseño/refactor de compras. | Las transiciones de orden son válidas; recibir no duplica inventario; costo promedio y movimientos coinciden. | E2e de orden → recepción parcial → finalización; prueba de UI administrativa. | **P1 / L** |
 | 3.4 | **Combos y catálogo pendientes** [ERP][E-commerce][Backend] | Completar reglas de vigencia/control de stock de combos y revisar los cambios OpenSpec pendientes de variantes multidimensionales, empaques, combos y catálogo antes de activarlos. | El stock virtual y la vigencia son consistentes en catálogo, POS y venta; variantes/presentaciones tienen SKU y validaciones correctas. | Tests de cálculo de combo; e2e de venta de combo; prueba de formularios de catálogo. | **P2 / L** |
 
 **Cierre de 3.1:** completado y verificado (2026-08-13).
@@ -141,6 +141,12 @@ El backend ya tiene módulos de catálogo, inventario, compras, clientes, provee
 - **Integración:** Auditoría integrada en flujos críticos (`AuthService.login`, `ProcesarWebhookBisaUseCase`, `EvaluarDevolucionUseCase`).
 - **Endpoint ERP:** `BitacoraErpController` (`GET /bitacora` paginado y filtrable) protegido con RBAC `@RequierePermiso('iam:bitacora:ver')`.
 - **Verificación:** 31/31 suites unitarias passed (209/209 tests); 9/9 suites e2e passed incluyendo `bitacora.e2e-spec.ts` (3/3 tests) contra PostgreSQL real; `tsc --noEmit` y `next build` limpios en frontend.
+
+**Cierre de 3.3:** completado y verificado (2026-08-13).
+- **Modelos & Prisma:** Modelos `Compra` y `CompraDetalle` actualizados con `public_id`, `costo_transporte`, `subtotal`, `total`, `estado` (`BORRADOR`, `EMITIDA`, `RECEPCION_PARCIAL`, `RECIBIDA`, `CANCELADA`), `cantidad_solicitada`, `cantidad_recibida` y `Producto.costo_promedio`. DB sincronizada con `prisma db push`.
+- **Costo Promedio Ponderado & Recepción Operativa:** `RecibirCompraUseCase` procesa entregas parciales/totales, prorratea el costo de flete sobre el valor de los ítems recibidos, calcula el **Costo Promedio Ponderado** ($C_{promedio}$) de cada producto, incrementa stock en `Inventario` y genera registros Kardex inmutables en `MovimientosInventario`.
+- **Controlador ERP:** `ComprasController` (`POST /compras`, `PATCH /compras/:id/recibir`, `PATCH /compras/:id/estado`, `GET /compras`, `GET /compras/:id`) con RBAC `compras:crear` y `compras:ver`.
+- **Verificación:** 31/31 suites unitarias passed (207/207 tests); 10/10 suites e2e passed incluyendo `compras.e2e-spec.ts` (3/3 tests) contra PostgreSQL real; `tsc --noEmit` y `next build` limpios en frontend.
 
 
 **No iniciar:** reembolso de pagos QR ni devolución de inventario sin 3.1; son operaciones financieras y de stock que deben compartir una única trazabilidad.

@@ -7,20 +7,29 @@ export interface CompraDetalleEntity {
   variante_id?: bigint;
   empaque_id?: bigint;
   cantidad: number;
-  costo_unitario: number; // or Decimal
+  costo_unitario: number;
 }
 
 export interface CompraCreateData {
   proveedor_id?: bigint;
   usuario_id: bigint;
   numero_recibo?: string;
+  costo_transporte?: number;
+  subtotal?: number;
   total: number;
+  estado?: string;
   observaciones?: string;
   detalles: CompraDetalleEntity[];
 }
 
 export interface ICompraRepository {
-  crear(data: CompraCreateData, tx?: any): Promise<Prisma.CompraGetPayload<Record<string, never>>>;
-  listar(params: { offset: number; limit: number }): Promise<{ total: number; data: any[] }>;
+  crear(
+    data: CompraCreateData,
+    tx?: any,
+  ): Promise<Prisma.CompraGetPayload<Record<string, never>>>;
+  listar(params: {
+    offset: number;
+    limit: number;
+  }): Promise<{ total: number; data: any[] }>;
   obtenerPorId(id: string): Promise<any>;
 }

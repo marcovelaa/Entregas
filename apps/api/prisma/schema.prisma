@@ -175,6 +175,7 @@ model Producto {
   unidad_medida      String       @default("UNIDAD") @db.VarChar(40)
   atributos          Json         @default("{}") @db.JsonB
   precio_base        Decimal      @default(0) @db.Decimal(14, 2)
+  costo_promedio     Decimal      @default(0) @db.Decimal(14, 2)
   precio_promocional Decimal?     @db.Decimal(14, 2)
   opciones_variantes Json         @default("[]") @db.JsonB
   activo             Boolean      @default(true)
@@ -351,38 +352,47 @@ model Proveedor {
 }
 
 model Compra {
-  id           BigInt   @id @default(autoincrement())
-  proveedor_id BigInt?
-  usuario_id   BigInt?
-  numero_nota  String   @default("S/N") @db.VarChar(100)
-  fecha        DateTime @default(now())
-  total        Decimal  @default(0) @db.Decimal(14, 2)
-  estado       String   @default("COMPLETADO") @db.VarChar(50) // COMPLETADO, ANULADO
-  notas        String?  @db.Text
-  creado_en    DateTime @default(now())
+  id               BigInt   @id @default(autoincrement())
+  public_id        String?  @unique @default(uuid()) @db.Uuid
+  proveedor_id     BigInt?
+  usuario_id       BigInt?
+  numero_nota      String   @default("S/N") @db.VarChar(100)
+  fecha            DateTime @default(now())
+  costo_transporte Decimal  @default(0) @db.Decimal(14, 2)
+  subtotal         Decimal  @default(0) @db.Decimal(14, 2)
+  total            Decimal  @default(0) @db.Decimal(14, 2)
+  estado           String   @default("BORRADOR") @db.VarChar(50)
+  notas            String?  @db.Text
+  creado_en        DateTime @default(now())
+  actualizado_en   DateTime @default(now()) @updatedAt
 
-  proveedor Proveedor?     @relation(fields: [proveedor_id], references: [id], onDelete: Restrict)
-  usuario   Usuario?       @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
+  proveedor Proveedor?      @relation(fields: [proveedor_id], references: [id], onDelete: Restrict)
+  usuario   Usuario?        @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
   detalles  CompraDetalle[]
 
+  @@index([proveedor_id])
+  @@index([estado])
   @@map("compras")
 }
 
 model CompraDetalle {
-  id              BigInt  @id @default(autoincrement())
-  compra_id       BigInt
-  producto_id     BigInt
-  variante_id     BigInt?
-  empaque_id      BigInt?
-  cantidad        Int
-  precio_costo    Decimal @default(0) @db.Decimal(14, 2)
-  subtotal        Decimal @default(0) @db.Decimal(14, 2)
+  id                  BigInt  @id @default(autoincrement())
+  compra_id           BigInt
+  producto_id         BigInt
+  variante_id         BigInt?
+  empaque_id          BigInt?
+  cantidad_solicitada Int     @default(1)
+  cantidad_recibida   Int     @default(0)
+  precio_costo        Decimal @default(0) @db.Decimal(14, 2)
+  subtotal            Decimal @default(0) @db.Decimal(14, 2)
 
   compra   Compra    @relation(fields: [compra_id], references: [id], onDelete: Cascade)
   producto Producto  @relation(fields: [producto_id], references: [id], onDelete: Restrict)
   variante Variante? @relation(fields: [variante_id], references: [id], onDelete: Restrict)
   empaque  Empaque?  @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
 
+  @@index([compra_id])
+  @@index([producto_id])
   @@map("compra_detalles")
 }
 
