@@ -1,72 +1,48 @@
 'use client';
 import React, { useState } from 'react';
-import Image from 'next/image';
-import PageHeader from '@/components/organisms/PageHeader/PageHeader';
 import { ProductCard } from '@/components/molecules/ProductCard/ProductCard';
+import { CatalogSidebar } from '@/components/organisms/CatalogSidebar/CatalogSidebar';
 import styles from './planLector.module.css';
 
-// Estructura de categorías jerárquicas
-const categories = [
-  {
-    id: 'inicial',
-    name: 'Inicial',
-    subGrades: [
-      { id: 'ini-pollito', name: 'Pollito' },
-      { id: 'ini-nidito', name: 'Nidito' },
-      { id: 'ini-prekinder', name: 'Prekínder' },
-      { id: 'ini-kinder', name: 'Kínder' },
-    ]
-  },
-  {
-    id: 'primaria',
-    name: 'Primaria',
-    subGrades: [
-      { id: 'pri-1', name: 'Primero' },
-      { id: 'pri-2', name: 'Segundo' },
-      { id: 'pri-3', name: 'Tercero' },
-      { id: 'pri-4', name: 'Cuarto' },
-      { id: 'pri-5', name: 'Quinto' },
-      { id: 'pri-6', name: 'Sexto' },
-    ]
-  },
-  {
-    id: 'secundaria',
-    name: 'Secundaria',
-    subGrades: [
-      { id: 'sec-1', name: 'Primero' },
-      { id: 'sec-2', name: 'Segundo' },
-      { id: 'sec-3', name: 'Tercero' },
-      { id: 'sec-4', name: 'Cuarto' },
-      { id: 'sec-5', name: 'Quinto' },
-      { id: 'sec-6', name: 'Sexto' },
-    ]
-  },
-  {
-    id: 'otros',
-    name: 'Otros',
-    subGrades: []
-  }
+const levels = [
+  { id: 'inicial', name: 'Inicial', colorClass: '', href: null },
+  { id: 'primaria', name: 'Primaria', colorClass: '', href: null },
+  { id: 'secundaria', name: 'Secundaria', colorClass: '', href: null },
+  { id: 'otros', name: 'Otros', colorClass: '', href: null }
 ];
 
-// Flat list de grados para búsquedas rápidas de nombres
-const allGradesFlat = categories.flatMap(cat => 
-  cat.subGrades.length > 0 ? cat.subGrades : [{ id: cat.id, name: cat.name }]
-);
-
-// Mock data
-const books = [
-  { id: 1, gradeId: 'ini-prekinder', title: 'Cuentos para soñar', author: 'Ana María Machado', publisher: 'Santillana', isbn: '978-84-1234-567', price: 45, img: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=400&auto=format&fit=crop' },
-  { id: 2, gradeId: 'ini-kinder', title: 'El monstruo de colores', author: 'Anna Llenas', publisher: 'Flamboyant', isbn: '978-84-9876-543', price: 60, img: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop' },
-  { id: 3, gradeId: 'pri-1', title: 'Mi primer libro de lectura', author: 'Varios Autores', publisher: 'Loqueleo', isbn: '978-84-1111-222', price: 55, img: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=400&auto=format&fit=crop' },
-  { id: 4, gradeId: 'pri-3', title: 'Matilda', author: 'Roald Dahl', publisher: 'Alfaguara', isbn: '978-84-3333-444', price: 65, img: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=400&auto=format&fit=crop' },
-  { id: 5, gradeId: 'sec-1', title: 'Cien años de soledad', author: 'Gabriel García Márquez', publisher: 'Sudamericana', isbn: '978-84-5555-666', price: 120, img: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop' },
-  { id: 6, gradeId: 'sec-4', title: '1984', author: 'George Orwell', publisher: 'Debolsillo', isbn: '978-84-7777-888', price: 85, img: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=400&auto=format&fit=crop' },
-  { id: 7, gradeId: 'otros', title: 'Diccionario Escolar', author: 'RAE', publisher: 'Espasa', isbn: '978-84-1111-999', price: 150, img: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=400&auto=format&fit=crop' },
-];
+const catalogData: Record<string, { id: string; name: string; subjects: { id: string; name: string }[] }[]> = {
+  inicial: [
+    { id: 'ini-pollito', name: 'Pollito', subjects: [] },
+    { id: 'ini-nidito', name: 'Nidito', subjects: [] },
+    { id: 'ini-prekinder', name: 'Prekínder', subjects: [] },
+    { id: 'ini-kinder', name: 'Kínder', subjects: [] },
+  ],
+  primaria: [
+    { id: 'pri-1', name: 'Primero', subjects: [] },
+    { id: 'pri-2', name: 'Segundo', subjects: [] },
+    { id: 'pri-3', name: 'Tercero', subjects: [] },
+    { id: 'pri-4', name: 'Cuarto', subjects: [] },
+    { id: 'pri-5', name: 'Quinto', subjects: [] },
+    { id: 'pri-6', name: 'Sexto', subjects: [] },
+  ],
+  secundaria: [
+    { id: 'sec-1', name: 'Primero', subjects: [] },
+    { id: 'sec-2', name: 'Segundo', subjects: [] },
+    { id: 'sec-3', name: 'Tercero', subjects: [] },
+    { id: 'sec-4', name: 'Cuarto', subjects: [] },
+    { id: 'sec-5', name: 'Quinto', subjects: [] },
+    { id: 'sec-6', name: 'Sexto', subjects: [] },
+  ],
+  otros: [
+    { id: 'otros-all', name: 'Todas las obras', subjects: [] }
+  ]
+};
 
 export default function PlanLectorPage() {
-  const [expandedCategory, setExpandedCategory] = useState<string | null>('');
-  const [activeGrade, setActiveGrade] = useState('');
+  const [activeLevel, setActiveLevel] = useState<string>('');
+  const [activeGrade, setActiveGrade] = useState<string>('');
+  const [activeSubject, setActiveSubject] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<any[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -88,114 +64,43 @@ export default function PlanLectorPage() {
   }, []);
 
   const filteredBooks = products.filter(b => {
-    // const matchesGrade = activeGrade ? b.gradeId === activeGrade : true; 
     const titleMatch = b.nombre ? b.nombre.toLowerCase().includes(searchQuery.toLowerCase()) : false;
     return titleMatch;
   });
 
   const getActiveGradeName = () => {
-    if (!activeGrade) return 'Todos los grados';
-    const found = allGradesFlat.find(g => g.id === activeGrade);
-    if (!found) return 'Todos los grados';
-    // Find parent category to show full context like "Primaria - Primero"
-    const parent = categories.find(c => c.subGrades.some(sub => sub.id === activeGrade));
-    return parent ? `${parent.name} - ${found.name}` : found.name;
+    if (!activeGrade) return 'Todas las lecturas';
+    const levelFound = Object.keys(catalogData).find(lvl => 
+      catalogData[lvl].some(g => g.id === activeGrade)
+    );
+    if (!levelFound) return 'Todas las lecturas';
+    const gradeFound = catalogData[levelFound].find(g => g.id === activeGrade);
+    const levelName = levels.find(l => l.id === levelFound)?.name;
+    return `${levelName} - ${gradeFound?.name}`;
   };
 
   return (
     <div className={styles.pageWrapper}>
-      <PageHeader 
-        title="Plan Lector"
-        subtitle="Descubre la selección oficial de textos y lecturas recomendadas. Organizado por grado para facilitar tu búsqueda."
-      />
-
       <div className={styles.layoutContainer}>
-        {/* Mobile Overlay */}
-        <div 
-          className={`${styles.mobileOverlay} ${isMobileMenuOpen ? styles.mobileOverlayOpen : ''}`} 
-          onClick={() => setIsMobileMenuOpen(false)}
+        <CatalogSidebar 
+          levels={levels}
+          catalogData={catalogData}
+          activeLevel={activeLevel}
+          setActiveLevel={setActiveLevel}
+          activeGrade={activeGrade}
+          setActiveGrade={setActiveGrade}
+          setActiveSubject={setActiveSubject}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+          styles={styles}
         />
 
-        {/* Navegación lateral estilo acordeón */}
-        <aside className={`${styles.sidebarSticky} ${isMobileMenuOpen ? styles.sidebarOpen : ''}`}>
-          <div className={styles.sidebarHeaderMobile}>
-            <h3>Filtrar Catálogo</h3>
-            <button className={styles.closeSidebarBtn} onClick={() => setIsMobileMenuOpen(false)}>×</button>
-          </div>
-          <h3 className={styles.sidebarTitle}>Filtrar por Nivel</h3>
-            <nav className={styles.categoryNav}>
-              {categories.map(cat => {
-                const isExpanded = expandedCategory === cat.id;
-                const hasSubGrades = cat.subGrades.length > 0;
-                const hasActiveSubGrade = hasSubGrades && cat.subGrades.some(sub => sub.id === activeGrade);
-                const isActiveCat = (!hasSubGrades && activeGrade === cat.id) || hasActiveSubGrade;
-
-                return (
-                  <div key={cat.id} className={styles.categoryGroup}>
-                    <button 
-                      className={`${styles.categoryBtn} ${isExpanded || isActiveCat ? styles.categoryExpanded : ''}`}
-                      onClick={() => {
-                        if (hasSubGrades) {
-                          if (expandedCategory === cat.id) {
-                            // Cierra el acordeón y resetea el filtro (imitando Textos Escolares)
-                            setExpandedCategory('');
-                            setActiveGrade('');
-                          } else {
-                            setExpandedCategory(cat.id);
-                            setActiveGrade(cat.subGrades[0].id);
-                          }
-                        } else {
-                          if (activeGrade === cat.id) {
-                            setActiveGrade('');
-                            setExpandedCategory('');
-                          } else {
-                            setActiveGrade(cat.id);
-                            setExpandedCategory(cat.id);
-                            setIsMobileMenuOpen(false);
-                          }
-                        }
-                      }}
-                    >
-                      <span className={styles.categoryName}>{cat.name}</span>
-                      {hasSubGrades && (
-                        <svg className={`${styles.chevron} ${isExpanded ? styles.chevronOpen : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                      )}
-                    </button>
-                    
-                    {hasSubGrades && (
-                      <div className={`${styles.subGradesWrapper} ${isExpanded ? styles.subGradesOpen : ''}`}>
-                        <div className={styles.subGradesInner}>
-                          <div className={styles.subGradesList}>
-                            {cat.subGrades.map(sub => (
-                              <button
-                                key={sub.id}
-                                className={`${styles.subGradeBtn} ${activeGrade === sub.id ? styles.subGradeActive : ''}`}
-                                onClick={() => {
-                                  setActiveGrade(sub.id);
-                                  setIsMobileMenuOpen(false);
-                                }}
-                              >
-                                {sub.name}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </nav>
-        </aside>
-
-        {/* Área principal del catálogo */}
-        <main className={styles.catalogArea}>
+        <main>
           <div className={styles.catalogHeader}>
             <div className={styles.headerTitleRow}>
-              <h2 className={styles.catalogTitle}>{getActiveGradeName()}</h2>
-              {/* Mobile Filter Button */}
+              <div>
+                <h2 className={styles.catalogTitle}>{getActiveGradeName()}</h2>
+              </div>
               <button className={styles.mobileFilterBtn} onClick={() => setIsMobileMenuOpen(true)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
                   <line x1="4" y1="21" x2="4" y2="14"></line>
@@ -218,7 +123,7 @@ export default function PlanLectorPage() {
               </svg>
               <input 
                 type="text" 
-                placeholder="Buscar libro en este nivel..." 
+                placeholder="Buscar lectura..." 
                 className={styles.searchInput}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -232,7 +137,6 @@ export default function PlanLectorPage() {
                 const imageUrl = book.imagenes && book.imagenes.length > 0 
                   ? `http://localhost:3001${book.imagenes[0].url}`
                   : 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop';
-                const numericPrice = Number(book.precio_base) || 0;
 
                 return (
                   <ProductCard
