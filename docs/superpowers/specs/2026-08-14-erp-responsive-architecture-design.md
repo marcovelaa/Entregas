@@ -46,6 +46,7 @@ Mismos quiebres que ya aparecían sueltos en el código; se estandarizan, no se 
 
 ## Checklist de arquitectura (por módulo)
 
+0. **Conexión real con el backend**: confirmar que cada llamada del módulo (`apps/admin/src/lib/axios.ts`) apunta a un endpoint que existe de verdad hoy en `apps/api` (el backend avanzó mucho desde que se escribió este doc — ahora incluye Pedidos, Pagos QR/BISA, Devoluciones, Bitácora — ver `apps/api/src/app.module.ts` y los controllers reales, no lo que dice este documento). Si un módulo todavía usa datos estáticos/mock donde ya existe un endpoint real, se conecta como parte de este mismo pase. Si una llamada apunta a una ruta que ya no existe o cambió de forma, se corrige.
 1. **Separación contenedor/presentación**: el `page.tsx` es un contenedor delgado (fetch, estado de alto nivel, routing); compone piezas presentacionales en vez de mezclar todo en un archivo de cientos de líneas.
 2. **Ubicación atomic design**: lo reutilizable entre módulos va a `components/{atoms,molecules,organisms}` compartido; lo específico de un módulo va a su carpeta `components/` local (patrón que ya usa `catalogo`). Atom = primitiva visual sin lógica. Molecule = composición chica con estado local. Organism = sección autocontenida con su propio dato/comportamiento.
 3. **Disparador de tamaño**: +300 líneas en un archivo es señal para buscar qué extraer, no una regla ciega de partir todo.
