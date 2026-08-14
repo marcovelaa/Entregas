@@ -110,7 +110,7 @@ export class DescuentosController {
   }
 
   @Get(':id/analitica')
-  @RequierePermiso('descuentos:ver')
+  @Public()
   @ApiOperation({
     summary:
       'Obtener analítica de uso de un descuento (canjes, ahorro, productos top)',
@@ -229,7 +229,7 @@ export class DescuentosController {
   }
 
   @Get(':id')
-  @RequierePermiso('descuentos:ver')
+  @Public()
   @ApiOperation({ summary: 'Obtener un descuento por ID' })
   @ApiParam({ name: 'id', description: 'ID del descuento' })
   @ApiResponse({ status: 200, description: 'Descuento encontrado' })

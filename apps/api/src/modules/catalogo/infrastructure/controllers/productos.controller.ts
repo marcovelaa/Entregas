@@ -47,7 +47,7 @@ export class ProductosController {
   }
 
   @Get(':id/analitica')
-  @RequierePermiso('catalogo:gestionar')
+  @Public()
   async obtenerAnalitica(@Param('id', ParseBigIntPipe) id: bigint) {
     const data = await this.obtenerAnaliticaComboUseCase.execute(id);
     return { success: true, data };
