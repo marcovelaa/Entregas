@@ -1,12 +1,21 @@
 import { Injectable, Inject } from '@nestjs/common';
-import type { IProductoRepository, ProductoEntity } from '../../../domain/repositories/producto.repository.interface';
+import type {
+  IProductoRepository,
+  ProductoEntity,
+} from '../../../domain/repositories/producto.repository.interface';
 import { PRODUCTO_REPOSITORY } from '../../../domain/repositories/producto.repository.interface';
 import { ListarProductosDto } from '../../dtos/producto.dto';
 import { PaginatedResult } from '../../../../../common/interfaces/paginated-result.interface';
 import { computeSellable, EstadoVenta } from '@repo/combo-rules';
-import { computeStockBom, stockDisponibleDeComponente } from '../../../domain/combo-stock';
+import {
+  computeStockBom,
+  stockDisponibleDeComponente,
+} from '../../../domain/combo-stock';
 
-type ProductoConVenta = ProductoEntity & { stock_vendible?: number; estado_venta?: EstadoVenta };
+type ProductoConVenta = ProductoEntity & {
+  stock_vendible?: number;
+  estado_venta?: EstadoVenta;
+};
 
 @Injectable()
 export class ListarProductosUseCase {
@@ -15,7 +24,11 @@ export class ListarProductosUseCase {
     private readonly productoRepo: IProductoRepository,
   ) {}
 
-  async execute(dto?: ListarProductosDto, page = 1, limit = 20): Promise<PaginatedResult<ProductoConVenta>> {
+  async execute(
+    dto?: ListarProductosDto,
+    page = 1,
+    limit = 20,
+  ): Promise<PaginatedResult<ProductoConVenta>> {
     const visibilidad = dto?.visibilidad ?? 'admin';
     const { data, total } = await this.productoRepo.buscarTodos(
       {
@@ -60,14 +73,23 @@ export class ListarProductosUseCase {
 
       // Gate: días de semana ([] = sin restricción = siempre visible)
       const diasSemana: number[] = (p as any).dias_semana ?? [];
-      if (esPublica && diasSemana.length > 0 && !diasSemana.includes(ahora.getDay())) continue;
+      if (
+        esPublica &&
+        diasSemana.length > 0 &&
+        !diasSemana.includes(ahora.getDay())
+      )
+        continue;
 
       // Gate: canal de venta
       const canal: string = (p as any).canal_venta ?? 'AMBOS';
       const canalSolicitado: string = dto?.canal ?? 'ECOMMERCE';
       if (esPublica && canal !== 'AMBOS' && canal !== canalSolicitado) continue;
 
-      dataEnriquecida.push({ ...p, stock_vendible: sellable, estado_venta: estado });
+      dataEnriquecida.push({
+        ...p,
+        stock_vendible: sellable,
+        estado_venta: estado,
+      });
     }
 
     return {

@@ -20,7 +20,7 @@ export class RegistrarMovimientoUseCase {
       producto_id: mov.producto_id.toString(),
       variante_id: mov.variante_id?.toString(),
       usuario_id: mov.usuario_id?.toString(),
-      documento_origen_id: mov.documento_origen_id?.toString()
+      documento_origen_id: mov.documento_origen_id?.toString(),
     };
   }
 }

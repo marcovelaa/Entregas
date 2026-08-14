@@ -12,15 +12,22 @@ function createMockPrisma() {
 describe('PrismaDashboardRepository', () => {
   it('obtenerVentasHoy suma el total y cuenta ventas COMPLETADAS desde la fecha dada', async () => {
     const prisma = createMockPrisma();
-    prisma.venta.aggregate.mockResolvedValue({ _sum: { total: 500 }, _count: { id: 4 } });
-    const repo = new PrismaDashboardRepository(prisma as unknown as PrismaService);
+    prisma.venta.aggregate.mockResolvedValue({
+      _sum: { total: 500 },
+      _count: { id: 4 },
+    });
+    const repo = new PrismaDashboardRepository(
+      prisma as unknown as PrismaService,
+    );
     const desde = new Date(2026, 7, 5);
 
     const result = await repo.obtenerVentasHoy(desde);
 
     expect(result).toEqual({ total: 500, cantidad: 4 });
     expect(prisma.venta.aggregate).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { estado: 'COMPLETADA', creado_en: { gte: desde } } }),
+      expect.objectContaining({
+        where: { estado: 'COMPLETADA', creado_en: { gte: desde } },
+      }),
     );
   });
 
@@ -30,7 +37,9 @@ describe('PrismaDashboardRepository', () => {
       { metodo_pago: 'efectivo', _sum: { total: 120 } },
       { metodo_pago: 'QR', _sum: { total: 40 } },
     ]);
-    const repo = new PrismaDashboardRepository(prisma as unknown as PrismaService);
+    const repo = new PrismaDashboardRepository(
+      prisma as unknown as PrismaService,
+    );
     const desde = new Date(2026, 7, 5);
 
     const result = await repo.obtenerDistribucionPorMetodoPago(desde);
@@ -49,9 +58,16 @@ describe('PrismaDashboardRepository', () => {
   it('obtenerAlertasStock filtra por umbral, ordena ascendente y limita la cantidad', async () => {
     const prisma = createMockPrisma();
     prisma.inventario.findMany.mockResolvedValue([
-      { id: 1n, cantidad_disponible: 2, stock_minimo: 5, producto: { nombre: 'Cuaderno', sku: 'CU-1' } },
+      {
+        id: 1n,
+        cantidad_disponible: 2,
+        stock_minimo: 5,
+        producto: { nombre: 'Cuaderno', sku: 'CU-1' },
+      },
     ]);
-    const repo = new PrismaDashboardRepository(prisma as unknown as PrismaService);
+    const repo = new PrismaDashboardRepository(
+      prisma as unknown as PrismaService,
+    );
 
     const result = await repo.obtenerAlertasStock(10, 5);
 
@@ -61,7 +77,9 @@ describe('PrismaDashboardRepository', () => {
       take: 5,
       orderBy: { cantidad_disponible: 'asc' },
     });
-    expect(result).toEqual([{ id: '1', nombre: 'Cuaderno', sku: 'CU-1', stock: 2, stockMinimo: 5 }]);
+    expect(result).toEqual([
+      { id: '1', nombre: 'Cuaderno', sku: 'CU-1', stock: 2, stockMinimo: 5 },
+    ]);
   });
 
   it('obtenerVentasRecientes usa el nombre real del cliente (Cliente.nombre), sin campos inexistentes', async () => {
@@ -84,7 +102,9 @@ describe('PrismaDashboardRepository', () => {
         cliente: null,
       },
     ]);
-    const repo = new PrismaDashboardRepository(prisma as unknown as PrismaService);
+    const repo = new PrismaDashboardRepository(
+      prisma as unknown as PrismaService,
+    );
 
     const result = await repo.obtenerVentasRecientes(6);
 

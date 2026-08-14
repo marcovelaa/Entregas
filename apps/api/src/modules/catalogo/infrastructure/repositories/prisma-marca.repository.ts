@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
-import { IMarcaRepository, MarcaEntity } from '../../domain/repositories/marca.repository.interface';
+import {
+  IMarcaRepository,
+  MarcaEntity,
+} from '../../domain/repositories/marca.repository.interface';
 
 @Injectable()
 export class PrismaMarcaRepository implements IMarcaRepository {
@@ -14,10 +17,14 @@ export class PrismaMarcaRepository implements IMarcaRepository {
         descripcion: marca.descripcion,
         activo: marca.activo ?? true,
       },
-    }) as unknown as MarcaEntity;
+    });
   }
 
-  async buscarTodas(filtros?: { activo?: boolean }, page = 1, limit = 20): Promise<{ data: MarcaEntity[]; total: number }> {
+  async buscarTodas(
+    filtros?: { activo?: boolean },
+    page = 1,
+    limit = 20,
+  ): Promise<{ data: MarcaEntity[]; total: number }> {
     const where = {
       ...(filtros?.activo !== undefined && { activo: filtros.activo }),
     };
@@ -36,25 +43,30 @@ export class PrismaMarcaRepository implements IMarcaRepository {
   async buscarPorId(id: bigint): Promise<MarcaEntity | null> {
     return this.prisma.marca.findUnique({
       where: { id },
-    }) as unknown as MarcaEntity | null;
+    });
   }
 
   async buscarPorSlug(slug: string): Promise<MarcaEntity | null> {
     return this.prisma.marca.findUnique({
       where: { slug },
-    }) as unknown as MarcaEntity | null;
+    });
   }
 
-  async actualizar(id: bigint, datos: Partial<MarcaEntity>): Promise<MarcaEntity> {
+  async actualizar(
+    id: bigint,
+    datos: Partial<MarcaEntity>,
+  ): Promise<MarcaEntity> {
     return this.prisma.marca.update({
       where: { id },
       data: {
         ...(datos.nombre !== undefined && { nombre: datos.nombre }),
         ...(datos.slug !== undefined && { slug: datos.slug }),
-        ...(datos.descripcion !== undefined && { descripcion: datos.descripcion }),
+        ...(datos.descripcion !== undefined && {
+          descripcion: datos.descripcion,
+        }),
         ...(datos.activo !== undefined && { activo: datos.activo }),
       },
-    }) as unknown as MarcaEntity;
+    });
   }
 
   async eliminar(id: bigint): Promise<void> {

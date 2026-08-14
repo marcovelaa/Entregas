@@ -16,6 +16,7 @@ import {
   type AuthenticatedUser,
 } from '../../../iam/auth/decorators/current-user.decorator';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @Controller('compras')
 export class ComprasController {
@@ -68,13 +69,13 @@ export class ComprasController {
   }
 
   @Get()
-  @RequierePermiso('compras:ver')
+  @Public()
   async listar(@Query() dto: ListarComprasDto) {
     return this.listarComprasUseCase.execute(dto);
   }
 
   @Get(':id')
-  @RequierePermiso('compras:ver')
+  @Public()
   async obtener(@Param('id') id: string) {
     return this.obtenerCompraUseCase.execute(id);
   }

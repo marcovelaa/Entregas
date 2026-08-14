@@ -1,4 +1,7 @@
-import { IDireccionRepository, DireccionCreateData } from '../../../domain/repositories/direccion.repository.interface';
+import {
+  IDireccionRepository,
+  DireccionCreateData,
+} from '../../../domain/repositories/direccion.repository.interface';
 
 export class CrearDireccionUseCase {
   constructor(private readonly direccionRepo: IDireccionRepository) {}

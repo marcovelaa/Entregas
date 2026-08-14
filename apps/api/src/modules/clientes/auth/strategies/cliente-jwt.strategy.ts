@@ -2,7 +2,10 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { Request } from 'express';
-import { CLIENTE_REPOSITORY, type IClienteRepository } from '../../domain/repositories/cliente.repository.interface';
+import {
+  CLIENTE_REPOSITORY,
+  type IClienteRepository,
+} from '../../domain/repositories/cliente.repository.interface';
 import type { CustomerJwtPayload } from '../cliente-auth.service';
 import { getCustomerJwtSecret } from '../jwt-cliente.config';
 import type { AuthenticatedCliente } from '../decorators/cliente-actual.decorator';
@@ -12,8 +15,14 @@ const extractFromCookie = (req: Request): string | null => {
 };
 
 @Injectable()
-export class ClienteJwtStrategy extends PassportStrategy(Strategy, 'jwt-cliente') {
-  constructor(@Inject(CLIENTE_REPOSITORY) private readonly clienteRepo: IClienteRepository) {
+export class ClienteJwtStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-cliente',
+) {
+  constructor(
+    @Inject(CLIENTE_REPOSITORY)
+    private readonly clienteRepo: IClienteRepository,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([extractFromCookie]),
       ignoreExpiration: false,
@@ -22,7 +31,9 @@ export class ClienteJwtStrategy extends PassportStrategy(Strategy, 'jwt-cliente'
   }
 
   async validate(payload: CustomerJwtPayload): Promise<AuthenticatedCliente> {
-    const cliente = await this.clienteRepo.obtenerConCredencialesPorId(payload.sub);
+    const cliente = await this.clienteRepo.obtenerConCredencialesPorId(
+      payload.sub,
+    );
     if (!cliente || !cliente.activo) {
       throw new UnauthorizedException('Cliente no encontrado o inactivo');
     }

@@ -77,7 +77,9 @@ export class ObtenerAnaliticaComboUseCase {
     }
 
     if (producto.tipo_producto !== 'COMBO') {
-      throw new NotFoundException(`El producto "${producto.nombre}" no es de tipo COMBO`);
+      throw new NotFoundException(
+        `El producto "${producto.nombre}" no es de tipo COMBO`,
+      );
     }
 
     // 1. Fetch sales details of this combo
@@ -105,8 +107,14 @@ export class ObtenerAnaliticaComboUseCase {
     // 2. Aggregate sales metrics
     let unidadesVendidas = 0;
     let totalRecaudadoBs = 0;
-    const dailyMap = new Map<string, { fecha: string; unidades: number; totalBs: number }>();
-    const pagosMap = new Map<string, { metodo: string; cantidad: number; totalBs: number }>();
+    const dailyMap = new Map<
+      string,
+      { fecha: string; unidades: number; totalBs: number }
+    >();
+    const pagosMap = new Map<
+      string,
+      { metodo: string; cantidad: number; totalBs: number }
+    >();
 
     ventasDetalles.forEach((vd: any) => {
       const cant = vd.cantidad;
@@ -116,14 +124,22 @@ export class ObtenerAnaliticaComboUseCase {
 
       // Daily timeline
       const fechaIso = vd.venta.creado_en.toISOString().split('T')[0];
-      const dayData = dailyMap.get(fechaIso) || { fecha: fechaIso, unidades: 0, totalBs: 0 };
+      const dayData = dailyMap.get(fechaIso) || {
+        fecha: fechaIso,
+        unidades: 0,
+        totalBs: 0,
+      };
       dayData.unidades += cant;
       dayData.totalBs += subtotal;
       dailyMap.set(fechaIso, dayData);
 
       // Payment method breakdown
       const metodo = vd.venta.metodo_pago || 'EFECTIVO';
-      const pagoData = pagosMap.get(metodo) || { metodo, cantidad: 0, totalBs: 0 };
+      const pagoData = pagosMap.get(metodo) || {
+        metodo,
+        cantidad: 0,
+        totalBs: 0,
+      };
       pagoData.cantidad += cant;
       pagoData.totalBs += subtotal;
       pagosMap.set(metodo, pagoData);
@@ -149,9 +165,17 @@ export class ObtenerAnaliticaComboUseCase {
       // Calculate available physical stock for this component
       let stockDisp = 0;
       if (pVar && pVar.Inventario?.length) {
-        stockDisp = pVar.Inventario.reduce((acc: number, inv: any) => acc + (inv.cantidad_disponible - inv.reservado), 0);
+        stockDisp = pVar.Inventario.reduce(
+          (acc: number, inv: any) =>
+            acc + (inv.cantidad_disponible - inv.reservado),
+          0,
+        );
       } else if (pComp.Inventario?.length) {
-        stockDisp = pComp.Inventario.reduce((acc: number, inv: any) => acc + (inv.cantidad_disponible - inv.reservado), 0);
+        stockDisp = pComp.Inventario.reduce(
+          (acc: number, inv: any) =>
+            acc + (inv.cantidad_disponible - inv.reservado),
+          0,
+        );
       }
       stockDisp = Math.max(0, stockDisp);
 
@@ -172,7 +196,8 @@ export class ObtenerAnaliticaComboUseCase {
       };
     });
 
-    const stockVirtualActual = minKitsPosibles === Infinity ? 0 : minKitsPosibles;
+    const stockVirtualActual =
+      minKitsPosibles === Infinity ? 0 : minKitsPosibles;
 
     const componentes: ComponenteAnalitica[] = rawComponents.map((c: any) => ({
       ...c,
@@ -182,18 +207,26 @@ export class ObtenerAnaliticaComboUseCase {
     // 4. Financial & Savings calculations
     const precioCombo = Number(producto.precio_base);
     const ahorroPorKitBs = Math.max(0, precioSumaComponentes - precioCombo);
-    const porcentajeAhorro = precioSumaComponentes > 0 ? (ahorroPorKitBs / precioSumaComponentes) * 100 : 0;
+    const porcentajeAhorro =
+      precioSumaComponentes > 0
+        ? (ahorroPorKitBs / precioSumaComponentes) * 100
+        : 0;
     const ahorroTotalClientesBs = unidadesVendidas * ahorroPorKitBs;
 
     const cupoMaximo = producto.cupo_maximo;
     const cupoUsado = producto.cupo_usado;
-    const cupoPorcentaje = cupoMaximo && cupoMaximo > 0 ? Math.min(100, Math.round((cupoUsado / cupoMaximo) * 100)) : null;
+    const cupoPorcentaje =
+      cupoMaximo && cupoMaximo > 0
+        ? Math.min(100, Math.round((cupoUsado / cupoMaximo) * 100))
+        : null;
 
     const historialDiario = Array.from(dailyMap.values()).sort(
       (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime(),
     );
 
-    const desglosePagos = Array.from(pagosMap.values()).sort((a, b) => b.totalBs - a.totalBs);
+    const desglosePagos = Array.from(pagosMap.values()).sort(
+      (a, b) => b.totalBs - a.totalBs,
+    );
 
     const ultimasVentas = ventasDetalles.slice(0, 10).map((vd: any) => {
       const clienteNombre = vd.venta?.cliente
@@ -202,7 +235,9 @@ export class ObtenerAnaliticaComboUseCase {
       return {
         id: vd.id.toString(),
         ticket: vd.venta?.numero_ticket || `#${vd.venta_id}`,
-        fecha: vd.venta?.creado_en ? vd.venta.creado_en.toISOString() : new Date().toISOString(),
+        fecha: vd.venta?.creado_en
+          ? vd.venta.creado_en.toISOString()
+          : new Date().toISOString(),
         cliente: clienteNombre,
         cantidad: vd.cantidad,
         total: Number(vd.subtotal),

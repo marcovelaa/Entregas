@@ -2,7 +2,10 @@ import { IUsuarioRepository } from '../../../domain/repositories/usuario.reposit
 import { IRolRepository } from '../../../domain/repositories/rol.repository.interface';
 import { Usuario } from '../../../domain/entities/usuario.entity';
 import { UpdateUsuarioDto } from '../../dtos/update-usuario.dto';
-import { UsuarioNoEncontradoException, RolNoEncontradoException } from '../../../domain/exceptions/iam.exceptions';
+import {
+  UsuarioNoEncontradoException,
+  RolNoEncontradoException,
+} from '../../../domain/exceptions/iam.exceptions';
 import * as bcrypt from 'bcrypt';
 
 export class EditarUsuarioUseCase {
@@ -14,13 +17,17 @@ export class EditarUsuarioUseCase {
   async execute(id: bigint, dto: UpdateUsuarioDto): Promise<Usuario> {
     const usuario = await this.usuarioRepository.findById(id);
     if (!usuario) {
-      throw new UsuarioNoEncontradoException(`El usuario con ID ${id} no existe.`);
+      throw new UsuarioNoEncontradoException(
+        `El usuario con ID ${id} no existe.`,
+      );
     }
 
     if (dto.rolId) {
       const rol = await this.rolRepository.findById(BigInt(dto.rolId));
       if (!rol) {
-        throw new RolNoEncontradoException(`El rol con ID ${dto.rolId} no existe.`);
+        throw new RolNoEncontradoException(
+          `El rol con ID ${dto.rolId} no existe.`,
+        );
       }
       usuario.cambiarRol(BigInt(dto.rolId));
     }

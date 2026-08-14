@@ -16,19 +16,34 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Iniciar sesión con email y contraseña' })
-  @ApiResponse({ status: 200, description: 'Login exitoso: access_token, refresh_token y datos del usuario' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Login exitoso: access_token, refresh_token y datos del usuario',
+  })
   @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
   async login(@Body() dto: LoginDto) {
-    const usuario = await this.authService.validarCredenciales(dto.email, dto.password);
+    const usuario = await this.authService.validarCredenciales(
+      dto.email,
+      dto.password,
+    );
     return this.authService.login(usuario);
   }
 
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Renovar el access_token a partir de un refresh_token vigente' })
-  @ApiResponse({ status: 200, description: 'Nuevo access_token y refresh_token' })
-  @ApiResponse({ status: 401, description: 'Refresh token inválido, expirado o usuario inactivo' })
+  @ApiOperation({
+    summary: 'Renovar el access_token a partir de un refresh_token vigente',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Nuevo access_token y refresh_token',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token inválido, expirado o usuario inactivo',
+  })
   async refresh(@Body() dto: RefreshDto) {
     return this.authService.refrescar(dto.refresh_token);
   }

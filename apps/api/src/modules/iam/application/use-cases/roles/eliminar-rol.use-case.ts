@@ -9,7 +9,7 @@ export class EliminarRolUseCase {
     if (!rol) {
       throw new NotFoundException(`El rol con ID ${id} no existe.`);
     }
-    
+
     // Aquí podríamos validar si el rol tiene usuarios asignados antes de borrarlo.
     // Como es MVP, lo borramos directo.
     await this.rolRepository.delete(id);

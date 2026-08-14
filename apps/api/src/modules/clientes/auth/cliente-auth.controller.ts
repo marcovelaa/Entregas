@@ -1,10 +1,23 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Throttle, seconds } from '@nestjs/throttler';
 import { Public } from '../../iam/auth/decorators/public.decorator';
 import { ClienteAuthService } from './cliente-auth.service';
 import { ClienteJwtAuthGuard } from './guards/cliente-jwt-auth.guard';
-import { ClienteActual, type AuthenticatedCliente, requireAuthenticatedCliente } from './decorators/cliente-actual.decorator';
+import {
+  ClienteActual,
+  type AuthenticatedCliente,
+  requireAuthenticatedCliente,
+} from './decorators/cliente-actual.decorator';
 import { setClienteAuthCookies, clearClienteAuthCookies } from './cookies.util';
 import { RegistroClienteDto } from './dto/registro-cliente.dto';
 import { LoginClienteDto } from './dto/login-cliente.dto';
@@ -20,7 +33,10 @@ export class ClienteAuthController {
   @Throttle({ default: { limit: 5, ttl: seconds(60) } })
   @Post('registro')
   @HttpCode(HttpStatus.CREATED)
-  async registro(@Body() dto: RegistroClienteDto, @Res({ passthrough: true }) res: Response) {
+  async registro(
+    @Body() dto: RegistroClienteDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const resultado = await this.clienteAuthService.registrar(dto);
     setClienteAuthCookies(res, resultado);
     return { cliente: resultado.cliente };
@@ -30,8 +46,14 @@ export class ClienteAuthController {
   @Throttle({ default: { limit: 5, ttl: seconds(60) } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginClienteDto, @Res({ passthrough: true }) res: Response) {
-    const cliente = await this.clienteAuthService.validarCredenciales(dto.email, dto.password);
+  async login(
+    @Body() dto: LoginClienteDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const cliente = await this.clienteAuthService.validarCredenciales(
+      dto.email,
+      dto.password,
+    );
     const resultado = this.clienteAuthService.login(cliente);
     setClienteAuthCookies(res, resultado);
     return { cliente: resultado.cliente };
@@ -40,7 +62,10 @@ export class ClienteAuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const refreshToken = req.cookies?.['cliente_refresh_token'];
     if (!refreshToken) {
       clearClienteAuthCookies(res);
@@ -64,8 +89,14 @@ export class ClienteAuthController {
   @Post('solicitar-recuperacion')
   @HttpCode(HttpStatus.OK)
   async solicitarRecuperacion(@Body() dto: SolicitarRecuperacionDto) {
-    const resultado = await this.clienteAuthService.solicitarRecuperacion(dto.email);
-    return { message: 'Si el correo existe, vas a recibir instrucciones de recuperación.', ...resultado };
+    const resultado = await this.clienteAuthService.solicitarRecuperacion(
+      dto.email,
+    );
+    return {
+      message:
+        'Si el correo existe, vas a recibir instrucciones de recuperación.',
+      ...resultado,
+    };
   }
 
   @Public()
@@ -80,9 +111,16 @@ export class ClienteAuthController {
   @UseGuards(ClienteJwtAuthGuard)
   @Post('cambiar-password')
   @HttpCode(HttpStatus.OK)
-  async cambiarPassword(@ClienteActual() clienteActual: AuthenticatedCliente | undefined, @Body() dto: CambiarPasswordDto) {
+  async cambiarPassword(
+    @ClienteActual() clienteActual: AuthenticatedCliente | undefined,
+    @Body() dto: CambiarPasswordDto,
+  ) {
     const cliente = requireAuthenticatedCliente(clienteActual);
-    await this.clienteAuthService.cambiarPassword(cliente.id, dto.password_actual, dto.password_nueva);
+    await this.clienteAuthService.cambiarPassword(
+      cliente.id,
+      dto.password_actual,
+      dto.password_nueva,
+    );
     return { ok: true };
   }
 }

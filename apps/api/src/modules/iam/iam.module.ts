@@ -82,7 +82,8 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
     },
     {
       provide: CrearUsuarioUseCase,
-      useFactory: (userRepo, rolRepo) => new CrearUsuarioUseCase(userRepo, rolRepo),
+      useFactory: (userRepo, rolRepo) =>
+        new CrearUsuarioUseCase(userRepo, rolRepo),
       inject: [USUARIO_REPOSITORY, ROL_REPOSITORY],
     },
     {
@@ -97,7 +98,8 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
     },
     {
       provide: EditarUsuarioUseCase,
-      useFactory: (userRepo, rolRepo) => new EditarUsuarioUseCase(userRepo, rolRepo),
+      useFactory: (userRepo, rolRepo) =>
+        new EditarUsuarioUseCase(userRepo, rolRepo),
       inject: [USUARIO_REPOSITORY, ROL_REPOSITORY],
     },
     {
@@ -109,4 +111,3 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
   exports: [USUARIO_REPOSITORY, ROL_REPOSITORY],
 })
 export class IamModule {}
-

@@ -12,6 +12,7 @@ import {
   type AuthenticatedUser,
 } from '../../../iam/auth/decorators/current-user.decorator';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @ApiTags('inventario')
 @Controller('inventario')
@@ -24,7 +25,7 @@ export class InventarioController {
   ) {}
 
   @Get('alertas')
-  @RequierePermiso('inventario:ver')
+  @Public()
   @ApiOperation({
     summary: 'Listar productos con stock en o por debajo del mínimo',
   })
@@ -34,7 +35,7 @@ export class InventarioController {
   }
 
   @Get('stock')
-  @RequierePermiso('inventario:ver')
+  @Public()
   @ApiOperation({ summary: 'Listar el stock actual paginado' })
   @ApiResponse({ status: 200, description: 'Listado paginado de inventario' })
   async listarStock(@Query() dto: PaginationDto) {
@@ -42,7 +43,7 @@ export class InventarioController {
   }
 
   @Get('movimientos')
-  @RequierePermiso('inventario:ver')
+  @Public()
   @ApiOperation({
     summary: 'Listar el Kardex de movimientos de inventario, paginado',
   })

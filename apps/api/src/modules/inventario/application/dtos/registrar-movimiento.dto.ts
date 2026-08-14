@@ -1,4 +1,11 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min, IsIn } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Min,
+  IsIn,
+} from 'class-validator';
 
 export class RegistrarMovimientoDto {
   @IsNotEmpty()

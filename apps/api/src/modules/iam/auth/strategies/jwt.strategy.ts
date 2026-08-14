@@ -8,7 +8,10 @@ import { getJwtSecret } from '../jwt.config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(@Inject(USUARIO_REPOSITORY) private readonly usuarioRepo: IUsuarioRepository) {
+  constructor(
+    @Inject(USUARIO_REPOSITORY)
+    private readonly usuarioRepo: IUsuarioRepository,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,

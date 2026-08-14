@@ -12,7 +12,9 @@ export class EliminarVarianteUseCase {
 
     const count = await this.varianteRepository.contarDependencias(id);
     if (count > 0) {
-      throw new ConflictException(`No se puede eliminar la presentación porque tiene stock o movimientos de inventario asociados. Por favor, desactívela.`);
+      throw new ConflictException(
+        `No se puede eliminar la presentación porque tiene stock o movimientos de inventario asociados. Por favor, desactívela.`,
+      );
     }
 
     await this.varianteRepository.eliminar(id);

@@ -51,8 +51,18 @@ describe('PrismaProductoRepository - publica filter applies vigencia only to win
 
     expect(branchVentana.AND).toEqual(
       expect.arrayContaining([
-        { OR: [{ vigencia_inicio: null }, { vigencia_inicio: { lte: expect.any(Date) } }] },
-        { OR: [{ vigencia_fin: null }, { vigencia_fin: { gte: expect.any(Date) } }] },
+        {
+          OR: [
+            { vigencia_inicio: null },
+            { vigencia_inicio: { lte: expect.any(Date) } },
+          ],
+        },
+        {
+          OR: [
+            { vigencia_fin: null },
+            { vigencia_fin: { gte: expect.any(Date) } },
+          ],
+        },
       ]),
     );
   });

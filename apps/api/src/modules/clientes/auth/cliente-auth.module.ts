@@ -14,14 +14,20 @@ import { PrismaClienteResetTokenRepository } from '../infrastructure/repositorie
   imports: [
     ClientesModule,
     PassportModule.register({ defaultStrategy: 'jwt-cliente' }),
-    JwtModule.register({ secret: getCustomerJwtSecret(), signOptions: { expiresIn: '8h' } }),
+    JwtModule.register({
+      secret: getCustomerJwtSecret(),
+      signOptions: { expiresIn: '8h' },
+    }),
   ],
   controllers: [ClienteAuthController],
   providers: [
     ClienteAuthService,
     ClienteJwtStrategy,
     ClienteJwtAuthGuard,
-    { provide: CLIENTE_RESET_TOKEN_REPOSITORY, useClass: PrismaClienteResetTokenRepository },
+    {
+      provide: CLIENTE_RESET_TOKEN_REPOSITORY,
+      useClass: PrismaClienteResetTokenRepository,
+    },
   ],
   exports: [ClienteJwtAuthGuard],
 })

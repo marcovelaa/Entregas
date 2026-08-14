@@ -49,18 +49,28 @@ export type ProductoCrearInput = Omit<Partial<ProductoEntity>, 'cupo_usado'> & {
   componentes_combo?: any[];
 };
 
-export type ProductoActualizarInput = Omit<Partial<ProductoEntity>, 'cupo_usado'> & {
+export type ProductoActualizarInput = Omit<
+  Partial<ProductoEntity>,
+  'cupo_usado'
+> & {
   componentes_combo?: any[];
 };
 
 export interface IProductoRepository {
   crear(producto: ProductoCrearInput): Promise<ProductoEntity>;
-  buscarTodos(filtros?: ProductoFiltros, page?: number, limit?: number): Promise<{ data: ProductoEntity[]; total: number }>;
+  buscarTodos(
+    filtros?: ProductoFiltros,
+    page?: number,
+    limit?: number,
+  ): Promise<{ data: ProductoEntity[]; total: number }>;
   buscarPorId(id: bigint): Promise<ProductoEntity | null>;
   buscarPorPublicId(publicId: string): Promise<ProductoEntity | null>;
   buscarPorSku(sku: string): Promise<ProductoEntity | null>;
   buscarStocksComponentes(ids: bigint[]): Promise<InventarioStockRow[]>;
-  actualizar(id: bigint, datos: ProductoActualizarInput): Promise<ProductoEntity>;
+  actualizar(
+    id: bigint,
+    datos: ProductoActualizarInput,
+  ): Promise<ProductoEntity>;
   /** Actualiza únicamente el precio base del producto (ej. desde una compra). Participa en `tx` si se provee. */
   actualizarPrecioVenta(id: bigint, precio: number, tx?: any): Promise<void>;
   desactivar(id: bigint): Promise<ProductoEntity>;

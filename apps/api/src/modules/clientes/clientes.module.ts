@@ -18,18 +18,54 @@ import { MarcarDireccionPrincipalUseCase } from './application/use-cases/direcci
 
 @Module({
   imports: [PrismaModule],
-  controllers: [ClientesController, ClientePerfilController, DireccionesController],
+  controllers: [
+    ClientesController,
+    ClientePerfilController,
+    DireccionesController,
+  ],
   providers: [
     { provide: CLIENTE_REPOSITORY, useClass: PrismaClienteRepository },
     { provide: DIRECCION_REPOSITORY, useClass: PrismaDireccionRepository },
-    { provide: CrearClienteUseCase, useFactory: (repo) => new CrearClienteUseCase(repo), inject: [CLIENTE_REPOSITORY] },
-    { provide: ListarClientesUseCase, useFactory: (repo) => new ListarClientesUseCase(repo), inject: [CLIENTE_REPOSITORY] },
-    { provide: ActualizarClienteUseCase, useFactory: (repo) => new ActualizarClienteUseCase(repo), inject: [CLIENTE_REPOSITORY] },
-    { provide: ListarDireccionesUseCase, useFactory: (repo) => new ListarDireccionesUseCase(repo), inject: [DIRECCION_REPOSITORY] },
-    { provide: CrearDireccionUseCase, useFactory: (repo) => new CrearDireccionUseCase(repo), inject: [DIRECCION_REPOSITORY] },
-    { provide: ActualizarDireccionUseCase, useFactory: (repo) => new ActualizarDireccionUseCase(repo), inject: [DIRECCION_REPOSITORY] },
-    { provide: EliminarDireccionUseCase, useFactory: (repo) => new EliminarDireccionUseCase(repo), inject: [DIRECCION_REPOSITORY] },
-    { provide: MarcarDireccionPrincipalUseCase, useFactory: (repo) => new MarcarDireccionPrincipalUseCase(repo), inject: [DIRECCION_REPOSITORY] },
+    {
+      provide: CrearClienteUseCase,
+      useFactory: (repo) => new CrearClienteUseCase(repo),
+      inject: [CLIENTE_REPOSITORY],
+    },
+    {
+      provide: ListarClientesUseCase,
+      useFactory: (repo) => new ListarClientesUseCase(repo),
+      inject: [CLIENTE_REPOSITORY],
+    },
+    {
+      provide: ActualizarClienteUseCase,
+      useFactory: (repo) => new ActualizarClienteUseCase(repo),
+      inject: [CLIENTE_REPOSITORY],
+    },
+    {
+      provide: ListarDireccionesUseCase,
+      useFactory: (repo) => new ListarDireccionesUseCase(repo),
+      inject: [DIRECCION_REPOSITORY],
+    },
+    {
+      provide: CrearDireccionUseCase,
+      useFactory: (repo) => new CrearDireccionUseCase(repo),
+      inject: [DIRECCION_REPOSITORY],
+    },
+    {
+      provide: ActualizarDireccionUseCase,
+      useFactory: (repo) => new ActualizarDireccionUseCase(repo),
+      inject: [DIRECCION_REPOSITORY],
+    },
+    {
+      provide: EliminarDireccionUseCase,
+      useFactory: (repo) => new EliminarDireccionUseCase(repo),
+      inject: [DIRECCION_REPOSITORY],
+    },
+    {
+      provide: MarcarDireccionPrincipalUseCase,
+      useFactory: (repo) => new MarcarDireccionPrincipalUseCase(repo),
+      inject: [DIRECCION_REPOSITORY],
+    },
   ],
   exports: [CLIENTE_REPOSITORY],
 })

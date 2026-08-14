@@ -75,42 +75,137 @@ import { CrearEmpaquesBulkUseCase } from './application/use-cases/empaques/crear
     { provide: CATEGORIA_REPOSITORY, useClass: PrismaCategoriaRepository },
     { provide: PRODUCTO_REPOSITORY, useClass: PrismaProductoRepository },
     { provide: VARIANTE_REPOSITORY, useClass: PrismaVarianteRepository },
-    { provide: PRODUCTO_IMAGEN_REPOSITORY, useClass: PrismaProductoImagenRepository },
+    {
+      provide: PRODUCTO_IMAGEN_REPOSITORY,
+      useClass: PrismaProductoImagenRepository,
+    },
     { provide: EMPAQUE_REPOSITORY, useClass: PrismaEmpaqueRepository },
 
     // Marcas use cases
-    { provide: CrearMarcaUseCase, useFactory: (r) => new CrearMarcaUseCase(r), inject: [MARCA_REPOSITORY] },
-    { provide: ListarMarcasUseCase, useFactory: (r) => new ListarMarcasUseCase(r), inject: [MARCA_REPOSITORY] },
-    { provide: ObtenerMarcaUseCase, useFactory: (r) => new ObtenerMarcaUseCase(r), inject: [MARCA_REPOSITORY] },
-    { provide: ActualizarMarcaUseCase, useFactory: (r) => new ActualizarMarcaUseCase(r), inject: [MARCA_REPOSITORY] },
-    { provide: EliminarMarcaUseCase, useFactory: (r) => new EliminarMarcaUseCase(r), inject: [MARCA_REPOSITORY] },
+    {
+      provide: CrearMarcaUseCase,
+      useFactory: (r) => new CrearMarcaUseCase(r),
+      inject: [MARCA_REPOSITORY],
+    },
+    {
+      provide: ListarMarcasUseCase,
+      useFactory: (r) => new ListarMarcasUseCase(r),
+      inject: [MARCA_REPOSITORY],
+    },
+    {
+      provide: ObtenerMarcaUseCase,
+      useFactory: (r) => new ObtenerMarcaUseCase(r),
+      inject: [MARCA_REPOSITORY],
+    },
+    {
+      provide: ActualizarMarcaUseCase,
+      useFactory: (r) => new ActualizarMarcaUseCase(r),
+      inject: [MARCA_REPOSITORY],
+    },
+    {
+      provide: EliminarMarcaUseCase,
+      useFactory: (r) => new EliminarMarcaUseCase(r),
+      inject: [MARCA_REPOSITORY],
+    },
 
     // Categorías use cases
-    { provide: CrearCategoriaUseCase, useFactory: (r) => new CrearCategoriaUseCase(r), inject: [CATEGORIA_REPOSITORY] },
-    { provide: ActualizarCategoriaUseCase, useFactory: (r) => new ActualizarCategoriaUseCase(r), inject: [CATEGORIA_REPOSITORY] },
-    { provide: ListarCategoriasUseCase, useFactory: (r) => new ListarCategoriasUseCase(r), inject: [CATEGORIA_REPOSITORY] },
-    { provide: ObtenerCategoriaUseCase, useFactory: (r) => new ObtenerCategoriaUseCase(r), inject: [CATEGORIA_REPOSITORY] },
+    {
+      provide: CrearCategoriaUseCase,
+      useFactory: (r) => new CrearCategoriaUseCase(r),
+      inject: [CATEGORIA_REPOSITORY],
+    },
+    {
+      provide: ActualizarCategoriaUseCase,
+      useFactory: (r) => new ActualizarCategoriaUseCase(r),
+      inject: [CATEGORIA_REPOSITORY],
+    },
+    {
+      provide: ListarCategoriasUseCase,
+      useFactory: (r) => new ListarCategoriasUseCase(r),
+      inject: [CATEGORIA_REPOSITORY],
+    },
+    {
+      provide: ObtenerCategoriaUseCase,
+      useFactory: (r) => new ObtenerCategoriaUseCase(r),
+      inject: [CATEGORIA_REPOSITORY],
+    },
 
     // Productos use cases
-    { provide: CrearProductoUseCase, useFactory: (r) => new CrearProductoUseCase(r), inject: [PRODUCTO_REPOSITORY] },
-    { provide: ListarProductosUseCase, useFactory: (r) => new ListarProductosUseCase(r), inject: [PRODUCTO_REPOSITORY] },
-    { provide: ObtenerProductoUseCase, useFactory: (r) => new ObtenerProductoUseCase(r), inject: [PRODUCTO_REPOSITORY] },
-    { provide: ActualizarProductoUseCase, useFactory: (r) => new ActualizarProductoUseCase(r), inject: [PRODUCTO_REPOSITORY] },
-    { provide: EliminarProductoUseCase, useFactory: (r) => new EliminarProductoUseCase(r), inject: [PRODUCTO_REPOSITORY] },
-    { provide: CrearProductoImagenUseCase, useFactory: (r) => new CrearProductoImagenUseCase(r), inject: [PRODUCTO_IMAGEN_REPOSITORY] },
+    {
+      provide: CrearProductoUseCase,
+      useFactory: (r) => new CrearProductoUseCase(r),
+      inject: [PRODUCTO_REPOSITORY],
+    },
+    {
+      provide: ListarProductosUseCase,
+      useFactory: (r) => new ListarProductosUseCase(r),
+      inject: [PRODUCTO_REPOSITORY],
+    },
+    {
+      provide: ObtenerProductoUseCase,
+      useFactory: (r) => new ObtenerProductoUseCase(r),
+      inject: [PRODUCTO_REPOSITORY],
+    },
+    {
+      provide: ActualizarProductoUseCase,
+      useFactory: (r) => new ActualizarProductoUseCase(r),
+      inject: [PRODUCTO_REPOSITORY],
+    },
+    {
+      provide: EliminarProductoUseCase,
+      useFactory: (r) => new EliminarProductoUseCase(r),
+      inject: [PRODUCTO_REPOSITORY],
+    },
+    {
+      provide: CrearProductoImagenUseCase,
+      useFactory: (r) => new CrearProductoImagenUseCase(r),
+      inject: [PRODUCTO_IMAGEN_REPOSITORY],
+    },
     ObtenerAnaliticaComboUseCase,
 
     // Variantes use cases
-    { provide: CrearVarianteUseCase, useFactory: (r) => new CrearVarianteUseCase(r), inject: [VARIANTE_REPOSITORY] },
-    { provide: ListarVariantesUseCase, useFactory: (r) => new ListarVariantesUseCase(r), inject: [VARIANTE_REPOSITORY] },
-    { provide: ActualizarVarianteUseCase, useFactory: (r) => new ActualizarVarianteUseCase(r), inject: [VARIANTE_REPOSITORY] },
-    { provide: EliminarVarianteUseCase, useFactory: (r) => new EliminarVarianteUseCase(r), inject: [VARIANTE_REPOSITORY] },
+    {
+      provide: CrearVarianteUseCase,
+      useFactory: (r) => new CrearVarianteUseCase(r),
+      inject: [VARIANTE_REPOSITORY],
+    },
+    {
+      provide: ListarVariantesUseCase,
+      useFactory: (r) => new ListarVariantesUseCase(r),
+      inject: [VARIANTE_REPOSITORY],
+    },
+    {
+      provide: ActualizarVarianteUseCase,
+      useFactory: (r) => new ActualizarVarianteUseCase(r),
+      inject: [VARIANTE_REPOSITORY],
+    },
+    {
+      provide: EliminarVarianteUseCase,
+      useFactory: (r) => new EliminarVarianteUseCase(r),
+      inject: [VARIANTE_REPOSITORY],
+    },
 
     // Empaques use cases
-    { provide: CrearEmpaqueUseCase, useFactory: (r) => new CrearEmpaqueUseCase(r), inject: [EMPAQUE_REPOSITORY] },
-    { provide: ListarEmpaquesPorVarianteUseCase, useFactory: (r) => new ListarEmpaquesPorVarianteUseCase(r), inject: [EMPAQUE_REPOSITORY] },
-    { provide: ActualizarEmpaqueUseCase, useFactory: (r) => new ActualizarEmpaqueUseCase(r), inject: [EMPAQUE_REPOSITORY] },
-    { provide: CrearEmpaquesBulkUseCase, useFactory: (r) => new CrearEmpaquesBulkUseCase(r), inject: [EMPAQUE_REPOSITORY] },
+    {
+      provide: CrearEmpaqueUseCase,
+      useFactory: (r) => new CrearEmpaqueUseCase(r),
+      inject: [EMPAQUE_REPOSITORY],
+    },
+    {
+      provide: ListarEmpaquesPorVarianteUseCase,
+      useFactory: (r) => new ListarEmpaquesPorVarianteUseCase(r),
+      inject: [EMPAQUE_REPOSITORY],
+    },
+    {
+      provide: ActualizarEmpaqueUseCase,
+      useFactory: (r) => new ActualizarEmpaqueUseCase(r),
+      inject: [EMPAQUE_REPOSITORY],
+    },
+    {
+      provide: CrearEmpaquesBulkUseCase,
+      useFactory: (r) => new CrearEmpaquesBulkUseCase(r),
+      inject: [EMPAQUE_REPOSITORY],
+    },
   ],
   exports: [
     CrearProductoUseCase,

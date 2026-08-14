@@ -1,4 +1,7 @@
-import { IClienteRepository, ClienteUpdateData } from '../../domain/repositories/cliente.repository.interface';
+import {
+  IClienteRepository,
+  ClienteUpdateData,
+} from '../../domain/repositories/cliente.repository.interface';
 
 export class ActualizarClienteUseCase {
   constructor(private readonly clienteRepo: IClienteRepository) {}

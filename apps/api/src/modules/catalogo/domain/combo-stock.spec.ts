@@ -31,7 +31,9 @@ describe('combo-stock - stockBOM a partir del BOM (D4)', () => {
   it('reads stock from componente_producto Inventario when no variante is set', () => {
     const comp = {
       cantidad: 2,
-      componente_producto: { Inventario: [{ cantidad_disponible: 10, reservado: 2 }] },
+      componente_producto: {
+        Inventario: [{ cantidad_disponible: 10, reservado: 2 }],
+      },
     };
     expect(stockDisponibleDeComponente(comp)).toBe(8);
   });

@@ -32,7 +32,9 @@ export class PrismaUsuarioRepository implements IUsuarioRepository {
   }
 
   async findByPublicId(publicId: string): Promise<Usuario | null> {
-    const user = await this.prisma.usuario.findUnique({ where: { public_id: publicId } });
+    const user = await this.prisma.usuario.findUnique({
+      where: { public_id: publicId },
+    });
     return user ? this.mapToDomain(user) : null;
   }
 
@@ -42,8 +44,12 @@ export class PrismaUsuarioRepository implements IUsuarioRepository {
   }
 
   async findAll(): Promise<Usuario[]> {
-    const users = await this.prisma.usuario.findMany({ orderBy: { id: 'desc' } });
-    return users.map((u: Prisma.UsuarioGetPayload<Record<string, never>>) => this.mapToDomain(u));
+    const users = await this.prisma.usuario.findMany({
+      orderBy: { id: 'desc' },
+    });
+    return users.map((u: Prisma.UsuarioGetPayload<Record<string, never>>) =>
+      this.mapToDomain(u),
+    );
   }
 
   async save(usuario: Usuario): Promise<Usuario> {
@@ -79,9 +85,9 @@ export class PrismaUsuarioRepository implements IUsuarioRepository {
 
   async delete(id: bigint): Promise<void> {
     // Implementación de Soft Delete: Solo desactivamos al usuario
-    await this.prisma.usuario.update({ 
+    await this.prisma.usuario.update({
       where: { id },
-      data: { activo: false }
+      data: { activo: false },
     });
   }
 }

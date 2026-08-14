@@ -12,7 +12,9 @@ export class EliminarProductoUseCase {
 
     const count = await this.productoRepository.contarVariantesAsociadas(id);
     if (count > 0) {
-      throw new ConflictException(`No se puede eliminar el producto porque tiene ${count} variante(s) o presentación(es) asociada(s).`);
+      throw new ConflictException(
+        `No se puede eliminar el producto porque tiene ${count} variante(s) o presentación(es) asociada(s).`,
+      );
     }
 
     await this.productoRepository.eliminar(id);

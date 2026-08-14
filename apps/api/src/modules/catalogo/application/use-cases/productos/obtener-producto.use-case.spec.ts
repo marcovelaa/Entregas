@@ -1,5 +1,8 @@
 import { ObtenerProductoUseCase } from './obtener-producto.use-case';
-import { IProductoRepository, ProductoEntity } from '../../../domain/repositories/producto.repository.interface';
+import {
+  IProductoRepository,
+  ProductoEntity,
+} from '../../../domain/repositories/producto.repository.interface';
 
 function repoMock(overrides: Partial<IProductoRepository> = {}) {
   return {
@@ -18,7 +21,12 @@ function repoMock(overrides: Partial<IProductoRepository> = {}) {
 }
 
 function bom(stock: number, cantidad = 1) {
-  return { cantidad, componente_producto: { Inventario: [{ cantidad_disponible: stock, reservado: 0 }] } };
+  return {
+    cantidad,
+    componente_producto: {
+      Inventario: [{ cantidad_disponible: stock, reservado: 0 }],
+    },
+  };
 }
 
 function combo(overrides: Record<string, any> = {}): ProductoEntity {
@@ -44,30 +52,45 @@ function combo(overrides: Record<string, any> = {}): ProductoEntity {
 }
 
 function simple(overrides: Record<string, any> = {}): ProductoEntity {
-  return combo({ ...overrides, tipo_producto: 'SIMPLE', id: 2n, public_id: 'pub-2', sku: 'SKU-2', nombre: 'Simple' });
+  return combo({
+    ...overrides,
+    tipo_producto: 'SIMPLE',
+    id: 2n,
+    public_id: 'pub-2',
+    sku: 'SKU-2',
+    nombre: 'Simple',
+  });
 }
 
 describe('ObtenerProductoUseCase - stock_vendible/estado_venta para combos (R2-1)', () => {
   it('returns stock_vendible and estado_venta for a COMBO product', async () => {
     const repo = repoMock({
-      buscarPorId: jest.fn().mockResolvedValue(combo({ componentes_combo: [bom(20)] })),
+      buscarPorId: jest
+        .fn()
+        .mockResolvedValue(combo({ componentes_combo: [bom(20)] })),
     });
     const uc = new ObtenerProductoUseCase(repo);
 
     const result = await uc.execute('1');
 
-    expect(result).toEqual(expect.objectContaining({ stock_vendible: 20, estado_venta: 'ACTIVO' }));
+    expect(result).toEqual(
+      expect.objectContaining({ stock_vendible: 20, estado_venta: 'ACTIVO' }),
+    );
   });
 
   it('returns sellable 0 / AGOTADO for a COMBO without sellable stock', async () => {
     const repo = repoMock({
-      buscarPorId: jest.fn().mockResolvedValue(combo({ componentes_combo: [] })),
+      buscarPorId: jest
+        .fn()
+        .mockResolvedValue(combo({ componentes_combo: [] })),
     });
     const uc = new ObtenerProductoUseCase(repo);
 
     const result = await uc.execute('1');
 
-    expect(result).toEqual(expect.objectContaining({ stock_vendible: 0, estado_venta: 'AGOTADO' }));
+    expect(result).toEqual(
+      expect.objectContaining({ stock_vendible: 0, estado_venta: 'AGOTADO' }),
+    );
   });
 
   it('leaves SIMPLE products untouched (no additive fields invented)', async () => {
@@ -85,14 +108,22 @@ describe('ObtenerProductoUseCase - stock_vendible/estado_venta para combos (R2-1
   it('falls back to public_id lookup when the id lookup misses', async () => {
     const repo = repoMock({
       buscarPorId: jest.fn().mockResolvedValue(null),
-      buscarPorPublicId: jest.fn().mockResolvedValue(combo({ id: 9n, componentes_combo: [bom(5)] })),
+      buscarPorPublicId: jest
+        .fn()
+        .mockResolvedValue(combo({ id: 9n, componentes_combo: [bom(5)] })),
     });
     const uc = new ObtenerProductoUseCase(repo);
 
     const result = await uc.execute('pub-1');
 
     expect(repo.buscarPorPublicId).toHaveBeenCalledWith('pub-1');
-    expect(result).toEqual(expect.objectContaining({ id: 9n, stock_vendible: 5, estado_venta: 'ACTIVO' }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 9n,
+        stock_vendible: 5,
+        estado_venta: 'ACTIVO',
+      }),
+    );
   });
 
   it('throws NotFoundException when the product does not exist', async () => {

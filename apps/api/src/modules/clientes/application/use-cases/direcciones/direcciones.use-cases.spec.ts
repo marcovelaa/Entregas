@@ -33,9 +33,11 @@ describe('Direcciones use cases', () => {
     repo.actualizar.mockResolvedValue(null);
     const useCase = new ActualizarDireccionUseCase(repo);
 
-    await expect(useCase.execute('cliente-1', 'direccion-de-otro-cliente', { alias: 'Casa' })).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(
+      useCase.execute('cliente-1', 'direccion-de-otro-cliente', {
+        alias: 'Casa',
+      }),
+    ).rejects.toThrow(NotFoundException);
   });
 
   it('EliminarDireccionUseCase lanza NotFoundException si el repositorio no borró nada', async () => {
@@ -43,7 +45,9 @@ describe('Direcciones use cases', () => {
     repo.eliminar.mockResolvedValue(false);
     const useCase = new EliminarDireccionUseCase(repo);
 
-    await expect(useCase.execute('cliente-1', 'direccion-de-otro-cliente')).rejects.toThrow(NotFoundException);
+    await expect(
+      useCase.execute('cliente-1', 'direccion-de-otro-cliente'),
+    ).rejects.toThrow(NotFoundException);
   });
 
   it('MarcarDireccionPrincipalUseCase lanza NotFoundException si el repositorio no encuentra la fila del cliente', async () => {
@@ -51,7 +55,9 @@ describe('Direcciones use cases', () => {
     repo.marcarPrincipal.mockResolvedValue(false);
     const useCase = new MarcarDireccionPrincipalUseCase(repo);
 
-    await expect(useCase.execute('cliente-1', 'direccion-de-otro-cliente')).rejects.toThrow(NotFoundException);
+    await expect(
+      useCase.execute('cliente-1', 'direccion-de-otro-cliente'),
+    ).rejects.toThrow(NotFoundException);
   });
 
   it('CrearDireccionUseCase delega en el repositorio con el clienteId', async () => {

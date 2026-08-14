@@ -14,7 +14,7 @@ function buildRepoMock(): jest.Mocked<IClienteRepository> {
     crearConCredenciales: jest.fn(),
     actualizarPassword: jest.fn(),
     obtenerConCredencialesPorId: jest.fn(),
-  } as any;
+  };
 }
 
 describe('ClienteJwtStrategy.validate', () => {
@@ -23,7 +23,9 @@ describe('ClienteJwtStrategy.validate', () => {
     repo.obtenerConCredencialesPorId.mockResolvedValue(null);
     const strategy = new ClienteJwtStrategy(repo);
 
-    await expect(strategy.validate({ sub: '1', email: 'ana@example.test' })).rejects.toThrow(UnauthorizedException);
+    await expect(
+      strategy.validate({ sub: '1', email: 'ana@example.test' }),
+    ).rejects.toThrow(UnauthorizedException);
   });
 
   it('rechaza si el cliente está inactivo', async () => {
@@ -39,7 +41,9 @@ describe('ClienteJwtStrategy.validate', () => {
     });
     const strategy = new ClienteJwtStrategy(repo);
 
-    await expect(strategy.validate({ sub: '1', email: 'ana@example.test' })).rejects.toThrow(UnauthorizedException);
+    await expect(
+      strategy.validate({ sub: '1', email: 'ana@example.test' }),
+    ).rejects.toThrow(UnauthorizedException);
   });
 
   it('devuelve el cliente autenticado si es válido', async () => {
@@ -55,8 +59,16 @@ describe('ClienteJwtStrategy.validate', () => {
     });
     const strategy = new ClienteJwtStrategy(repo);
 
-    const result = await strategy.validate({ sub: '1', email: 'ana@example.test' });
+    const result = await strategy.validate({
+      sub: '1',
+      email: 'ana@example.test',
+    });
 
-    expect(result).toEqual({ id: '1', nombres: 'Ana', apellidos: 'Pérez', email: 'ana@example.test' });
+    expect(result).toEqual({
+      id: '1',
+      nombres: 'Ana',
+      apellidos: 'Pérez',
+      email: 'ana@example.test',
+    });
   });
 });

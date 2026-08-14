@@ -15,25 +15,25 @@ import { ListarAlertasUseCase } from './application/use-cases/listar-alertas.use
   providers: [
     {
       provide: INVENTARIO_REPOSITORY,
-      useClass: PrismaInventarioRepository
+      useClass: PrismaInventarioRepository,
     },
     {
       provide: ListarStockUseCase,
       useFactory: (repo) => new ListarStockUseCase(repo),
-      inject: [INVENTARIO_REPOSITORY]
+      inject: [INVENTARIO_REPOSITORY],
     },
     {
       provide: ListarMovimientosUseCase,
       useFactory: (repo) => new ListarMovimientosUseCase(repo),
-      inject: [INVENTARIO_REPOSITORY]
+      inject: [INVENTARIO_REPOSITORY],
     },
     {
       provide: RegistrarMovimientoUseCase,
       useFactory: (repo) => new RegistrarMovimientoUseCase(repo),
-      inject: [INVENTARIO_REPOSITORY]
+      inject: [INVENTARIO_REPOSITORY],
     },
-    ListarAlertasUseCase
+    ListarAlertasUseCase,
   ],
-  exports: [INVENTARIO_REPOSITORY]
+  exports: [INVENTARIO_REPOSITORY],
 })
 export class InventarioModule {}

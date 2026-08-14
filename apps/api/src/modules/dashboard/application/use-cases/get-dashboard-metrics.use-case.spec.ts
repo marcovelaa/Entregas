@@ -33,7 +33,11 @@ describe('GetDashboardMetricsUseCase', () => {
 
     const result = await useCase.execute();
 
-    expect(result.data.ventasHoy).toEqual({ total: 300, cantidad: 3, ticketPromedio: 100 });
+    expect(result.data.ventasHoy).toEqual({
+      total: 300,
+      cantidad: 3,
+      ticketPromedio: 100,
+    });
   });
 
   it('el ticket promedio es 0 cuando no hubo ventas hoy (evita división por cero)', async () => {
@@ -54,9 +58,15 @@ describe('GetDashboardMetricsUseCase', () => {
     const result = await useCase.execute();
 
     expect(result.data.graficoSemanal).toHaveLength(7);
-    expect(result.data.graficoSemanal.find((d) => d.dia === 'Mié')?.total).toBe(75);
-    expect(result.data.graficoSemanal.find((d) => d.dia === 'Lun')?.total).toBe(10);
-    expect(result.data.graficoSemanal.find((d) => d.dia === 'Dom')?.total).toBe(0);
+    expect(result.data.graficoSemanal.find((d) => d.dia === 'Mié')?.total).toBe(
+      75,
+    );
+    expect(result.data.graficoSemanal.find((d) => d.dia === 'Lun')?.total).toBe(
+      10,
+    );
+    expect(result.data.graficoSemanal.find((d) => d.dia === 'Dom')?.total).toBe(
+      0,
+    );
   });
 
   it('reconcilia la distribución por método de pago: fija EFECTIVO/QR/TARJETA en 0 y calcula el porcentaje', async () => {
@@ -67,19 +77,33 @@ describe('GetDashboardMetricsUseCase', () => {
 
     const result = await useCase.execute();
 
-    const porMetodo = Object.fromEntries(result.data.distribucionPagos.map((d) => [d.metodo, d]));
-    expect(porMetodo.EFECTIVO).toEqual({ metodo: 'EFECTIVO', monto: 60, porcentaje: 60 });
+    const porMetodo = Object.fromEntries(
+      result.data.distribucionPagos.map((d) => [d.metodo, d]),
+    );
+    expect(porMetodo.EFECTIVO).toEqual({
+      metodo: 'EFECTIVO',
+      monto: 60,
+      porcentaje: 60,
+    });
     expect(porMetodo.QR).toEqual({ metodo: 'QR', monto: 40, porcentaje: 40 });
-    expect(porMetodo.TARJETA).toEqual({ metodo: 'TARJETA', monto: 0, porcentaje: 0 });
+    expect(porMetodo.TARJETA).toEqual({
+      metodo: 'TARJETA',
+      monto: 0,
+      porcentaje: 0,
+    });
     expect(porMetodo.OTRO).toEqual({ metodo: 'OTRO', monto: 0, porcentaje: 0 });
   });
 
   it('desvía métodos de pago desconocidos al bucket OTRO', async () => {
-    repo.obtenerDistribucionPorMetodoPago.mockResolvedValue([{ metodo: 'CRIPTO', monto: 100 }]);
+    repo.obtenerDistribucionPorMetodoPago.mockResolvedValue([
+      { metodo: 'CRIPTO', monto: 100 },
+    ]);
 
     const result = await useCase.execute();
 
-    const porMetodo = Object.fromEntries(result.data.distribucionPagos.map((d) => [d.metodo, d]));
+    const porMetodo = Object.fromEntries(
+      result.data.distribucionPagos.map((d) => [d.metodo, d]),
+    );
     expect(porMetodo.OTRO.monto).toBe(100);
     expect(porMetodo.OTRO.porcentaje).toBe(100);
   });
@@ -98,8 +122,22 @@ describe('GetDashboardMetricsUseCase', () => {
 
   it('usa "Cliente General" cuando la venta reciente no tiene cliente asociado', async () => {
     repo.obtenerVentasRecientes.mockResolvedValue([
-      { id: '1', ticket: 'T-1', total: 50, metodoPago: 'EFECTIVO', fecha: new Date(), clienteNombre: null },
-      { id: '2', ticket: 'T-2', total: 80, metodoPago: 'QR', fecha: new Date(), clienteNombre: 'Ana Pérez' },
+      {
+        id: '1',
+        ticket: 'T-1',
+        total: 50,
+        metodoPago: 'EFECTIVO',
+        fecha: new Date(),
+        clienteNombre: null,
+      },
+      {
+        id: '2',
+        ticket: 'T-2',
+        total: 80,
+        metodoPago: 'QR',
+        fecha: new Date(),
+        clienteNombre: 'Ana Pérez',
+      },
     ]);
 
     const result = await useCase.execute();

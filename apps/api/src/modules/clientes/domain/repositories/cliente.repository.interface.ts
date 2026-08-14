@@ -34,10 +34,20 @@ export type ClienteCredencialesCreateData = {
 export interface IClienteRepository {
   crear(data: ClienteCreateData): Promise<any>;
   actualizar(id: string, data: ClienteUpdateData): Promise<any>;
-  listar(params: { offset: number; limit: number; buscar?: string }): Promise<{ total: number; data: any[] }>;
+  listar(params: {
+    offset: number;
+    limit: number;
+    buscar?: string;
+  }): Promise<{ total: number; data: any[] }>;
   obtenerPorId(id: string): Promise<any>;
-  buscarPorEmailConCredenciales(email: string): Promise<ClienteConCredenciales | null>;
-  crearConCredenciales(data: ClienteCredencialesCreateData): Promise<ClienteConCredenciales>;
+  buscarPorEmailConCredenciales(
+    email: string,
+  ): Promise<ClienteConCredenciales | null>;
+  crearConCredenciales(
+    data: ClienteCredencialesCreateData,
+  ): Promise<ClienteConCredenciales>;
   actualizarPassword(id: string, passwordHash: string): Promise<void>;
-  obtenerConCredencialesPorId(id: string): Promise<ClienteConCredenciales | null>;
+  obtenerConCredencialesPorId(
+    id: string,
+  ): Promise<ClienteConCredenciales | null>;
 }

@@ -12,7 +12,11 @@ export interface MarcaEntity {
 
 export interface IMarcaRepository {
   crear(marca: Partial<MarcaEntity>): Promise<MarcaEntity>;
-  buscarTodas(filtros?: { activo?: boolean }, page?: number, limit?: number): Promise<{ data: MarcaEntity[]; total: number }>;
+  buscarTodas(
+    filtros?: { activo?: boolean },
+    page?: number,
+    limit?: number,
+  ): Promise<{ data: MarcaEntity[]; total: number }>;
   buscarPorId(id: bigint): Promise<MarcaEntity | null>;
   buscarPorSlug(slug: string): Promise<MarcaEntity | null>;
   actualizar(id: bigint, datos: Partial<MarcaEntity>): Promise<MarcaEntity>;

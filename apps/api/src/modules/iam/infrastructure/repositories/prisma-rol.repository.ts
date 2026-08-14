@@ -26,7 +26,7 @@ export class PrismaRolRepository implements IRolRepository {
     });
 
     if (!rolModel) return null;
-    
+
     return this.mapToDomain(rolModel);
   }
 
@@ -34,8 +34,11 @@ export class PrismaRolRepository implements IRolRepository {
     const rolesModel = await this.prisma.rol.findMany({
       orderBy: { id: 'asc' },
     });
-    
-    return rolesModel.map((model: Prisma.RolGetPayload<Record<string, never>>) => this.mapToDomain(model));
+
+    return rolesModel.map(
+      (model: Prisma.RolGetPayload<Record<string, never>>) =>
+        this.mapToDomain(model),
+    );
   }
 
   async save(rol: Rol): Promise<Rol> {
@@ -74,7 +77,7 @@ export class PrismaRolRepository implements IRolRepository {
   async delete(id: bigint): Promise<void> {
     await this.prisma.rol.update({
       where: { id },
-      data: { activo: false }
+      data: { activo: false },
     });
   }
 
@@ -82,7 +85,10 @@ export class PrismaRolRepository implements IRolRepository {
     const relaciones = await this.prisma.rolPermiso.findMany({
       where: { rol_id: id },
     });
-    return relaciones.map((r: Prisma.RolPermisoGetPayload<Record<string, never>>) => r.permiso_codigo);
+    return relaciones.map(
+      (r: Prisma.RolPermisoGetPayload<Record<string, never>>) =>
+        r.permiso_codigo,
+    );
   }
 
   async asignarPermisos(id: bigint, permisos: string[]): Promise<void> {
@@ -92,7 +98,7 @@ export class PrismaRolRepository implements IRolRepository {
       // Insertar nuevos
       if (permisos.length > 0) {
         await tx.rolPermiso.createMany({
-          data: permisos.map(p => ({ rol_id: id, permiso_codigo: p }))
+          data: permisos.map((p) => ({ rol_id: id, permiso_codigo: p })),
         });
       }
     });

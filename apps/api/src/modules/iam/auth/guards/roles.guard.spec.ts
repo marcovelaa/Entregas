@@ -12,30 +12,46 @@ function createContext(user: unknown) {
 
 describe('RolesGuard', () => {
   it('permite el acceso si el endpoint no requiere ningún permiso específico', () => {
-    const reflector = { getAllAndOverride: jest.fn().mockReturnValue(undefined) } as unknown as Reflector;
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValue(undefined),
+    } as unknown as Reflector;
     const guard = new RolesGuard(reflector);
 
     expect(guard.canActivate(createContext(undefined))).toBe(true);
   });
 
   it('permite el acceso si el usuario autenticado tiene el permiso requerido', () => {
-    const reflector = { getAllAndOverride: jest.fn().mockReturnValue('ventas:crear') } as unknown as Reflector;
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValue('ventas:crear'),
+    } as unknown as Reflector;
     const guard = new RolesGuard(reflector);
 
-    expect(guard.canActivate(createContext({ permisos: ['ventas:crear', 'ventas:ver'] }))).toBe(true);
+    expect(
+      guard.canActivate(
+        createContext({ permisos: ['ventas:crear', 'ventas:ver'] }),
+      ),
+    ).toBe(true);
   });
 
   it('rechaza con ForbiddenException si el usuario no tiene el permiso requerido', () => {
-    const reflector = { getAllAndOverride: jest.fn().mockReturnValue('ventas:crear') } as unknown as Reflector;
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValue('ventas:crear'),
+    } as unknown as Reflector;
     const guard = new RolesGuard(reflector);
 
-    expect(() => guard.canActivate(createContext({ permisos: ['ventas:ver'] }))).toThrow(ForbiddenException);
+    expect(() =>
+      guard.canActivate(createContext({ permisos: ['ventas:ver'] })),
+    ).toThrow(ForbiddenException);
   });
 
   it('rechaza con ForbiddenException si no hay usuario autenticado en la request', () => {
-    const reflector = { getAllAndOverride: jest.fn().mockReturnValue('ventas:crear') } as unknown as Reflector;
+    const reflector = {
+      getAllAndOverride: jest.fn().mockReturnValue('ventas:crear'),
+    } as unknown as Reflector;
     const guard = new RolesGuard(reflector);
 
-    expect(() => guard.canActivate(createContext(undefined))).toThrow(ForbiddenException);
+    expect(() => guard.canActivate(createContext(undefined))).toThrow(
+      ForbiddenException,
+    );
   });
 });

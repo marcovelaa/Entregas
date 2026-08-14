@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsEmail } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsEmail,
+} from 'class-validator';
 import { PaginationDto } from '../../../../common/dto/pagination.dto';
 
 export class CrearProveedorDto {

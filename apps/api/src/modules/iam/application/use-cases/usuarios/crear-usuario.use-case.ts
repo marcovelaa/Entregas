@@ -2,7 +2,10 @@ import { IUsuarioRepository } from '../../../domain/repositories/usuario.reposit
 import { IRolRepository } from '../../../domain/repositories/rol.repository.interface';
 import { Usuario } from '../../../domain/entities/usuario.entity';
 import { CrearUsuarioDto } from '../../dtos/crear-usuario.dto';
-import { UsuarioDuplicadoException, RolNoEncontradoException } from '../../../domain/exceptions/iam.exceptions';
+import {
+  UsuarioDuplicadoException,
+  RolNoEncontradoException,
+} from '../../../domain/exceptions/iam.exceptions';
 import * as bcrypt from 'bcrypt';
 
 export class CrearUsuarioUseCase {
@@ -14,12 +17,16 @@ export class CrearUsuarioUseCase {
   async execute(dto: CrearUsuarioDto): Promise<Usuario> {
     const rol = await this.rolRepository.findById(BigInt(dto.rolId));
     if (!rol) {
-      throw new RolNoEncontradoException(`El rol con ID ${dto.rolId} no existe.`);
+      throw new RolNoEncontradoException(
+        `El rol con ID ${dto.rolId} no existe.`,
+      );
     }
 
     const existeEmail = await this.usuarioRepository.findByEmail(dto.email);
     if (existeEmail) {
-      throw new UsuarioDuplicadoException(`El email ${dto.email} ya está registrado.`);
+      throw new UsuarioDuplicadoException(
+        `El email ${dto.email} ya está registrado.`,
+      );
     }
 
     const salt = await bcrypt.genSalt();

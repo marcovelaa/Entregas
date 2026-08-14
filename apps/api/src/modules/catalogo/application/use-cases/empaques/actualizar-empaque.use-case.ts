@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { EMPAQUE_REPOSITORY } from '../../../domain/repositories/empaque.repository.interface';
 import type { IEmpaqueRepository } from '../../../domain/repositories/empaque.repository.interface';
 import { ActualizarEmpaqueDto } from '../../dtos/empaque.dto';

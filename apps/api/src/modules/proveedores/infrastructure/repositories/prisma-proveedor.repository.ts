@@ -19,10 +19,13 @@ export class PrismaProveedorRepository implements IProveedorRepository {
         email: proveedor.email,
         activo: proveedor.activo ?? true,
       },
-    }) as unknown as ProveedorEntity;
+    });
   }
 
-  async listar(params: { offset: number; limit: number }): Promise<{ total: number; data: ProveedorEntity[] }> {
+  async listar(params: {
+    offset: number;
+    limit: number;
+  }): Promise<{ total: number; data: ProveedorEntity[] }> {
     const [total, data] = await Promise.all([
       this.prisma.proveedor.count(),
       this.prisma.proveedor.findMany({
@@ -37,10 +40,13 @@ export class PrismaProveedorRepository implements IProveedorRepository {
   async buscarPorId(id: bigint): Promise<ProveedorEntity | null> {
     return this.prisma.proveedor.findUnique({
       where: { id },
-    }) as unknown as ProveedorEntity | null;
+    });
   }
 
-  async actualizar(id: bigint, datos: Partial<ProveedorEntity>): Promise<ProveedorEntity> {
+  async actualizar(
+    id: bigint,
+    datos: Partial<ProveedorEntity>,
+  ): Promise<ProveedorEntity> {
     return this.prisma.proveedor.update({
       where: { id },
       data: {
@@ -51,6 +57,6 @@ export class PrismaProveedorRepository implements IProveedorRepository {
         ...(datos.email !== undefined && { email: datos.email }),
         ...(datos.activo !== undefined && { activo: datos.activo }),
       },
-    }) as unknown as ProveedorEntity;
+    });
   }
 }

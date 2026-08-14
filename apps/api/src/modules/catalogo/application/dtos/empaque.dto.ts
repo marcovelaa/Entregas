@@ -1,4 +1,14 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber, IsBoolean, Min, MaxLength, IsArray, ArrayMinSize } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  Min,
+  MaxLength,
+  IsArray,
+  ArrayMinSize,
+} from 'class-validator';
 
 export class CrearEmpaqueDto {
   @IsNumber()

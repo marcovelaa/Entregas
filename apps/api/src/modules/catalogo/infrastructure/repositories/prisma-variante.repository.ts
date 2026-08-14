@@ -15,32 +15,35 @@ export class PrismaVarianteRepository implements IVarianteRepository {
         producto_id: variante.producto_id!,
         nombre: variante.nombre!,
         sku_base: variante.sku_base!,
-                imagen_url: variante.imagen_url,
+        imagen_url: variante.imagen_url,
         activo: variante.activo ?? true,
       },
-    }) as unknown as VarianteEntity;
+    });
   }
 
   async buscarPorProducto(productoId: bigint): Promise<VarianteEntity[]> {
     return this.prisma.variante.findMany({
       where: { producto_id: productoId },
       orderBy: { nombre: 'asc' },
-    }) as unknown as VarianteEntity[];
+    });
   }
 
   async buscarPorId(id: bigint): Promise<VarianteEntity | null> {
     return this.prisma.variante.findUnique({
       where: { id },
-    }) as unknown as VarianteEntity | null;
+    });
   }
 
   async buscarPorSku(sku: string): Promise<VarianteEntity | null> {
     return this.prisma.variante.findUnique({
       where: { sku_base: sku },
-    }) as unknown as VarianteEntity | null;
+    });
   }
 
-  async actualizar(id: bigint, datos: Partial<VarianteEntity>): Promise<VarianteEntity> {
+  async actualizar(
+    id: bigint,
+    datos: Partial<VarianteEntity>,
+  ): Promise<VarianteEntity> {
     return this.prisma.variante.update({
       where: { id },
       data: {
@@ -49,10 +52,14 @@ export class PrismaVarianteRepository implements IVarianteRepository {
         ...(datos.imagen_url !== undefined && { imagen_url: datos.imagen_url }),
         ...(datos.activo !== undefined && { activo: datos.activo }),
       },
-    }) as unknown as VarianteEntity;
+    });
   }
 
-  async actualizarPrecioVenta(id: bigint, precio: number, tx?: any): Promise<void> {
+  async actualizarPrecioVenta(
+    id: bigint,
+    precio: number,
+    tx?: any,
+  ): Promise<void> {
     const client = tx ?? this.prisma;
     await client.variante.update({
       where: { id },
@@ -64,7 +71,7 @@ export class PrismaVarianteRepository implements IVarianteRepository {
     return this.prisma.variante.update({
       where: { id },
       data: { activo: false },
-    }) as unknown as VarianteEntity;
+    });
   }
 
   async eliminar(id: bigint): Promise<void> {
@@ -74,8 +81,12 @@ export class PrismaVarianteRepository implements IVarianteRepository {
   }
 
   async contarDependencias(id: bigint): Promise<number> {
-    const invCount = await this.prisma.inventario.count({ where: { variante_id: id } });
-    const movCount = await this.prisma.movimientosInventario.count({ where: { variante_id: id } });
+    const invCount = await this.prisma.inventario.count({
+      where: { variante_id: id },
+    });
+    const movCount = await this.prisma.movimientosInventario.count({
+      where: { variante_id: id },
+    });
     return invCount + movCount;
   }
 }

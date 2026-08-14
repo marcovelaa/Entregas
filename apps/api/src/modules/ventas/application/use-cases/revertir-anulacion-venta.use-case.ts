@@ -5,10 +5,12 @@ import type { IVentaRepository } from '../../domain/repositories/venta.repositor
 @Injectable()
 export class RevertirAnulacionVentaUseCase {
   constructor(
-    @Inject(VENTA_REPOSITORY) private readonly ventaRepo: IVentaRepository
+    @Inject(VENTA_REPOSITORY) private readonly ventaRepo: IVentaRepository,
   ) {}
 
   async execute(venta_id: string, usuario_id: string) {
-    return { data: await this.ventaRepo.revertirAnulacion(venta_id, usuario_id) };
+    return {
+      data: await this.ventaRepo.revertirAnulacion(venta_id, usuario_id),
+    };
   }
 }

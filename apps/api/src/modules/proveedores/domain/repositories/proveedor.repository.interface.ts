@@ -14,7 +14,13 @@ export interface ProveedorEntity {
 
 export interface IProveedorRepository {
   crear(proveedor: Partial<ProveedorEntity>): Promise<ProveedorEntity>;
-  listar(params: { offset: number; limit: number }): Promise<{ total: number; data: ProveedorEntity[] }>;
+  listar(params: {
+    offset: number;
+    limit: number;
+  }): Promise<{ total: number; data: ProveedorEntity[] }>;
   buscarPorId(id: bigint): Promise<ProveedorEntity | null>;
-  actualizar(id: bigint, datos: Partial<ProveedorEntity>): Promise<ProveedorEntity>;
+  actualizar(
+    id: bigint,
+    datos: Partial<ProveedorEntity>,
+  ): Promise<ProveedorEntity>;
 }

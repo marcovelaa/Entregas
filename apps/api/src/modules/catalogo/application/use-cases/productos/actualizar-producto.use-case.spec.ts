@@ -46,7 +46,7 @@ describe('ActualizarProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', (
     await uc.execute(1n, {
       vigencia_inicio: '2026-08-01',
       vigencia_fin: '2026-08-10',
-    } as any);
+    });
 
     expect(repo.actualizar).toHaveBeenCalledWith(
       1n,
@@ -75,7 +75,12 @@ describe('ActualizarProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', (
       buscarPorId: jest.fn().mockResolvedValue(
         comboPersistido({
           componentes_combo: [
-            { cantidad: 1, componente_producto: { Inventario: [{ cantidad_disponible: 5, reservado: 0 }] } },
+            {
+              cantidad: 1,
+              componente_producto: {
+                Inventario: [{ cantidad_disponible: 5, reservado: 0 }],
+              },
+            },
           ],
         }),
       ),
@@ -83,7 +88,9 @@ describe('ActualizarProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', (
     });
     const uc = new ActualizarProductoUseCase(repo);
 
-    await expect(uc.execute(1n, { cupo_maximo: 6 } as any)).rejects.toThrow(BadRequestException);
+    await expect(uc.execute(1n, { cupo_maximo: 6 } as any)).rejects.toThrow(
+      BadRequestException,
+    );
     expect(repo.buscarStocksComponentes).not.toHaveBeenCalled();
     expect(repo.actualizar).not.toHaveBeenCalled();
   });
@@ -93,7 +100,12 @@ describe('ActualizarProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', (
       buscarPorId: jest.fn().mockResolvedValue(
         comboPersistido({
           componentes_combo: [
-            { cantidad: 1, componente_producto: { Inventario: [{ cantidad_disponible: 5, reservado: 0 }] } },
+            {
+              cantidad: 1,
+              componente_producto: {
+                Inventario: [{ cantidad_disponible: 5, reservado: 0 }],
+              },
+            },
           ],
         }),
       ),
@@ -101,9 +113,12 @@ describe('ActualizarProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', (
     });
     const uc = new ActualizarProductoUseCase(repo);
 
-    await uc.execute(1n, { cupo_maximo: 5 } as any);
+    await uc.execute(1n, { cupo_maximo: 5 });
 
-    expect(repo.actualizar).toHaveBeenCalledWith(1n, expect.objectContaining({ cupo_maximo: 5 }));
+    expect(repo.actualizar).toHaveBeenCalledWith(
+      1n,
+      expect.objectContaining({ cupo_maximo: 5 }),
+    );
   });
 
   it('validates against the NEW BOM when componentes_combo is supplied (2 kits, cupo 3)', async () => {
@@ -111,12 +126,22 @@ describe('ActualizarProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', (
       buscarPorId: jest.fn().mockResolvedValue(
         comboPersistido({
           componentes_combo: [
-            { cantidad: 1, componente_producto: { Inventario: [{ cantidad_disponible: 99, reservado: 0 }] } },
+            {
+              cantidad: 1,
+              componente_producto: {
+                Inventario: [{ cantidad_disponible: 99, reservado: 0 }],
+              },
+            },
           ],
         }),
       ),
       buscarStocksComponentes: jest.fn().mockResolvedValue([
-        { producto_id: 20n, variante_id: null, cantidad_disponible: 2, reservado: 0 },
+        {
+          producto_id: 20n,
+          variante_id: null,
+          cantidad_disponible: 2,
+          reservado: 0,
+        },
       ]),
       actualizar: jest.fn().mockResolvedValue({ id: 1n }),
     });
@@ -133,21 +158,27 @@ describe('ActualizarProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', (
 
   it('skips the guardrail for non-COMBO products', async () => {
     const repo = actualizarRepoMock({
-      buscarPorId: jest.fn().mockResolvedValue(comboPersistido({ tipo_producto: 'SIMPLE' })),
+      buscarPorId: jest
+        .fn()
+        .mockResolvedValue(comboPersistido({ tipo_producto: 'SIMPLE' })),
       actualizar: jest.fn().mockResolvedValue({ id: 1n }),
     });
     const uc = new ActualizarProductoUseCase(repo);
 
-    await uc.execute(1n, { cupo_maximo: 999 } as any);
+    await uc.execute(1n, { cupo_maximo: 999 });
 
     expect(repo.buscarStocksComponentes).not.toHaveBeenCalled();
     expect(repo.actualizar).toHaveBeenCalled();
   });
 
   it('rethrows NotFoundException when the product does not exist', async () => {
-    const repo = actualizarRepoMock({ buscarPorId: jest.fn().mockResolvedValue(null) });
+    const repo = actualizarRepoMock({
+      buscarPorId: jest.fn().mockResolvedValue(null),
+    });
     const uc = new ActualizarProductoUseCase(repo);
 
-    await expect(uc.execute(1n, { nombre: 'X' } as any)).rejects.toThrow(NotFoundException);
+    await expect(uc.execute(1n, { nombre: 'X' } as any)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

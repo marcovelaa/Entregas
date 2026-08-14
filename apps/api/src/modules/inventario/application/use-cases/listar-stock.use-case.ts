@@ -9,15 +9,18 @@ export class ListarStockUseCase {
     const limit = dto.limit || 20;
     const offset = (page - 1) * limit;
 
-    const { total, data } = await this.inventarioRepo.listarStock({ offset, limit });
+    const { total, data } = await this.inventarioRepo.listarStock({
+      offset,
+      limit,
+    });
 
     return {
       data,
       meta: {
         total,
         page,
-        last_page: Math.ceil(total / limit)
-      }
+        last_page: Math.ceil(total / limit),
+      },
     };
   }
 }

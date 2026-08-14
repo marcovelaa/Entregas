@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import type { IVarianteRepository } from '../../../domain/repositories/variante.repository.interface';
 import { VARIANTE_REPOSITORY } from '../../../domain/repositories/variante.repository.interface';
 import { ActualizarVarianteDto } from '../../dtos/variante.dto';
@@ -16,12 +21,12 @@ export class ActualizarVarianteUseCase {
       throw new NotFoundException(`Variante con id ${id} no encontrada`);
     }
 
-
-
     if (dto.sku_base && dto.sku_base !== variante.sku_base) {
       const existente = await this.varianteRepo.buscarPorSku(dto.sku_base);
       if (existente) {
-        throw new BadRequestException(`Ya existe una variante con el SKU '${dto.sku_base}'`);
+        throw new BadRequestException(
+          `Ya existe una variante con el SKU '${dto.sku_base}'`,
+        );
       }
     }
 

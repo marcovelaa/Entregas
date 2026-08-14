@@ -19,20 +19,29 @@ export class PrismaDireccionRepository implements IDireccionRepository {
     return filas.map((f) => this.serialize(f));
   }
 
-  async crear(clienteId: string, data: DireccionCreateData): Promise<DireccionData> {
+  async crear(
+    clienteId: string,
+    data: DireccionCreateData,
+  ): Promise<DireccionData> {
     const fila = await this.prisma.direccion.create({
       data: { ...data, cliente_id: BigInt(clienteId) },
     });
     return this.serialize(fila);
   }
 
-  async actualizar(clienteId: string, direccionId: string, data: DireccionUpdateData): Promise<DireccionData | null> {
+  async actualizar(
+    clienteId: string,
+    direccionId: string,
+    data: DireccionUpdateData,
+  ): Promise<DireccionData | null> {
     const { count } = await this.prisma.direccion.updateMany({
       where: { id: BigInt(direccionId), cliente_id: BigInt(clienteId) },
       data,
     });
     if (count === 0) return null;
-    const fila = await this.prisma.direccion.findUnique({ where: { id: BigInt(direccionId) } });
+    const fila = await this.prisma.direccion.findUnique({
+      where: { id: BigInt(direccionId) },
+    });
     return fila ? this.serialize(fila) : null;
   }
 
@@ -43,7 +52,10 @@ export class PrismaDireccionRepository implements IDireccionRepository {
     return count > 0;
   }
 
-  async marcarPrincipal(clienteId: string, direccionId: string): Promise<boolean> {
+  async marcarPrincipal(
+    clienteId: string,
+    direccionId: string,
+  ): Promise<boolean> {
     return this.prisma.$transaction(async (tx) => {
       const { count } = await tx.direccion.updateMany({
         where: { id: BigInt(direccionId), cliente_id: BigInt(clienteId) },
@@ -51,7 +63,10 @@ export class PrismaDireccionRepository implements IDireccionRepository {
       });
       if (count === 0) return false;
       await tx.direccion.updateMany({
-        where: { cliente_id: BigInt(clienteId), id: { not: BigInt(direccionId) } },
+        where: {
+          cliente_id: BigInt(clienteId),
+          id: { not: BigInt(direccionId) },
+        },
         data: { es_principal: false },
       });
       return true;

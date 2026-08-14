@@ -1,4 +1,16 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber, IsObject, IsBoolean, Min, IsArray, IsEnum, IsInt, IsIn } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsObject,
+  IsBoolean,
+  Min,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsIn,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ModoVenta, CanalVenta } from '@prisma/client';
 import { PaginationDto } from '../../../../common/dto/pagination.dto';

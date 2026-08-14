@@ -32,10 +32,15 @@ export class PrismaDashboardRepository implements IDashboardRepository {
       select: { total: true, creado_en: true },
     });
 
-    return ventas.map((v) => ({ total: Number(v.total), creado_en: v.creado_en }));
+    return ventas.map((v) => ({
+      total: Number(v.total),
+      creado_en: v.creado_en,
+    }));
   }
 
-  async obtenerDistribucionPorMetodoPago(desde: Date): Promise<DistribucionPago[]> {
+  async obtenerDistribucionPorMetodoPago(
+    desde: Date,
+  ): Promise<DistribucionPago[]> {
     const grupos = await this.prisma.venta.groupBy({
       by: ['metodo_pago'],
       _sum: { total: true },
@@ -48,7 +53,10 @@ export class PrismaDashboardRepository implements IDashboardRepository {
     }));
   }
 
-  async obtenerAlertasStock(umbral: number, limite: number): Promise<AlertaStock[]> {
+  async obtenerAlertasStock(
+    umbral: number,
+    limite: number,
+  ): Promise<AlertaStock[]> {
     const inventarios = await this.prisma.inventario.findMany({
       where: { cantidad_disponible: { lte: umbral } },
       include: { producto: true },
@@ -70,7 +78,9 @@ export class PrismaDashboardRepository implements IDashboardRepository {
   }
 
   async sumarStockDisponible(): Promise<number> {
-    const result = await this.prisma.inventario.aggregate({ _sum: { cantidad_disponible: true } });
+    const result = await this.prisma.inventario.aggregate({
+      _sum: { cantidad_disponible: true },
+    });
     return result._sum.cantidad_disponible || 0;
   }
 

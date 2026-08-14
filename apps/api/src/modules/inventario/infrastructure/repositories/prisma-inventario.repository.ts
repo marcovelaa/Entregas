@@ -15,21 +15,31 @@ export class PrismaInventarioRepository implements IInventarioRepository {
         take: params.limit,
         include: {
           producto: {
-            select: { nombre: true, sku: true, categoria: { select: { nombre: true } } }
+            select: {
+              nombre: true,
+              sku: true,
+              categoria: { select: { nombre: true } },
+            },
           },
           variante: {
-            select: { nombre: true, sku_base: true }
-          }
-        }
-      })
+            select: { nombre: true, sku_base: true },
+          },
+        },
+      }),
     ]);
 
-    const serializedData = data.map((item: Prisma.InventarioGetPayload<{ include: { variante: { select: { nombre: true; sku_base: true } } } }>) => ({
-      ...item,
-      id: item.id.toString(),
-      producto_id: item.producto_id.toString(),
-      variante_id: item.variante_id?.toString()
-    }));
+    const serializedData = data.map(
+      (
+        item: Prisma.InventarioGetPayload<{
+          include: { variante: { select: { nombre: true; sku_base: true } } };
+        }>,
+      ) => ({
+        ...item,
+        id: item.id.toString(),
+        producto_id: item.producto_id.toString(),
+        variante_id: item.variante_id?.toString(),
+      }),
+    );
 
     return { total, data: serializedData };
   }
@@ -44,32 +54,45 @@ export class PrismaInventarioRepository implements IInventarioRepository {
         include: {
           producto: { select: { nombre: true, sku: true } },
           variante: { select: { nombre: true, sku_base: true } },
-          usuario: { select: { nombres: true, apellidos: true } }
-        }
-      })
+          usuario: { select: { nombres: true, apellidos: true } },
+        },
+      }),
     ]);
 
-    const serializedData = data.map((item: Prisma.MovimientosInventarioGetPayload<{ include: { producto: { select: { nombre: true; sku: true } }; variante: { select: { nombre: true; sku_base: true } }; usuario: { select: { nombres: true; apellidos: true } } } }>) => ({
-      ...item,
-      id: item.id.toString(),
-      producto_id: item.producto_id.toString(),
-      variante_id: item.variante_id?.toString(),
-      usuario_id: item.usuario_id?.toString(),
-      documento_origen_id: item.documento_origen_id?.toString()
-    }));
+    const serializedData = data.map(
+      (
+        item: Prisma.MovimientosInventarioGetPayload<{
+          include: {
+            producto: { select: { nombre: true; sku: true } };
+            variante: { select: { nombre: true; sku_base: true } };
+            usuario: { select: { nombres: true; apellidos: true } };
+          };
+        }>,
+      ) => ({
+        ...item,
+        id: item.id.toString(),
+        producto_id: item.producto_id.toString(),
+        variante_id: item.variante_id?.toString(),
+        usuario_id: item.usuario_id?.toString(),
+        documento_origen_id: item.documento_origen_id?.toString(),
+      }),
+    );
 
     return { total, data: serializedData };
   }
 
-  async registrarMovimiento(data: {
-    producto_id: bigint;
-    variante_id?: bigint;
-    empaque_id?: bigint;
-    tipo_movimiento: string;
-    cantidad: number;
-    motivo?: string;
-    usuario_id?: bigint;
-  }, tx?: any) {
+  async registrarMovimiento(
+    data: {
+      producto_id: bigint;
+      variante_id?: bigint;
+      empaque_id?: bigint;
+      tipo_movimiento: string;
+      cantidad: number;
+      motivo?: string;
+      usuario_id?: bigint;
+    },
+    tx?: any,
+  ) {
     const execute = async (client: any) => {
       let targetVarianteId = data.variante_id;
       if (!targetVarianteId) {
@@ -91,7 +114,7 @@ export class PrismaInventarioRepository implements IInventarioRepository {
           cantidad: data.cantidad,
           motivo: data.motivo,
           usuario_id: data.usuario_id,
-        }
+        },
       });
 
       // 2. Actualizar stock
@@ -99,38 +122,45 @@ export class PrismaInventarioRepository implements IInventarioRepository {
         where: {
           producto_id: data.producto_id,
           variante_id: targetVarianteId || null,
-        }
+        },
       });
 
-      const cantidadDelta = data.tipo_movimiento.includes('INGRESO') 
-        ? data.cantidad 
+      const cantidadDelta = data.tipo_movimiento.includes('INGRESO')
+        ? data.cantidad
         : -data.cantidad;
 
       if (stockItem) {
-        if (!data.tipo_movimiento.includes('INGRESO') && stockItem.cantidad_disponible + cantidadDelta < 0) {
-          throw new ConflictException('Stock insuficiente para realizar este movimiento negativo.');
+        if (
+          !data.tipo_movimiento.includes('INGRESO') &&
+          stockItem.cantidad_disponible + cantidadDelta < 0
+        ) {
+          throw new ConflictException(
+            'Stock insuficiente para realizar este movimiento negativo.',
+          );
         }
         await client.inventario.update({
           where: { id: stockItem.id },
-          data: { cantidad_disponible: { increment: cantidadDelta } }
+          data: { cantidad_disponible: { increment: cantidadDelta } },
         });
       } else {
         if (!data.tipo_movimiento.includes('INGRESO')) {
-          throw new ConflictException('Stock insuficiente, no hay registro previo para este producto.');
+          throw new ConflictException(
+            'Stock insuficiente, no hay registro previo para este producto.',
+          );
         }
         await client.inventario.create({
           data: {
             producto_id: data.producto_id,
             variante_id: targetVarianteId,
             cantidad_disponible: cantidadDelta,
-            ubicacion: 'PRINCIPAL'
-          }
+            ubicacion: 'PRINCIPAL',
+          },
         });
       }
 
       return mov;
     };
-    
+
     return tx ? execute(tx) : this.prisma.$transaction(execute);
   }
 }

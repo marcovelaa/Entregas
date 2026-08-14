@@ -12,7 +12,10 @@ export interface ProductoImagenEntity {
 
 export interface IProductoImagenRepository {
   crear(imagen: Partial<ProductoImagenEntity>): Promise<ProductoImagenEntity>;
-  actualizar(id: bigint, datos: Partial<ProductoImagenEntity>): Promise<ProductoImagenEntity>;
+  actualizar(
+    id: bigint,
+    datos: Partial<ProductoImagenEntity>,
+  ): Promise<ProductoImagenEntity>;
   eliminar(id: bigint): Promise<void>;
   desmarcarPrincipales(productoId: bigint): Promise<void>;
 }

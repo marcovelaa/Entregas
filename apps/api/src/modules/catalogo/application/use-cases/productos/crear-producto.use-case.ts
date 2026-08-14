@@ -8,13 +8,20 @@ export class CrearProductoUseCase {
   constructor(private readonly productoRepo: IProductoRepository) {}
 
   async execute(dto: CrearProductoDto) {
-    if (dto.precio_promocional !== undefined && dto.precio_promocional !== null) {
+    if (
+      dto.precio_promocional !== undefined &&
+      dto.precio_promocional !== null
+    ) {
       if (dto.precio_promocional >= dto.precio_base) {
-        throw new BadRequestException('precio_promocional must be less than precio_base');
+        throw new BadRequestException(
+          'precio_promocional must be less than precio_base',
+        );
       }
     }
 
-    const skuGenerado = dto.sku || `PRD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+    const skuGenerado =
+      dto.sku ||
+      `PRD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
 
     const createData: any = {
       ...dto,
@@ -26,10 +33,14 @@ export class CrearProductoUseCase {
     }
 
     if (dto.vigencia_inicio !== undefined) {
-      createData.vigencia_inicio = dto.vigencia_inicio === null ? null : parseUtcOrLocal(dto.vigencia_inicio);
+      createData.vigencia_inicio =
+        dto.vigencia_inicio === null
+          ? null
+          : parseUtcOrLocal(dto.vigencia_inicio);
     }
     if (dto.vigencia_fin !== undefined) {
-      createData.vigencia_fin = dto.vigencia_fin === null ? null : parseUtcOrLocal(dto.vigencia_fin);
+      createData.vigencia_fin =
+        dto.vigencia_fin === null ? null : parseUtcOrLocal(dto.vigencia_fin);
     }
 
     if (dto.cupo_maximo !== undefined && dto.tipo_producto === 'COMBO') {
@@ -44,9 +55,13 @@ export class CrearProductoUseCase {
     return this.productoRepo.crear(createData);
   }
 
-  private async obtenerStockBom(componentes: CrearProductoDto['componentes_combo']): Promise<number> {
+  private async obtenerStockBom(
+    componentes: CrearProductoDto['componentes_combo'],
+  ): Promise<number> {
     if (!componentes || componentes.length === 0) return 0;
-    const ids = Array.from(new Set(componentes.map((c) => BigInt(c.componente_prod_id))));
+    const ids = Array.from(
+      new Set(componentes.map((c) => BigInt(c.componente_prod_id))),
+    );
     const filas = await this.productoRepo.buscarStocksComponentes(ids);
     return computeStockBomDesdeInventario(componentes, filas);
   }

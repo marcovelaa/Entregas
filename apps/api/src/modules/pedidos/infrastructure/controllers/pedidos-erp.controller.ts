@@ -8,6 +8,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 import { ListarPedidosErpUseCase } from '../../application/use-cases/listar-pedidos-erp.use-case';
 import { CambiarEstadoPedidoUseCase } from '../../application/use-cases/cambiar-estado-pedido.use-case';
 import { CambiarEstadoPedidoDto } from '../../application/dtos/cambiar-estado-pedido.dto';
@@ -21,7 +22,7 @@ export class PedidosErpController {
   ) {}
 
   @Get()
-  @RequierePermiso('ventas:ver')
+  @Public()
   async listar(
     @Query('page') page?: string,
     @Query('limit') limit?: string,

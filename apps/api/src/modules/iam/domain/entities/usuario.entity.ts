@@ -57,7 +57,11 @@ export class Usuario {
     this.passwordHash = nuevoHash;
   }
 
-  actualizarPerfil(nombres: string, apellidos: string, telefono: string | null): void {
+  actualizarPerfil(
+    nombres: string,
+    apellidos: string,
+    telefono: string | null,
+  ): void {
     this.nombres = nombres;
     this.apellidos = apellidos;
     this.telefono = telefono;

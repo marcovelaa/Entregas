@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
-import { IProductoImagenRepository, ProductoImagenEntity } from '../../domain/repositories/producto-imagen.repository.interface';
+import {
+  IProductoImagenRepository,
+  ProductoImagenEntity,
+} from '../../domain/repositories/producto-imagen.repository.interface';
 
 @Injectable()
 export class PrismaProductoImagenRepository implements IProductoImagenRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async crear(imagen: Partial<ProductoImagenEntity>): Promise<ProductoImagenEntity> {
+  async crear(
+    imagen: Partial<ProductoImagenEntity>,
+  ): Promise<ProductoImagenEntity> {
     return this.prisma.productoImagen.create({
       data: {
         producto_id: imagen.producto_id!,
@@ -16,18 +21,23 @@ export class PrismaProductoImagenRepository implements IProductoImagenRepository
         es_principal: imagen.es_principal ?? false,
         activo: imagen.activo ?? true,
       },
-    }) as unknown as ProductoImagenEntity;
+    });
   }
 
-  async actualizar(id: bigint, datos: Partial<ProductoImagenEntity>): Promise<ProductoImagenEntity> {
+  async actualizar(
+    id: bigint,
+    datos: Partial<ProductoImagenEntity>,
+  ): Promise<ProductoImagenEntity> {
     return this.prisma.productoImagen.update({
       where: { id },
       data: {
-        ...(datos.es_principal !== undefined && { es_principal: datos.es_principal }),
+        ...(datos.es_principal !== undefined && {
+          es_principal: datos.es_principal,
+        }),
         ...(datos.orden !== undefined && { orden: datos.orden }),
         ...(datos.activo !== undefined && { activo: datos.activo }),
       },
-    }) as unknown as ProductoImagenEntity;
+    });
   }
 
   async eliminar(id: bigint): Promise<void> {

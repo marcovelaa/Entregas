@@ -51,16 +51,17 @@ export class PrismaProductoRepository implements IProductoRepository {
             ],
           },
         }),
-        ...(producto.componentes_combo && producto.componentes_combo.length > 0 && {
-          componentes_combo: {
-            create: producto.componentes_combo.map((c: any) => ({
-              componente_prod_id: BigInt(c.componente_prod_id),
-              variante_id: c.variante_id ? BigInt(c.variante_id) : null,
-              empaque_id: c.empaque_id ? BigInt(c.empaque_id) : null,
-              cantidad: Number(c.cantidad) || 1,
-            })),
-          },
-        }),
+        ...(producto.componentes_combo &&
+          producto.componentes_combo.length > 0 && {
+            componentes_combo: {
+              create: producto.componentes_combo.map((c: any) => ({
+                componente_prod_id: BigInt(c.componente_prod_id),
+                variante_id: c.variante_id ? BigInt(c.variante_id) : null,
+                empaque_id: c.empaque_id ? BigInt(c.empaque_id) : null,
+                cantidad: Number(c.cantidad) || 1,
+              })),
+            },
+          }),
       },
       include: {
         marca: true,
@@ -75,16 +76,23 @@ export class PrismaProductoRepository implements IProductoRepository {
           },
         },
       },
-    }) as unknown as ProductoEntity;
+    });
   }
 
-  async buscarTodos(filtros?: ProductoFiltros, page = 1, limit = 20): Promise<{ data: ProductoEntity[]; total: number }> {
+  async buscarTodos(
+    filtros?: ProductoFiltros,
+    page = 1,
+    limit = 20,
+  ): Promise<{ data: ProductoEntity[]; total: number }> {
     const esVisibilidadPublica = filtros?.visibilidad === 'publica';
     const where: any = {
       ...(filtros?.categoria_id && { categoria_id: filtros.categoria_id }),
       ...(filtros?.marca_id && { marca_id: filtros.marca_id }),
-      ...(filtros?.tipo_producto && { tipo_producto: filtros.tipo_producto as any }),
-      ...(!esVisibilidadPublica && filtros?.activo !== undefined && { activo: filtros.activo }),
+      ...(filtros?.tipo_producto && {
+        tipo_producto: filtros.tipo_producto as any,
+      }),
+      ...(!esVisibilidadPublica &&
+        filtros?.activo !== undefined && { activo: filtros.activo }),
     };
 
     const condiciones: any[] = [];
@@ -99,8 +107,18 @@ export class PrismaProductoRepository implements IProductoRepository {
             { modo_venta: { notIn: MODOS_CON_VIGENCIA } },
             {
               AND: [
-                { OR: [{ vigencia_inicio: null }, { vigencia_inicio: { lte: ahora } }] },
-                { OR: [{ vigencia_fin: null }, { vigencia_fin: { gte: ahora } }] },
+                {
+                  OR: [
+                    { vigencia_inicio: null },
+                    { vigencia_inicio: { lte: ahora } },
+                  ],
+                },
+                {
+                  OR: [
+                    { vigencia_fin: null },
+                    { vigencia_fin: { gte: ahora } },
+                  ],
+                },
               ],
             },
           ],
@@ -110,9 +128,20 @@ export class PrismaProductoRepository implements IProductoRepository {
     if (filtros?.search) {
       condiciones.push({
         OR: [
-          { nombre: { contains: filtros.search, mode: 'insensitive' as const } },
+          {
+            nombre: { contains: filtros.search, mode: 'insensitive' as const },
+          },
           { sku: { contains: filtros.search, mode: 'insensitive' as const } },
-          { variantes: { some: { sku_base: { contains: filtros.search, mode: 'insensitive' as const } } } }
+          {
+            variantes: {
+              some: {
+                sku_base: {
+                  contains: filtros.search,
+                  mode: 'insensitive' as const,
+                },
+              },
+            },
+          },
         ],
       });
     }
@@ -130,7 +159,9 @@ export class PrismaProductoRepository implements IProductoRepository {
           imagenes: true,
           componentes_combo: {
             include: {
-              componente_producto: { include: { imagenes: true, Inventario: true } },
+              componente_producto: {
+                include: { imagenes: true, Inventario: true },
+              },
               variante: { include: { Inventario: true } },
               empaque: true,
             },
@@ -156,13 +187,15 @@ export class PrismaProductoRepository implements IProductoRepository {
         imagenes: true,
         componentes_combo: {
           include: {
-            componente_producto: { include: { imagenes: true, Inventario: true } },
+            componente_producto: {
+              include: { imagenes: true, Inventario: true },
+            },
             variante: { include: { Inventario: true } },
             empaque: true,
           },
         },
       },
-    }) as unknown as ProductoEntity | null;
+    });
   }
 
   async buscarPorPublicId(publicId: string): Promise<ProductoEntity | null> {
@@ -176,32 +209,45 @@ export class PrismaProductoRepository implements IProductoRepository {
         imagenes: true,
         componentes_combo: {
           include: {
-            componente_producto: { include: { imagenes: true, Inventario: true } },
+            componente_producto: {
+              include: { imagenes: true, Inventario: true },
+            },
             variante: { include: { Inventario: true } },
             empaque: true,
           },
         },
       },
-    }) as unknown as ProductoEntity | null;
+    });
   }
 
   async buscarPorSku(sku: string): Promise<ProductoEntity | null> {
     return this.prisma.producto.findUnique({
       where: { sku },
-    }) as unknown as ProductoEntity | null;
+    });
   }
 
   async buscarStocksComponentes(ids: bigint[]): Promise<InventarioStockRow[]> {
     if (ids.length === 0) return [];
     return this.prisma.inventario.findMany({
       where: { producto_id: { in: ids } },
-      select: { producto_id: true, variante_id: true, cantidad_disponible: true, reservado: true },
-    }) as unknown as InventarioStockRow[];
+      select: {
+        producto_id: true,
+        variante_id: true,
+        cantidad_disponible: true,
+        reservado: true,
+      },
+    });
   }
 
-  async actualizar(id: bigint, datos: ProductoActualizarInput): Promise<ProductoEntity> {
+  async actualizar(
+    id: bigint,
+    datos: ProductoActualizarInput,
+  ): Promise<ProductoEntity> {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      if (datos.precio_base !== undefined || datos.precio_promocional !== undefined) {
+      if (
+        datos.precio_base !== undefined ||
+        datos.precio_promocional !== undefined
+      ) {
         const prodWithVars = await tx.producto.findUnique({
           where: { id },
           include: { variantes: true },
@@ -210,8 +256,12 @@ export class PrismaProductoRepository implements IProductoRepository {
           await tx.variante.update({
             where: { id: prodWithVars.variantes[0].id },
             data: {
-              ...(datos.precio_base !== undefined && { precio_unitario: datos.precio_base }),
-              ...(datos.precio_promocional !== undefined && { precio_promocional: datos.precio_promocional }),
+              ...(datos.precio_base !== undefined && {
+                precio_unitario: datos.precio_base,
+              }),
+              ...(datos.precio_promocional !== undefined && {
+                precio_promocional: datos.precio_promocional,
+              }),
             },
           });
         }
@@ -237,24 +287,50 @@ export class PrismaProductoRepository implements IProductoRepository {
       return tx.producto.update({
         where: { id },
         data: {
-          ...(datos.categoria_id !== undefined && { categoria_id: datos.categoria_id }),
+          ...(datos.categoria_id !== undefined && {
+            categoria_id: datos.categoria_id,
+          }),
           ...(datos.marca_id !== undefined && { marca_id: datos.marca_id }),
           ...(datos.sku !== undefined && { sku: datos.sku }),
           ...(datos.nombre !== undefined && { nombre: datos.nombre }),
-          ...(datos.descripcion !== undefined && { descripcion: datos.descripcion }),
-          ...(datos.naturaleza !== undefined && { naturaleza: datos.naturaleza }),
-          ...(datos.tipo_producto !== undefined && { tipo_producto: datos.tipo_producto as any }),
-          ...(datos.unidad_medida !== undefined && { unidad_medida: datos.unidad_medida }),
+          ...(datos.descripcion !== undefined && {
+            descripcion: datos.descripcion,
+          }),
+          ...(datos.naturaleza !== undefined && {
+            naturaleza: datos.naturaleza,
+          }),
+          ...(datos.tipo_producto !== undefined && {
+            tipo_producto: datos.tipo_producto as any,
+          }),
+          ...(datos.unidad_medida !== undefined && {
+            unidad_medida: datos.unidad_medida,
+          }),
           ...(datos.atributos !== undefined && { atributos: datos.atributos }),
-          ...(datos.precio_base !== undefined && { precio_base: datos.precio_base }),
-          ...(datos.precio_promocional !== undefined && { precio_promocional: datos.precio_promocional }),
+          ...(datos.precio_base !== undefined && {
+            precio_base: datos.precio_base,
+          }),
+          ...(datos.precio_promocional !== undefined && {
+            precio_promocional: datos.precio_promocional,
+          }),
           ...(datos.activo !== undefined && { activo: datos.activo }),
-          ...(datos.modo_venta !== undefined && { modo_venta: datos.modo_venta }),
-          ...(datos.vigencia_inicio !== undefined && { vigencia_inicio: datos.vigencia_inicio }),
-          ...(datos.vigencia_fin !== undefined && { vigencia_fin: datos.vigencia_fin }),
-          ...(datos.cupo_maximo !== undefined && { cupo_maximo: datos.cupo_maximo }),
-          ...(datos.dias_semana !== undefined && { dias_semana: datos.dias_semana }),
-          ...(datos.canal_venta !== undefined && { canal_venta: datos.canal_venta }),
+          ...(datos.modo_venta !== undefined && {
+            modo_venta: datos.modo_venta,
+          }),
+          ...(datos.vigencia_inicio !== undefined && {
+            vigencia_inicio: datos.vigencia_inicio,
+          }),
+          ...(datos.vigencia_fin !== undefined && {
+            vigencia_fin: datos.vigencia_fin,
+          }),
+          ...(datos.cupo_maximo !== undefined && {
+            cupo_maximo: datos.cupo_maximo,
+          }),
+          ...(datos.dias_semana !== undefined && {
+            dias_semana: datos.dias_semana,
+          }),
+          ...(datos.canal_venta !== undefined && {
+            canal_venta: datos.canal_venta,
+          }),
         },
         include: {
           marca: true,
@@ -269,11 +345,15 @@ export class PrismaProductoRepository implements IProductoRepository {
             },
           },
         },
-      }) as unknown as ProductoEntity;
+      });
     });
   }
 
-  async actualizarPrecioVenta(id: bigint, precio: number, tx?: any): Promise<void> {
+  async actualizarPrecioVenta(
+    id: bigint,
+    precio: number,
+    tx?: any,
+  ): Promise<void> {
     const client = tx ?? this.prisma;
     await client.producto.update({
       where: { id },
@@ -285,7 +365,7 @@ export class PrismaProductoRepository implements IProductoRepository {
     return this.prisma.producto.update({
       where: { id },
       data: { activo: false },
-    }) as unknown as ProductoEntity;
+    });
   }
 
   async eliminar(id: bigint): Promise<void> {

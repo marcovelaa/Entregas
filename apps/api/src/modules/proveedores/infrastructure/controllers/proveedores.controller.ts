@@ -17,6 +17,7 @@ import {
 } from '../../application/dtos/proveedor.dto';
 import { ParseBigIntPipe } from '../../../../common/pipes';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @Controller('proveedores')
 export class ProveedoresController {
@@ -33,6 +34,7 @@ export class ProveedoresController {
   }
 
   @Get()
+  @Public()
   async listar(@Query() query: ListarProveedoresDto) {
     return this.listarProveedoresUseCase.execute(query);
   }

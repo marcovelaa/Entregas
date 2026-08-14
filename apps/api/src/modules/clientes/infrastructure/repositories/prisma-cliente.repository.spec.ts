@@ -38,7 +38,10 @@ describe('PrismaClienteRepository — credenciales', () => {
     });
 
     expect(prisma.cliente.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ password_hash: 'hashed', email: 'ana@example.test' }),
+      data: expect.objectContaining({
+        password_hash: 'hashed',
+        email: 'ana@example.test',
+      }),
     });
     expect(result.passwordHash).toBe('hashed');
     expect(result.id).toBe('1');
@@ -50,7 +53,8 @@ describe('PrismaClienteRepository — credenciales', () => {
     (prisma as any).cliente.findFirst = jest.fn().mockResolvedValue(null);
     const repo = new PrismaClienteRepository(prisma as any);
 
-    const result = await repo.buscarPorEmailConCredenciales('nadie@example.test');
+    const result =
+      await repo.buscarPorEmailConCredenciales('nadie@example.test');
 
     expect(result).toBeNull();
   });

@@ -1,4 +1,14 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber, IsBoolean, MaxLength, ValidateNested, ArrayMaxSize, IsArray } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  MaxLength,
+  ValidateNested,
+  ArrayMaxSize,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CrearVarianteDto {

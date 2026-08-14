@@ -8,7 +8,9 @@ export class VerDetalleUsuarioUseCase {
   async execute(id: bigint): Promise<Usuario> {
     const usuario = await this.usuarioRepository.findById(id);
     if (!usuario) {
-      throw new UsuarioNoEncontradoException(`El usuario con ID ${id} no existe.`);
+      throw new UsuarioNoEncontradoException(
+        `El usuario con ID ${id} no existe.`,
+      );
     }
     return usuario;
   }

@@ -11,10 +11,12 @@ export class ActualizarCategoriaUseCase {
 
     if (dto.categoria_padre_id !== undefined) {
       if (BigInt(dto.categoria_padre_id) === id) {
-        throw new BadRequestException('Circular reference: categoria_padre_id cannot be the same as id');
+        throw new BadRequestException(
+          'Circular reference: categoria_padre_id cannot be the same as id',
+        );
       }
     }
-    
+
     const updateData: any = { ...dto };
     if (dto.categoria_padre_id !== undefined) {
       updateData.categoria_padre_id = BigInt(dto.categoria_padre_id);

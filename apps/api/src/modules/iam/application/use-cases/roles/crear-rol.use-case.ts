@@ -10,9 +10,11 @@ export class CrearRolUseCase {
   async execute(dto: CrearRolDto): Promise<Rol> {
     // 1. Regla de negocio: El nombre del rol no debe existir
     const existeRol = await this.rolRepository.findByNombre(dto.nombre);
-    
+
     if (existeRol) {
-      throw new RolDuplicadoException(`El rol con el nombre '${dto.nombre}' ya existe.`);
+      throw new RolDuplicadoException(
+        `El rol con el nombre '${dto.nombre}' ya existe.`,
+      );
     }
 
     // 2. Instanciamos la entidad de dominio

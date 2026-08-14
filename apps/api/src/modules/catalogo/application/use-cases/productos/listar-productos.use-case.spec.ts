@@ -1,5 +1,8 @@
 import { ListarProductosUseCase } from './listar-productos.use-case';
-import { IProductoRepository, ProductoEntity } from '../../../domain/repositories/producto.repository.interface';
+import {
+  IProductoRepository,
+  ProductoEntity,
+} from '../../../domain/repositories/producto.repository.interface';
 
 function listarRepoMock(overrides: Partial<IProductoRepository> = {}) {
   return {
@@ -18,7 +21,12 @@ function listarRepoMock(overrides: Partial<IProductoRepository> = {}) {
 }
 
 function bom(stock: number, cantidad = 1) {
-  return { cantidad, componente_producto: { Inventario: [{ cantidad_disponible: stock, reservado: 0 }] } };
+  return {
+    cantidad,
+    componente_producto: {
+      Inventario: [{ cantidad_disponible: stock, reservado: 0 }],
+    },
+  };
 }
 
 function combo(overrides: Record<string, any> = {}): ProductoEntity {
@@ -44,7 +52,14 @@ function combo(overrides: Record<string, any> = {}): ProductoEntity {
 }
 
 function simple(overrides: Record<string, any> = {}): ProductoEntity {
-  return combo({ ...overrides, tipo_producto: 'SIMPLE', id: 2n, public_id: 'pub-2', sku: 'SKU-2', nombre: 'Simple' });
+  return combo({
+    ...overrides,
+    tipo_producto: 'SIMPLE',
+    id: 2n,
+    public_id: 'pub-2',
+    sku: 'SKU-2',
+    nombre: 'Simple',
+  });
 }
 
 describe('ListarProductosUseCase - stock_vendible/estado_venta y visibilidad (2.5)', () => {
@@ -65,15 +80,22 @@ describe('ListarProductosUseCase - stock_vendible/estado_venta y visibilidad (2.
 
   it('excludes from publica a combo with cupo agotado (cupo_usado >= cupo_maximo) (RULES-3)', async () => {
     const repo = listarRepoMock({
-      buscarTodos: jest
-        .fn()
-        .mockResolvedValue({
-          data: [
-            combo({ cupo_maximo: 10, cupo_usado: 10, componentes_combo: [bom(20)] }),
-            combo({ id: 3n, cupo_maximo: 10, cupo_usado: 0, componentes_combo: [bom(20)] }),
-          ],
-          total: 2,
-        }),
+      buscarTodos: jest.fn().mockResolvedValue({
+        data: [
+          combo({
+            cupo_maximo: 10,
+            cupo_usado: 10,
+            componentes_combo: [bom(20)],
+          }),
+          combo({
+            id: 3n,
+            cupo_maximo: 10,
+            cupo_usado: 0,
+            componentes_combo: [bom(20)],
+          }),
+        ],
+        total: 2,
+      }),
     });
     const uc = new ListarProductosUseCase(repo);
 
@@ -137,7 +159,13 @@ describe('ListarProductosUseCase - stock_vendible/estado_venta y visibilidad (2.
   it('computes sellable capped by cupo: stockBOM 20, cupo_maximo 5, cupo_usado 1 -> 4 (STOCK-1)', async () => {
     const repo = listarRepoMock({
       buscarTodos: jest.fn().mockResolvedValue({
-        data: [combo({ cupo_maximo: 5, cupo_usado: 1, componentes_combo: [bom(20)] })],
+        data: [
+          combo({
+            cupo_maximo: 5,
+            cupo_usado: 1,
+            componentes_combo: [bom(20)],
+          }),
+        ],
         total: 1,
       }),
     });
@@ -145,13 +173,21 @@ describe('ListarProductosUseCase - stock_vendible/estado_venta y visibilidad (2.
 
     const result = await uc.execute({ visibilidad: 'publica' } as any);
 
-    expect(result.data[0]).toEqual(expect.objectContaining({ stock_vendible: 4, estado_venta: 'ACTIVO' }));
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({ stock_vendible: 4, estado_venta: 'ACTIVO' }),
+    );
   });
 
   it('computes sellable capped by BOM: stockBOM 3, cupo_maximo 50, cupo_usado 0 -> 3 (STOCK-1)', async () => {
     const repo = listarRepoMock({
       buscarTodos: jest.fn().mockResolvedValue({
-        data: [combo({ cupo_maximo: 50, cupo_usado: 0, componentes_combo: [bom(3)] })],
+        data: [
+          combo({
+            cupo_maximo: 50,
+            cupo_usado: 0,
+            componentes_combo: [bom(3)],
+          }),
+        ],
         total: 1,
       }),
     });
@@ -159,16 +195,33 @@ describe('ListarProductosUseCase - stock_vendible/estado_venta y visibilidad (2.
 
     const result = await uc.execute({ visibilidad: 'admin' } as any);
 
-    expect(result.data[0]).toEqual(expect.objectContaining({ stock_vendible: 3, estado_venta: 'ACTIVO' }));
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({ stock_vendible: 3, estado_venta: 'ACTIVO' }),
+    );
   });
 
   it('lists VENCIDO and AGOTADO combos for admin WITH their estado_venta (RULES-3)', async () => {
     const repo = listarRepoMock({
       buscarTodos: jest.fn().mockResolvedValue({
         data: [
-          combo({ id: 1n, modo_venta: 'RANGO_FECHAS', vigencia_fin: new Date('2020-01-01T00:00:00.000Z'), componentes_combo: [bom(20)] }),
-          combo({ id: 4n, cupo_maximo: 10, cupo_usado: 10, componentes_combo: [bom(20)] }),
-          combo({ id: 5n, cupo_maximo: 10, cupo_usado: 0, componentes_combo: [bom(20)] }),
+          combo({
+            id: 1n,
+            modo_venta: 'RANGO_FECHAS',
+            vigencia_fin: new Date('2020-01-01T00:00:00.000Z'),
+            componentes_combo: [bom(20)],
+          }),
+          combo({
+            id: 4n,
+            cupo_maximo: 10,
+            cupo_usado: 10,
+            componentes_combo: [bom(20)],
+          }),
+          combo({
+            id: 5n,
+            cupo_maximo: 10,
+            cupo_usado: 0,
+            componentes_combo: [bom(20)],
+          }),
         ],
         total: 3,
       }),
@@ -178,30 +231,46 @@ describe('ListarProductosUseCase - stock_vendible/estado_venta y visibilidad (2.
     const result = await uc.execute({ visibilidad: 'admin' } as any);
 
     expect(result.data).toHaveLength(3);
-    expect(result.data.find((p) => p.id === 1n)).toEqual(expect.objectContaining({ estado_venta: 'VENCIDO', stock_vendible: 0 }));
-    expect(result.data.find((p) => p.id === 4n)).toEqual(expect.objectContaining({ estado_venta: 'AGOTADO', stock_vendible: 0 }));
-    expect(result.data.find((p) => p.id === 5n)).toEqual(expect.objectContaining({ estado_venta: 'ACTIVO', stock_vendible: 10 }));
+    expect(result.data.find((p) => p.id === 1n)).toEqual(
+      expect.objectContaining({ estado_venta: 'VENCIDO', stock_vendible: 0 }),
+    );
+    expect(result.data.find((p) => p.id === 4n)).toEqual(
+      expect.objectContaining({ estado_venta: 'AGOTADO', stock_vendible: 0 }),
+    );
+    expect(result.data.find((p) => p.id === 5n)).toEqual(
+      expect.objectContaining({ estado_venta: 'ACTIVO', stock_vendible: 10 }),
+    );
   });
 
   it('does not filter agotado combos for admin (default visibilidad)', async () => {
     const repo = listarRepoMock({
       buscarTodos: jest.fn().mockResolvedValue({
-        data: [combo({ cupo_maximo: 10, cupo_usado: 10, componentes_combo: [bom(20)] })],
+        data: [
+          combo({
+            cupo_maximo: 10,
+            cupo_usado: 10,
+            componentes_combo: [bom(20)],
+          }),
+        ],
         total: 1,
       }),
     });
     const uc = new ListarProductosUseCase(repo);
 
-    const result = await uc.execute(undefined as any);
+    const result = await uc.execute(undefined);
 
     expect(result.data).toHaveLength(1);
-    expect(result.data[0]).toEqual(expect.objectContaining({ estado_venta: 'AGOTADO' }));
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({ estado_venta: 'AGOTADO' }),
+    );
   });
 
   it('leaves SIMPLE products untouched (no additive fields invented)', async () => {
     const repo = listarRepoMock({
       buscarTodos: jest.fn().mockResolvedValue({
-        data: [simple({ Inventario: [{ cantidad_disponible: 7, reservado: 0 }] })],
+        data: [
+          simple({ Inventario: [{ cantidad_disponible: 7, reservado: 0 }] }),
+        ],
         total: 1,
       }),
     });
@@ -233,6 +302,8 @@ describe('ListarProductosUseCase - stock_vendible/estado_venta y visibilidad (2.
     const result = await uc.execute({ visibilidad: 'publica' } as any);
 
     expect(result.data).toHaveLength(1);
-    expect(result.data[0]).toEqual(expect.objectContaining({ stock_vendible: 20, estado_venta: 'ACTIVO' }));
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({ stock_vendible: 20, estado_venta: 'ACTIVO' }),
+    );
   });
 });

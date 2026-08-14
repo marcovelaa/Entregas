@@ -4,5 +4,7 @@ import { IPermisoRepository } from '../../domain/repositories/permiso.repository
 @Injectable()
 export class PrismaPermisoRepository implements IPermisoRepository {
   constructor(private readonly prisma: PrismaService) {}
-  async findAll() { return this.prisma.permiso.findMany({ orderBy: { codigo: 'asc' } }); }
+  async findAll() {
+    return this.prisma.permiso.findMany({ orderBy: { codigo: 'asc' } });
+  }
 }

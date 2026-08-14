@@ -16,8 +16,8 @@ export class ListarVentasUseCase {
       meta: {
         total,
         page,
-        last_page: Math.ceil(total / limit)
-      }
+        last_page: Math.ceil(total / limit),
+      },
     };
   }
 }

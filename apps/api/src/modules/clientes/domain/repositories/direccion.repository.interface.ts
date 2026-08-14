@@ -27,7 +27,11 @@ export type DireccionUpdateData = Partial<DireccionCreateData>;
 export interface IDireccionRepository {
   listarPorCliente(clienteId: string): Promise<DireccionData[]>;
   crear(clienteId: string, data: DireccionCreateData): Promise<DireccionData>;
-  actualizar(clienteId: string, direccionId: string, data: DireccionUpdateData): Promise<DireccionData | null>;
+  actualizar(
+    clienteId: string,
+    direccionId: string,
+    data: DireccionUpdateData,
+  ): Promise<DireccionData | null>;
   eliminar(clienteId: string, direccionId: string): Promise<boolean>;
   marcarPrincipal(clienteId: string, direccionId: string): Promise<boolean>;
 }

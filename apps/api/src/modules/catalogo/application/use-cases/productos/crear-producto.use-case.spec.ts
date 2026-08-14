@@ -20,7 +20,9 @@ function crearRepoMock(overrides: Partial<IProductoRepository> = {}) {
 
 describe('CrearProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', () => {
   it('persists vigencia_fin "2026-08-10" as 2026-08-10T04:00:00Z (RULES-2)', async () => {
-    const repo = crearRepoMock({ crear: jest.fn().mockResolvedValue({ id: 1n }) });
+    const repo = crearRepoMock({
+      crear: jest.fn().mockResolvedValue({ id: 1n }),
+    });
     const uc = new CrearProductoUseCase(repo);
 
     await uc.execute({
@@ -32,12 +34,16 @@ describe('CrearProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', () => 
     } as any);
 
     expect(repo.crear).toHaveBeenCalledWith(
-      expect.objectContaining({ vigencia_fin: new Date('2026-08-10T04:00:00.000Z') }),
+      expect.objectContaining({
+        vigencia_fin: new Date('2026-08-10T04:00:00.000Z'),
+      }),
     );
   });
 
   it('persists local datetime "2026-08-10T23:59" as 2026-08-11T03:59:00Z (America/La_Paz -4h)', async () => {
-    const repo = crearRepoMock({ crear: jest.fn().mockResolvedValue({ id: 1n }) });
+    const repo = crearRepoMock({
+      crear: jest.fn().mockResolvedValue({ id: 1n }),
+    });
     const uc = new CrearProductoUseCase(repo);
 
     await uc.execute({
@@ -49,15 +55,23 @@ describe('CrearProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', () => 
     } as any);
 
     expect(repo.crear).toHaveBeenCalledWith(
-      expect.objectContaining({ vigencia_fin: new Date('2026-08-11T03:59:00.000Z') }),
+      expect.objectContaining({
+        vigencia_fin: new Date('2026-08-11T03:59:00.000Z'),
+      }),
     );
   });
 
   it('leaves vigencia fields undefined when not provided', async () => {
-    const repo = crearRepoMock({ crear: jest.fn().mockResolvedValue({ id: 1n }) });
+    const repo = crearRepoMock({
+      crear: jest.fn().mockResolvedValue({ id: 1n }),
+    });
     const uc = new CrearProductoUseCase(repo);
 
-    await uc.execute({ nombre: 'Simple', precio_base: 50, categoria_id: 1 } as any);
+    await uc.execute({
+      nombre: 'Simple',
+      precio_base: 50,
+      categoria_id: 1,
+    });
 
     const createData = (repo.crear as jest.Mock).mock.calls[0][0];
     expect(createData.vigencia_inicio).toBeUndefined();
@@ -67,8 +81,18 @@ describe('CrearProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', () => 
   it('throws BadRequestException when cupo_maximo exceeds stockBOM (10/1 y 30/2 -> 10 kits, cupo 11)', async () => {
     const repo = crearRepoMock({
       buscarStocksComponentes: jest.fn().mockResolvedValue([
-        { producto_id: 10n, variante_id: null, cantidad_disponible: 10, reservado: 0 },
-        { producto_id: 11n, variante_id: null, cantidad_disponible: 30, reservado: 0 },
+        {
+          producto_id: 10n,
+          variante_id: null,
+          cantidad_disponible: 10,
+          reservado: 0,
+        },
+        {
+          producto_id: 11n,
+          variante_id: null,
+          cantidad_disponible: 30,
+          reservado: 0,
+        },
       ]),
       crear: jest.fn().mockResolvedValue({ id: 1n }),
     });
@@ -93,7 +117,12 @@ describe('CrearProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', () => 
   it('accepts cupo_maximo equal to stockBOM and persists it', async () => {
     const repo = crearRepoMock({
       buscarStocksComponentes: jest.fn().mockResolvedValue([
-        { producto_id: 10n, variante_id: null, cantidad_disponible: 10, reservado: 0 },
+        {
+          producto_id: 10n,
+          variante_id: null,
+          cantidad_disponible: 10,
+          reservado: 0,
+        },
       ]),
       crear: jest.fn().mockResolvedValue({ id: 1n }),
     });
@@ -108,14 +137,26 @@ describe('CrearProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', () => 
       componentes_combo: [{ componente_prod_id: 10, cantidad: 1 }],
     } as any);
 
-    expect(repo.crear).toHaveBeenCalledWith(expect.objectContaining({ cupo_maximo: 10 }));
+    expect(repo.crear).toHaveBeenCalledWith(
+      expect.objectContaining({ cupo_maximo: 10 }),
+    );
   });
 
   it('matches stock by variante_id for variante components', async () => {
     const repo = crearRepoMock({
       buscarStocksComponentes: jest.fn().mockResolvedValue([
-        { producto_id: 10n, variante_id: null, cantidad_disponible: 50, reservado: 0 },
-        { producto_id: 10n, variante_id: 7n, cantidad_disponible: 2, reservado: 0 },
+        {
+          producto_id: 10n,
+          variante_id: null,
+          cantidad_disponible: 50,
+          reservado: 0,
+        },
+        {
+          producto_id: 10n,
+          variante_id: 7n,
+          cantidad_disponible: 2,
+          reservado: 0,
+        },
       ]),
       crear: jest.fn().mockResolvedValue({ id: 1n }),
     });
@@ -128,7 +169,9 @@ describe('CrearProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', () => 
         categoria_id: 1,
         tipo_producto: 'COMBO',
         cupo_maximo: 3,
-        componentes_combo: [{ componente_prod_id: 10, variante_id: 7, cantidad: 1 }],
+        componentes_combo: [
+          { componente_prod_id: 10, variante_id: 7, cantidad: 1 },
+        ],
       } as any),
     ).rejects.toThrow(BadRequestException);
   });
@@ -176,6 +219,8 @@ describe('CrearProductoUseCase - vigencia UTC y guardrail de cupo (2.4)', () => 
       tipo_producto: 'COMBO',
       cupo_maximo: 0,
     } as any);
-    expect(repo.crear).toHaveBeenCalledWith(expect.objectContaining({ cupo_maximo: 0 }));
+    expect(repo.crear).toHaveBeenCalledWith(
+      expect.objectContaining({ cupo_maximo: 0 }),
+    );
   });
 });

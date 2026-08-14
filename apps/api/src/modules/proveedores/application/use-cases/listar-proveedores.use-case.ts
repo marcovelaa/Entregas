@@ -1,7 +1,6 @@
 import type { IProveedorRepository } from '../../domain/repositories/proveedor.repository.interface';
 import { ListarProveedoresDto } from '../dtos/proveedor.dto';
 
-
 export class ListarProveedoresUseCase {
   constructor(private readonly proveedorRepository: IProveedorRepository) {}
 
@@ -10,7 +9,10 @@ export class ListarProveedoresUseCase {
     const page = dto.page ? parseInt(dto.page.toString(), 10) : 1;
     const offset = (page - 1) * limit;
 
-    const { total, data } = await this.proveedorRepository.listar({ offset, limit });
+    const { total, data } = await this.proveedorRepository.listar({
+      offset,
+      limit,
+    });
 
     return {
       data,

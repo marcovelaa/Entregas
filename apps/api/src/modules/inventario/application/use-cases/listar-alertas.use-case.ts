@@ -13,9 +13,9 @@ export class ListarAlertasUseCase {
       WHERE i.cantidad_disponible <= COALESCE(i.stock_minimo, 5)
     `;
 
-    return (rawAlertas as any[]).map(a => ({
+    return (rawAlertas as any[]).map((a) => ({
       ...a,
-      id: a.id.toString()
+      id: a.id.toString(),
     }));
   }
 }

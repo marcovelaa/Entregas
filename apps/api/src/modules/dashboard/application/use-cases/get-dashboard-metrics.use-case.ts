@@ -6,7 +6,10 @@ const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 @Injectable()
 export class GetDashboardMetricsUseCase {
-  constructor(@Inject(DASHBOARD_REPOSITORY) private readonly dashboardRepo: IDashboardRepository) {}
+  constructor(
+    @Inject(DASHBOARD_REPOSITORY)
+    private readonly dashboardRepo: IDashboardRepository,
+  ) {}
 
   async execute() {
     const today = new Date();
@@ -16,16 +19,23 @@ export class GetDashboardMetricsUseCase {
     hace7Dias.setDate(hace7Dias.getDate() - 6);
     hace7Dias.setHours(0, 0, 0, 0);
 
-    const [ventasHoy, ventasSemana, distribucionRaw, alertasStock, totalProductos, totalStock, ventasRecientes] =
-      await Promise.all([
-        this.dashboardRepo.obtenerVentasHoy(today),
-        this.dashboardRepo.obtenerVentasDesde(hace7Dias),
-        this.dashboardRepo.obtenerDistribucionPorMetodoPago(hace7Dias),
-        this.dashboardRepo.obtenerAlertasStock(10, 5),
-        this.dashboardRepo.contarProductosActivos(),
-        this.dashboardRepo.sumarStockDisponible(),
-        this.dashboardRepo.obtenerVentasRecientes(6),
-      ]);
+    const [
+      ventasHoy,
+      ventasSemana,
+      distribucionRaw,
+      alertasStock,
+      totalProductos,
+      totalStock,
+      ventasRecientes,
+    ] = await Promise.all([
+      this.dashboardRepo.obtenerVentasHoy(today),
+      this.dashboardRepo.obtenerVentasDesde(hace7Dias),
+      this.dashboardRepo.obtenerDistribucionPorMetodoPago(hace7Dias),
+      this.dashboardRepo.obtenerAlertasStock(10, 5),
+      this.dashboardRepo.contarProductosActivos(),
+      this.dashboardRepo.sumarStockDisponible(),
+      this.dashboardRepo.obtenerVentasRecientes(6),
+    ]);
 
     // Agrupar ventas de la última semana por día (Dom-Sáb)
     const graficoSemanalMap: { [key: string]: number } = {};
@@ -47,7 +57,12 @@ export class GetDashboardMetricsUseCase {
 
     // Distribución por método de pago: fijar los métodos conocidos en 0 y sumar lo que
     // devolvió la base (agregado server-side), enviando cualquier método desconocido a OTRO.
-    const metodosMap: { [key: string]: number } = { EFECTIVO: 0, QR: 0, TARJETA: 0, OTRO: 0 };
+    const metodosMap: { [key: string]: number } = {
+      EFECTIVO: 0,
+      QR: 0,
+      TARJETA: 0,
+      OTRO: 0,
+    };
     distribucionRaw.forEach((d) => {
       if (metodosMap[d.metodo] !== undefined) {
         metodosMap[d.metodo] += d.monto;
@@ -55,14 +70,21 @@ export class GetDashboardMetricsUseCase {
         metodosMap['OTRO'] += d.monto;
       }
     });
-    const totalVentasPeriodo = Object.values(metodosMap).reduce((acc, v) => acc + v, 0);
+    const totalVentasPeriodo = Object.values(metodosMap).reduce(
+      (acc, v) => acc + v,
+      0,
+    );
     const distribucionPagos = Object.keys(metodosMap).map((metodo) => ({
       metodo,
       monto: metodosMap[metodo],
-      porcentaje: totalVentasPeriodo > 0 ? Math.round((metodosMap[metodo] / totalVentasPeriodo) * 100) : 0,
+      porcentaje:
+        totalVentasPeriodo > 0
+          ? Math.round((metodosMap[metodo] / totalVentasPeriodo) * 100)
+          : 0,
     }));
 
-    const ticketPromedio = ventasHoy.cantidad > 0 ? ventasHoy.total / ventasHoy.cantidad : 0;
+    const ticketPromedio =
+      ventasHoy.cantidad > 0 ? ventasHoy.total / ventasHoy.cantidad : 0;
 
     return {
       success: true,

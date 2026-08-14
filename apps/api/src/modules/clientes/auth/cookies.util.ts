@@ -5,7 +5,10 @@ const REFRESH_COOKIE = 'cliente_refresh_token';
 
 const isProduction = () => process.env.NODE_ENV === 'production';
 
-export function setClienteAuthCookies(res: Response, tokens: { access_token: string; refresh_token: string }): void {
+export function setClienteAuthCookies(
+  res: Response,
+  tokens: { access_token: string; refresh_token: string },
+): void {
   res.cookie(ACCESS_COOKIE, tokens.access_token, {
     httpOnly: true,
     secure: isProduction(),

@@ -1,10 +1,19 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import type { IProductoRepository, ProductoEntity } from '../../../domain/repositories/producto.repository.interface';
+import type {
+  IProductoRepository,
+  ProductoEntity,
+} from '../../../domain/repositories/producto.repository.interface';
 import { PRODUCTO_REPOSITORY } from '../../../domain/repositories/producto.repository.interface';
 import { computeSellable, EstadoVenta } from '@repo/combo-rules';
-import { computeStockBom, stockDisponibleDeComponente } from '../../../domain/combo-stock';
+import {
+  computeStockBom,
+  stockDisponibleDeComponente,
+} from '../../../domain/combo-stock';
 
-type ProductoConVenta = ProductoEntity & { stock_vendible?: number; estado_venta?: EstadoVenta };
+type ProductoConVenta = ProductoEntity & {
+  stock_vendible?: number;
+  estado_venta?: EstadoVenta;
+};
 
 @Injectable()
 export class ObtenerProductoUseCase {
@@ -22,7 +31,9 @@ export class ObtenerProductoUseCase {
       producto = await this.productoRepo.buscarPorPublicId(idOrPublicId);
     }
     if (!producto) {
-      throw new NotFoundException(`Producto con ID ${idOrPublicId} no encontrado`);
+      throw new NotFoundException(
+        `Producto con ID ${idOrPublicId} no encontrado`,
+      );
     }
     if (producto.tipo_producto !== 'COMBO') {
       return producto;

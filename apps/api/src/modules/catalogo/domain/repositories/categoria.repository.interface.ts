@@ -18,9 +18,16 @@ export interface CategoriaConSubcategorias extends CategoriaEntity {
 
 export interface ICategoriaRepository {
   crear(categoria: Partial<CategoriaEntity>): Promise<CategoriaEntity>;
-  actualizar(id: bigint, categoria: Partial<CategoriaEntity>): Promise<CategoriaEntity>;
+  actualizar(
+    id: bigint,
+    categoria: Partial<CategoriaEntity>,
+  ): Promise<CategoriaEntity>;
   buscarPorSlug(slug: string): Promise<CategoriaEntity | null>;
   buscarPorId(id: bigint): Promise<CategoriaEntity | null>;
-  buscarTodas(filtros?: { activo?: boolean; padre_id?: bigint | null }, page?: number, limit?: number): Promise<{ data: CategoriaEntity[]; total: number }>;
+  buscarTodas(
+    filtros?: { activo?: boolean; padre_id?: bigint | null },
+    page?: number,
+    limit?: number,
+  ): Promise<{ data: CategoriaEntity[]; total: number }>;
   buscarConSubcategorias(id: bigint): Promise<CategoriaConSubcategorias | null>;
 }

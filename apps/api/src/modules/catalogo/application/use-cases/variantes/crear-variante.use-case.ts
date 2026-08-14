@@ -8,7 +8,9 @@ export class CrearVarianteUseCase {
   async execute(dto: CrearVarianteDto) {
     const existing = await this.varianteRepo.buscarPorSku(dto.sku_base);
     if (existing) {
-      throw new BadRequestException(`La variante con SKU ${dto.sku_base} ya existe.`);
+      throw new BadRequestException(
+        `La variante con SKU ${dto.sku_base} ya existe.`,
+      );
     }
 
     const createData: any = { ...dto };

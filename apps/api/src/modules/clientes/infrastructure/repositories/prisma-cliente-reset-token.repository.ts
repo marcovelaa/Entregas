@@ -9,14 +9,26 @@ import {
 export class PrismaClienteResetTokenRepository implements IClienteResetTokenRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async crear(clienteId: string, tokenHash: string, expiraEn: Date): Promise<void> {
+  async crear(
+    clienteId: string,
+    tokenHash: string,
+    expiraEn: Date,
+  ): Promise<void> {
     await this.prisma.clienteResetToken.create({
-      data: { cliente_id: BigInt(clienteId), token_hash: tokenHash, expira_en: expiraEn },
+      data: {
+        cliente_id: BigInt(clienteId),
+        token_hash: tokenHash,
+        expira_en: expiraEn,
+      },
     });
   }
 
-  async buscarPorHash(tokenHash: string): Promise<ClienteResetTokenData | null> {
-    const fila = await this.prisma.clienteResetToken.findUnique({ where: { token_hash: tokenHash } });
+  async buscarPorHash(
+    tokenHash: string,
+  ): Promise<ClienteResetTokenData | null> {
+    const fila = await this.prisma.clienteResetToken.findUnique({
+      where: { token_hash: tokenHash },
+    });
     if (!fila) return null;
     return {
       id: fila.id.toString(),
@@ -28,6 +40,9 @@ export class PrismaClienteResetTokenRepository implements IClienteResetTokenRepo
   }
 
   async marcarUsado(id: string): Promise<void> {
-    await this.prisma.clienteResetToken.update({ where: { id: BigInt(id) }, data: { usado: true } });
+    await this.prisma.clienteResetToken.update({
+      where: { id: BigInt(id) },
+      data: { usado: true },
+    });
   }
 }

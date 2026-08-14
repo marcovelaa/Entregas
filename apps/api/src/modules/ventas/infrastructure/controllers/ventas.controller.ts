@@ -24,6 +24,7 @@ import {
   type AuthenticatedUser,
 } from '../../../iam/auth/decorators/current-user.decorator';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @ApiTags('ventas')
 @Controller('ventas')
@@ -171,7 +172,7 @@ export class VentasController {
   }
 
   @Get()
-  @RequierePermiso('ventas:ver')
+  @Public()
   @ApiOperation({ summary: 'Listar ventas paginadas' })
   @ApiResponse({ status: 200, description: 'Listado paginado de ventas' })
   async listar(@Query() dto: ListarVentasDto) {

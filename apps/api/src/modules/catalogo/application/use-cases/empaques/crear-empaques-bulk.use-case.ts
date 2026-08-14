@@ -6,7 +6,7 @@ export class CrearEmpaquesBulkUseCase {
   constructor(private readonly empaqueRepo: IEmpaqueRepository) {}
 
   async execute(dto: CrearEmpaquesBulkDto) {
-    const toInsert: Partial<EmpaqueEntity>[] = dto.empaques.map(e => ({
+    const toInsert: Partial<EmpaqueEntity>[] = dto.empaques.map((e) => ({
       variante_id: BigInt(e.variante_id),
       nombre: e.nombre,
       sku: e.sku,

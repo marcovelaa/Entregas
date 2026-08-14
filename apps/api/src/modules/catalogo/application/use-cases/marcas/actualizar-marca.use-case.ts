@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import type { IMarcaRepository } from '../../../domain/repositories/marca.repository.interface';
 import { MARCA_REPOSITORY } from '../../../domain/repositories/marca.repository.interface';
 import { ActualizarMarcaDto } from '../../dtos/crear-marca.dto';
@@ -19,7 +24,9 @@ export class ActualizarMarcaUseCase {
     if (dto.slug && dto.slug !== marca.slug) {
       const existente = await this.marcaRepo.buscarPorSlug(dto.slug);
       if (existente) {
-        throw new BadRequestException(`Ya existe una marca con el slug '${dto.slug}'`);
+        throw new BadRequestException(
+          `Ya existe una marca con el slug '${dto.slug}'`,
+        );
       }
     }
 

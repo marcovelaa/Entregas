@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, createHash } from 'crypto';
@@ -11,7 +17,10 @@ import {
   CLIENTE_RESET_TOKEN_REPOSITORY,
   type IClienteResetTokenRepository,
 } from '../domain/repositories/cliente-reset-token.repository.interface';
-import { getCustomerJwtSecret, getCustomerJwtRefreshSecret } from './jwt-cliente.config';
+import {
+  getCustomerJwtSecret,
+  getCustomerJwtRefreshSecret,
+} from './jwt-cliente.config';
 import { RegistroClienteDto } from './dto/registro-cliente.dto';
 
 export interface CustomerJwtPayload {
@@ -24,15 +33,21 @@ const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hora
 @Injectable()
 export class ClienteAuthService {
   constructor(
-    @Inject(CLIENTE_REPOSITORY) private readonly clienteRepo: IClienteRepository,
-    @Inject(CLIENTE_RESET_TOKEN_REPOSITORY) private readonly resetTokenRepo: IClienteResetTokenRepository,
+    @Inject(CLIENTE_REPOSITORY)
+    private readonly clienteRepo: IClienteRepository,
+    @Inject(CLIENTE_RESET_TOKEN_REPOSITORY)
+    private readonly resetTokenRepo: IClienteResetTokenRepository,
     private readonly jwtService: JwtService,
   ) {}
 
   async registrar(dto: RegistroClienteDto) {
-    const existente = await this.clienteRepo.buscarPorEmailConCredenciales(dto.email);
+    const existente = await this.clienteRepo.buscarPorEmailConCredenciales(
+      dto.email,
+    );
     if (existente) {
-      throw new ConflictException('Ya existe una cuenta con este correo electrónico');
+      throw new ConflictException(
+        'Ya existe una cuenta con este correo electrónico',
+      );
     }
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const cliente = await this.clienteRepo.crearConCredenciales({
@@ -45,7 +60,10 @@ export class ClienteAuthService {
     return this.emitirTokens(cliente);
   }
 
-  async validarCredenciales(email: string, password: string): Promise<ClienteConCredenciales> {
+  async validarCredenciales(
+    email: string,
+    password: string,
+  ): Promise<ClienteConCredenciales> {
     const cliente = await this.clienteRepo.buscarPorEmailConCredenciales(email);
     if (!cliente || !cliente.activo) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -64,11 +82,15 @@ export class ClienteAuthService {
   async refrescar(refreshToken: string) {
     let decoded: CustomerJwtPayload;
     try {
-      decoded = this.jwtService.verify(refreshToken, { secret: getCustomerJwtRefreshSecret() });
+      decoded = this.jwtService.verify(refreshToken, {
+        secret: getCustomerJwtRefreshSecret(),
+      });
     } catch {
       throw new UnauthorizedException('Refresh token inválido o expirado');
     }
-    const cliente = await this.clienteRepo.obtenerConCredencialesPorId(decoded.sub);
+    const cliente = await this.clienteRepo.obtenerConCredencialesPorId(
+      decoded.sub,
+    );
     if (!cliente || !cliente.activo) {
       throw new UnauthorizedException('Cliente no encontrado o inactivo');
     }
@@ -91,19 +113,33 @@ export class ClienteAuthService {
     return {};
   }
 
-  async restablecerPassword(tokenPlano: string, nuevaPassword: string): Promise<void> {
+  async restablecerPassword(
+    tokenPlano: string,
+    nuevaPassword: string,
+  ): Promise<void> {
     const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
     const registro = await this.resetTokenRepo.buscarPorHash(tokenHash);
-    if (!registro || registro.usado || registro.expiraEn.getTime() < Date.now()) {
-      throw new BadRequestException('El enlace de recuperación no es válido o expiró');
+    if (
+      !registro ||
+      registro.usado ||
+      registro.expiraEn.getTime() < Date.now()
+    ) {
+      throw new BadRequestException(
+        'El enlace de recuperación no es válido o expiró',
+      );
     }
     const passwordHash = await bcrypt.hash(nuevaPassword, 12);
     await this.clienteRepo.actualizarPassword(registro.clienteId, passwordHash);
     await this.resetTokenRepo.marcarUsado(registro.id);
   }
 
-  async cambiarPassword(clienteId: string, passwordActual: string, passwordNueva: string): Promise<void> {
-    const cliente = await this.clienteRepo.obtenerConCredencialesPorId(clienteId);
+  async cambiarPassword(
+    clienteId: string,
+    passwordActual: string,
+    passwordNueva: string,
+  ): Promise<void> {
+    const cliente =
+      await this.clienteRepo.obtenerConCredencialesPorId(clienteId);
     if (!cliente) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -116,10 +152,19 @@ export class ClienteAuthService {
   }
 
   private emitirTokens(cliente: ClienteConCredenciales) {
-    const payload: CustomerJwtPayload = { sub: cliente.id, email: cliente.email };
+    const payload: CustomerJwtPayload = {
+      sub: cliente.id,
+      email: cliente.email,
+    };
     return {
-      access_token: this.jwtService.sign(payload, { secret: getCustomerJwtSecret(), expiresIn: '8h' }),
-      refresh_token: this.jwtService.sign(payload, { secret: getCustomerJwtRefreshSecret(), expiresIn: '7d' }),
+      access_token: this.jwtService.sign(payload, {
+        secret: getCustomerJwtSecret(),
+        expiresIn: '8h',
+      }),
+      refresh_token: this.jwtService.sign(payload, {
+        secret: getCustomerJwtRefreshSecret(),
+        expiresIn: '7d',
+      }),
       cliente: {
         id: cliente.id,
         nombres: cliente.nombres,

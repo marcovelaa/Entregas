@@ -8,6 +8,7 @@ import {
   ListarClientesDto,
 } from '../../application/dtos/cliente.dto';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @Controller('clientes')
 export class ClientesController {
@@ -24,6 +25,7 @@ export class ClientesController {
   }
 
   @Get()
+  @Public()
   async listar(@Query() dto: ListarClientesDto) {
     return this.listarClientesUseCase.execute(dto);
   }

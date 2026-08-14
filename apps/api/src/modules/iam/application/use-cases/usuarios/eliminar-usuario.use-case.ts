@@ -7,9 +7,11 @@ export class EliminarUsuarioUseCase {
   async execute(id: bigint): Promise<void> {
     const usuario = await this.usuarioRepository.findById(id);
     if (!usuario) {
-      throw new UsuarioNoEncontradoException(`El usuario con ID ${id} no existe.`);
+      throw new UsuarioNoEncontradoException(
+        `El usuario con ID ${id} no existe.`,
+      );
     }
-    
+
     await this.usuarioRepository.delete(id);
   }
 }

@@ -14,7 +14,9 @@ export class SubirImagenProductoUseCase {
     });
 
     if (!producto) {
-      throw new NotFoundException(`Producto con ID ${producto_id} no encontrado`);
+      throw new NotFoundException(
+        `Producto con ID ${producto_id} no encontrado`,
+      );
     }
 
     // Verificar si ya tiene imagen principal
@@ -31,7 +33,7 @@ export class SubirImagenProductoUseCase {
         url,
         es_principal,
         activo: true,
-      }
+      },
     });
 
     return {
@@ -40,7 +42,7 @@ export class SubirImagenProductoUseCase {
         id: imagen.id.toString(),
         url: imagen.url,
         es_principal: imagen.es_principal,
-      }
+      },
     };
   }
 }

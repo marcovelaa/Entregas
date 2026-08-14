@@ -9,7 +9,14 @@ export class Rol {
   ) {}
 
   static crear(nombre: string, descripcion?: string): Rol {
-    return new Rol(0n, nombre, descripcion || null, true, new Date(), new Date());
+    return new Rol(
+      0n,
+      nombre,
+      descripcion || null,
+      true,
+      new Date(),
+      new Date(),
+    );
   }
 
   desactivar(): void {

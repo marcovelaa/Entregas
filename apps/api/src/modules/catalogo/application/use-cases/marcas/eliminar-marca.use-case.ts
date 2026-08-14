@@ -12,7 +12,9 @@ export class EliminarMarcaUseCase {
 
     const count = await this.marcaRepository.contarProductosAsociados(id);
     if (count > 0) {
-      throw new ConflictException(`No se puede eliminar la marca porque tiene ${count} producto(s) asociado(s).`);
+      throw new ConflictException(
+        `No se puede eliminar la marca porque tiene ${count} producto(s) asociado(s).`,
+      );
     }
 
     await this.marcaRepository.eliminar(id);
