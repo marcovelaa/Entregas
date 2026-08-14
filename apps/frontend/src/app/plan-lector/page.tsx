@@ -111,6 +111,7 @@ export default function PlanLectorPage() {
                 </svg>
                 Filtros
               </button>
+            </div>
           </div>
 
           {filteredBooks.length > 0 ? (
