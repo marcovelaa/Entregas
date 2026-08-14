@@ -44,7 +44,7 @@ export class DescuentosController {
   ) {}
 
   @Get()
-  @RequierePermiso('descuentos:ver')
+  @Public()
   @ApiOperation({
     summary:
       'Listar todos los descuentos con sus alcances (productos/variantes/empaques/categorías)',
