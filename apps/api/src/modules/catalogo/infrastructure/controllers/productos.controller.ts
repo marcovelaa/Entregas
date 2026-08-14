@@ -21,6 +21,7 @@ import {
 } from '../../application/dtos/producto.dto';
 import { ParseBigIntPipe } from '../../../../common/pipes';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @Controller('productos')
 export class ProductosController {
@@ -40,17 +41,20 @@ export class ProductosController {
   }
 
   @Get()
+  @Public()
   async listar(@Query() query: ListarProductosDto) {
     return this.listarProductosUseCase.execute(query, query.page, query.limit);
   }
 
   @Get(':id/analitica')
+  @RequierePermiso('catalogo:gestionar')
   async obtenerAnalitica(@Param('id', ParseBigIntPipe) id: bigint) {
     const data = await this.obtenerAnaliticaComboUseCase.execute(id);
     return { success: true, data };
   }
 
   @Get(':publicId')
+  @Public()
   async obtener(@Param('publicId') publicId: string) {
     return this.obtenerProductoUseCase.execute(publicId);
   }
