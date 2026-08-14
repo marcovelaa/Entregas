@@ -90,7 +90,7 @@ describe('RBAC route metadata', () => {
         DescuentosController.prototype as unknown as Record<string, unknown>,
         'validarPromocion',
       ),
-    ).toBe('descuentos:validar');
+    ).toBeUndefined();
   });
 
   it('reserves privilege-changing IAM routes for their highest required permission', () => {

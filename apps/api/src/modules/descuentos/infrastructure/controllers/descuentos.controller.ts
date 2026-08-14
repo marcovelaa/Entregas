@@ -16,6 +16,7 @@ import {
   CartItemInput,
 } from '../../domain/discount-engine.service';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 const HHMM_RE = /^\d{2}:\d{2}$/;
 
@@ -624,7 +625,7 @@ export class DescuentosController {
   }
 
   @Post('validar')
-  @RequierePermiso('descuentos:validar')
+  @Public()
   @ApiOperation({
     summary:
       'Evaluar el carrito contra los descuentos/cupones activos y calcular el mejor ahorro aplicable',
