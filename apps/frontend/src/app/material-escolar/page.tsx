@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import styles from './materialEscolar.module.css';
 import { MaterialCard } from '@/components/molecules/MaterialCard/MaterialCard';
-import PageHeader from '@/components/organisms/PageHeader/PageHeader';
 
 // Mock Data
 const categories = [
@@ -53,11 +52,6 @@ export default function MaterialEscolarPage() {
 
   return (
     <div className={styles.pageWrapper}>
-      <PageHeader 
-        title="Material Escolar"
-        subtitle="La papelería más completa. Compra por unidad para el colegio, o por paquete y pallet para tu negocio."
-      />
-
       <div className={styles.layoutContainer}>
         {/* Sidebar Filters */}
         <aside className={styles.sidebar}>
