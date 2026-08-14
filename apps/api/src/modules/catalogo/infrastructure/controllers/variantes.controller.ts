@@ -27,6 +27,7 @@ import {
 } from '../../application/dtos/variante.dto';
 import { ParseBigIntPipe } from '../../../../common/pipes';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 const variantesDir = path.join(process.cwd(), 'uploads', 'variantes');
 
@@ -64,6 +65,7 @@ export class VariantesController {
   }
 
   @Get('producto/:productoId')
+  @Public()
   async listarPorProducto(
     @Param('productoId', ParseBigIntPipe) productoId: bigint,
   ) {
@@ -101,7 +103,7 @@ export class VariantesController {
     const imageUrl = `/uploads/variantes/${finalFilename}`;
     const v = await this.actualizarVarianteUseCase.execute(id, {
       imagen_url: imageUrl,
-    } as any);
+    });
     return serializeVariante(v);
   }
 }

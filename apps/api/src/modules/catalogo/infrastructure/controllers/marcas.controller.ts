@@ -20,6 +20,7 @@ import {
 } from '../../application/dtos/crear-marca.dto';
 import { ParseBigIntPipe } from '../../../../common/pipes';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @Controller('marcas')
 export class MarcasController {
@@ -38,11 +39,13 @@ export class MarcasController {
   }
 
   @Get()
+  @Public()
   async listar(@Query() query: ListarMarcasDto) {
     return this.listarMarcasUseCase.execute(query, query.page, query.limit);
   }
 
   @Get(':id')
+  @Public()
   async obtener(@Param('id', ParseBigIntPipe) id: bigint) {
     return this.obtenerMarcaUseCase.execute(id);
   }

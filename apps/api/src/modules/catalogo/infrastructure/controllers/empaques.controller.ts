@@ -9,6 +9,7 @@ import {
   CrearEmpaquesBulkDto,
 } from '../../application/dtos/empaque.dto';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
+import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @Controller('empaques')
 export class EmpaquesController {
@@ -20,6 +21,7 @@ export class EmpaquesController {
   ) {}
 
   @Get('variante/:id')
+  @Public()
   async listarPorVariante(@Param('id') id: string) {
     const empaques = await this.listarEmpaquesUc.execute(BigInt(id));
     return empaques.map((e) => ({
