@@ -43,7 +43,6 @@ export default function PlanLectorPage() {
   const [activeLevel, setActiveLevel] = useState<string>('');
   const [activeGrade, setActiveGrade] = useState<string>('');
   const [activeSubject, setActiveSubject] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<any[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -63,10 +62,7 @@ export default function PlanLectorPage() {
       .catch(err => console.error('Error fetching products', err));
   }, []);
 
-  const filteredBooks = products.filter(b => {
-    const titleMatch = b.nombre ? b.nombre.toLowerCase().includes(searchQuery.toLowerCase()) : false;
-    return titleMatch;
-  });
+  const filteredBooks = products;
 
   const getActiveGradeName = () => {
     if (!activeGrade) return 'Todas las lecturas';
@@ -115,20 +111,6 @@ export default function PlanLectorPage() {
                 </svg>
                 Filtros
               </button>
-            </div>
-            <div className={styles.searchWrapper}>
-              <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <input 
-                type="text" 
-                placeholder="Buscar lectura..." 
-                className={styles.searchInput}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
           </div>
 
           {filteredBooks.length > 0 ? (
