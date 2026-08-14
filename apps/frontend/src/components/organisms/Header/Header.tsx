@@ -13,48 +13,27 @@ export default function Header() {
   const { favorites } = useFavorites();
   const { totalItems } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
-  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('Todas las categorías');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({
-    envio: false,
-    ofertas: false,
-    nuevo: false
-  });
+  
+  // TODO: Reemplazar esto con tu contexto de autenticación real (ej. useAuth())
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const mockUser = { nombre: 'Marco' }; // Simulación de los datos del usuario
   
   const pathname = usePathname();
 
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category);
-    setIsCategoryMenuOpen(false);
-  };
-
-  const handleFilterToggle = (key: keyof typeof filters) => {
-    setFilters(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  // No renderizar el Header en la página de login para evitar distracciones (CRO)
+  if (pathname === '/login') {
+    return null;
+  }
 
   const executeSearch = () => {
-    setIsCategoryMenuOpen(false);
-    setIsFilterMenuOpen(false);
-    
     // Acá en el futuro iría la conexión con el backend o useRouter de Next
     console.log('--- NUEVA BÚSQUEDA ---');
     console.log('Término:', searchQuery);
-    console.log('Categoría:', selectedCategory);
-    console.log('Filtros activos:', filters);
     
-    alert(`Buscando: ${searchQuery || 'Todo'}\nCategoría: ${selectedCategory}`);
+    alert(`Buscando: ${searchQuery || 'Todo'}`);
   };
 
-  const categoriesList = [
-    'Todas las categorías',
-    'Textos Escolares',
-    'Plan Lector',
-    'Material Escolar',
-    'Papel y Cuadernos',
-    'Ofertas Especiales'
-  ];
 
   return (
     <>
@@ -62,9 +41,13 @@ export default function Header() {
         <div className={styles.utilityBar}>
           <div className={styles.utilityLeft}>
             <span className={styles.greeting}>
-              ¡Hola! <Link href="#" className={styles.linkBlue}>Inicia sesión</Link> o <Link href="#" className={styles.linkBlue}>regístrate</Link>
+              {isAuthenticated ? (
+                <>¡Hola, {mockUser.nombre}!</>
+              ) : (
+                <>¡Hola! <Link href="/login" className={styles.linkBlue}>Inicia sesión</Link> o <Link href="/login" className={styles.linkBlue}>regístrate</Link></>
+              )}
             </span>
-            <Link href="#">Preguntas frecuentes</Link>
+            <Link href="/preguntas-frecuentes">Preguntas frecuentes</Link>
             <Link href="#">Nosotros</Link>
           </div>
           <div className={styles.utilityRight}>
@@ -73,37 +56,14 @@ export default function Header() {
         </div>
 
         <header className={styles.header}>
-        <Logo />
+          <div className={styles.logoWrapper}>
+            <Logo />
+          </div>
 
         <div className={styles.searchContainer}>
               <div className={styles.searchWrapper}>
                 
-                {/* Custom Category Dropdown */}
-                <div className={styles.dropdownContainer}>
-                  <div 
-                    className={styles.searchCategorySelect} 
-                    onClick={() => { setIsCategoryMenuOpen(!isCategoryMenuOpen); setIsFilterMenuOpen(false); }}
-                    tabIndex={0}
-                    role="button"
-                  >
-                    {selectedCategory}
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginLeft: '6px'}}><polyline points="6 9 12 15 18 9"></polyline></svg>
-                  </div>
-                  {isCategoryMenuOpen && (
-                    <div className={styles.dropdownMenu}>
-                      {categoriesList.map(cat => (
-                        <div 
-                          key={cat} 
-                          className={styles.dropdownItem}
-                          onClick={() => handleCategorySelect(cat)}
-                          style={{ fontWeight: selectedCategory === cat ? 'bold' : 'normal', color: selectedCategory === cat ? 'var(--color-blue)' : 'inherit' }}
-                        >
-                          {cat}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+
                 
                 <input 
                   type="text" 
@@ -113,52 +73,9 @@ export default function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && executeSearch()}
-                  onClick={() => { setIsCategoryMenuOpen(false); setIsFilterMenuOpen(false); }}
                 />
                 
-                {/* Custom Filter Dropdown */}
-                <div className={styles.dropdownContainer}>
-                  <button 
-                    className={styles.searchFilterBtn} 
-                    aria-label="Filtros avanzados"
-                    onClick={() => { setIsFilterMenuOpen(!isFilterMenuOpen); setIsCategoryMenuOpen(false); }}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.iconSmall} aria-hidden="true">
-                      <line x1="4" y1="21" x2="4" y2="14"></line>
-                      <line x1="4" y1="10" x2="4" y2="3"></line>
-                      <line x1="12" y1="21" x2="12" y2="12"></line>
-                      <line x1="12" y1="8" x2="12" y2="3"></line>
-                      <line x1="20" y1="21" x2="20" y2="16"></line>
-                      <line x1="20" y1="12" x2="20" y2="3"></line>
-                      <line x1="1" y1="14" x2="7" y2="14"></line>
-                      <line x1="9" y1="8" x2="15" y2="8"></line>
-                      <line x1="17" y1="16" x2="23" y2="16"></line>
-                    </svg>
-                    {(filters.envio || filters.ofertas || filters.nuevo) && (
-                      <span style={{ position: 'absolute', top: '8px', right: '8px', width: '8px', height: '8px', backgroundColor: 'var(--color-red)', borderRadius: '50%' }}></span>
-                    )}
-                  </button>
-                  {isFilterMenuOpen && (
-                    <div className={styles.filterMenu}>
-                      <h4 className={styles.filterTitle}>Filtros de Búsqueda</h4>
-                      <div className={styles.filterOption}>
-                        <input type="checkbox" id="envio" checked={filters.envio} onChange={() => handleFilterToggle('envio')} />
-                        <label htmlFor="envio">Envío express disponible</label>
-                      </div>
-                      <div className={styles.filterOption}>
-                        <input type="checkbox" id="ofertas" checked={filters.ofertas} onChange={() => handleFilterToggle('ofertas')} />
-                        <label htmlFor="ofertas">Descuentos activos</label>
-                      </div>
-                      <div className={styles.filterOption}>
-                        <input type="checkbox" id="nuevo" checked={filters.nuevo} onChange={() => handleFilterToggle('nuevo')} />
-                        <label htmlFor="nuevo">Catálogo 2026</label>
-                      </div>
-                      <button className={styles.applyFilterBtn} onClick={() => setIsFilterMenuOpen(false)}>
-                        Aplicar Filtros
-                      </button>
-                    </div>
-                  )}
-                </div>
+
 
                 <button className={styles.searchBtn} aria-label="Ejecutar búsqueda" onClick={executeSearch}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
@@ -201,7 +118,7 @@ export default function Header() {
           <Link href="/material-escolar" className={pathname === '/material-escolar' ? styles.activeCategory : ''}>Material Escolar</Link>
           <Link href="/cuadernos" className={pathname === '/cuadernos' ? styles.activeCategory : ''}>Cuadernos</Link>
           <Link href="/papel" className={pathname === '/papel' ? styles.activeCategory : ''}>Papel</Link>
-          <Link href="/ofertas" className={styles.redLink}>Ofertas</Link>
+          <Link href="/ofertas" className={pathname === '/ofertas' ? styles.activeOferta : styles.ofertaLink}>Ofertas</Link>
         </nav>
       </div>
 

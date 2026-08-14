@@ -56,7 +56,24 @@
 
 .sidebarSticky {
   position: sticky;
-  top: 100px;
+  top: 2rem;
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+/* UI Mobile Menu */
+.mobileFilterBtn {
+  display: none;
+}
+
+.mobileOverlay {
+  display: none;
+}
+
+.sidebarHeaderMobile {
+  display: none;
 }
 
 .sidebarTitle {
@@ -84,6 +101,7 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  box-sizing: border-box;
   background: white;
   border: 1px solid transparent;
   padding: 0.85rem 1.25rem;
@@ -149,6 +167,8 @@
 
 .subGradeBtn {
   text-align: left;
+  width: 100%;
+  box-sizing: border-box;
   background: none;
   border: none;
   padding: 0.5rem 1rem;
@@ -180,6 +200,14 @@
   padding-bottom: 1rem;
 }
 
+.headerTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
 .catalogTitle {
   font-size: 1.8rem;
   font-family: var(--font-heading, inherit);
@@ -204,6 +232,7 @@
 
 .searchInput {
   width: 100%;
+  box-sizing: border-box;
   padding: 0.65rem 1rem 0.65rem 2.5rem;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -370,10 +399,94 @@
 @media (max-width: 900px) {
   .layoutContainer {
     grid-template-columns: 1fr;
+    padding: 1rem 5%;
+  }
+
+  .mobileFilterBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: transparent;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #475569;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .mobileFilterBtn:hover {
+    background-color: #f1f5f9;
+    border-color: #94a3b8;
+  }
+
+  .mobileFilterBtn:active {
+    background-color: #e2e8f0;
+  }
+
+  .mobileOverlay {
+    display: block;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .mobileOverlayOpen {
+    opacity: 1;
+    pointer-events: auto;
   }
   
   .sidebarSticky {
-    position: static;
+    position: fixed;
+    top: 0;
+    left: -320px;
+    bottom: 0;
+    width: 300px;
+    max-width: 85%;
+    background: white;
+    z-index: 100;
+    overflow-y: auto;
+    padding: 1.5rem;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    border-radius: 0;
+  }
+
+  .sidebarOpen {
+    left: 0;
+  }
+
+  .sidebarHeaderMobile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .sidebarHeaderMobile h3 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .closeSidebarBtn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.5rem;
+    line-height: 1;
   }
   
   .catalogHeader {
@@ -384,5 +497,12 @@
   
   .searchWrapper {
     width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .booksGrid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
   }
 }

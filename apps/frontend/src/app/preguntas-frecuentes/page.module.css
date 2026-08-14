@@ -1,0 +1,64 @@
+.pageWrapper {
+  width: 100%;
+  min-height: calc(100vh - 120px);
+  background-color: #f9f9f9;
+  padding: 3rem 1.5rem;
+}
+
+.mainContent {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.header {
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  color: #222;
+  margin-bottom: 1rem;
+}
+
+.header p {
+  font-size: 1.125rem;
+  color: #666;
+}
+
+.accordionSection {
+  background: transparent;
+}
+
+.contactSupport {
+  margin-top: 2rem;
+  text-align: center;
+  padding: 2.5rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #eaeaea;
+}
+
+.contactSupport p {
+  font-size: 1.125rem;
+  color: #444;
+  margin-bottom: 1.5rem;
+}
+
+.contactBtn {
+  background: #25d366;
+  color: white;
+  border: none;
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.contactBtn:hover {
+  background: #128c7e;
+}

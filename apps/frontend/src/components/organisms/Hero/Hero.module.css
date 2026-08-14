@@ -42,7 +42,7 @@
 
 .bannerImage {
   object-fit: cover !important;
-  object-position: center right !important;
+  object-position: right center !important;
 }
 
 /* Clean Typography on Negative Space (No Awkward Boxes) */
@@ -159,27 +159,47 @@
 
 @media (max-width: 768px) {
   .bannerStage {
-    height: 300px;
-  }
-  .captionOverlay {
-    top: auto;
-    transform: none;
-    bottom: 1.25rem;
-    left: 1.25rem;
-    right: 1.25rem;
-    max-width: 100%;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(10px);
+    height: auto;
+    aspect-ratio: 24 / 10;
     border-radius: 12px;
   }
-  .headline {
-    font-size: 1.3rem;
+  .slide {
+    position: absolute; /* Revert to default stacked slides */
+    inset: 0;
   }
-  .subheadline {
-    font-size: 0.85rem;
+  .imageWrapper {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    width: 100%;
+  }
+  .bannerImage {
+    object-position: 92% center !important;
+  }
+  .captionOverlay {
+    display: none !important; /* Hide text completely on mobile */
   }
   .cornerNav {
-    display: none;
+    bottom: 0.75rem;
+    right: 50%;
+    transform: translateX(50%);
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+  }
+  .navBtn {
+    display: none; /* Hide arrows on mobile */
+  }
+  .indicators {
+    gap: 0.5rem;
+  }
+  .pill {
+    background: rgba(10, 37, 64, 0.25);
+  }
+  .pillActive {
+    background: #0284C7;
   }
 }
+

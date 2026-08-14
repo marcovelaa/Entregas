@@ -21,6 +21,7 @@ export interface ProductCardProps {
   componentes?: Array<{ nombre: string; cantidad: number; imagen_url?: string }>;
   componentesImagenes?: string[];
   modoImagen?: 'PROPIA' | 'GRID_AUTO';
+  isBook?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -38,6 +39,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   componentes = [],
   componentesImagenes = [],
   modoImagen = 'GRID_AUTO',
+  isBook = false,
 }) => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToCart } = useCart();
@@ -104,12 +106,57 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     });
   };
 
+  const cardRef = React.useRef<HTMLElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    if (!cardRef.current || !isBook) return;
+
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    // Map to approx -7 to 7 degrees
+    const rotateX = ((y - centerY) / centerY) * -7;
+    const rotateY = ((x - centerX) / centerX) * 7;
+    
+    requestAnimationFrame(() => {
+      if (cardRef.current) {
+        cardRef.current.style.setProperty('--rotateX', `${rotateX}deg`);
+        cardRef.current.style.setProperty('--rotateY', `${rotateY}deg`);
+      }
+    });
+  };
+
+  const handleMouseLeave = () => {
+    if (!cardRef.current || !isBook) return;
+    requestAnimationFrame(() => {
+      if (cardRef.current) {
+        cardRef.current.style.setProperty('--rotateX', '0deg');
+        cardRef.current.style.setProperty('--rotateY', '0deg');
+      }
+    });
+  };
+
+  const descriptionStub = componentes.length > 0 
+    ? componentes.map(c => c.nombre).join(', ') 
+    : 'Libro de texto y actividades diseñado para potenciar el aprendizaje continuo.';
 
   return (
-    <article className={styles.productCard}>
+    <article 
+      ref={cardRef}
+      className={`${styles.productCard} ${isBook ? styles.productCardBook : ''}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
       {id && <Link href={`/producto/${id}`} className={styles.cardLink} aria-label={`Ver detalle de ${title}`} />}
       
-      <div className={styles.imageContainer}>
+      <div 
+        className={styles.imageContainer}
+        style={{ viewTransitionName: isBook && id ? `book-cover-${id}` : 'none' } as React.CSSProperties}
+      >
         <button
           className={`${styles.favoriteBtn} ${favorited ? styles.favorited : ''}`}
           onClick={handleFavoriteClick}
@@ -156,6 +203,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         <h3 className={styles.title} title={title}>{title}</h3>
 
+        {isBook && (
+          <div className={styles.hoverReveal}>
+            <p className={styles.descriptionText}>{descriptionStub}</p>
+          </div>
+        )}
 
         <div className={styles.footerRow}>
           <div className={styles.priceCol}>

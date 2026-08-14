@@ -2,79 +2,152 @@
 .footer {
   background-color: var(--bg-subtle);
   border-top: 1px solid var(--border-light);
-  padding: 4rem 5% 2rem;
-  margin-top: 4rem;
+  padding: 2rem 5% 1.5rem;
+  margin-top: 2rem;
 }
 .footerGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 3rem;
-  margin-bottom: 3rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 2rem;
 }
-.footerCol h3 {
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
+.footerCol {
+  display: flex;
+  flex-direction: column;
+}
+.footerBrandCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-right: 1rem;
+  max-width: 100%;
+}
+.logoWrapper {
+  margin-bottom: 0.75rem;
+  transform: scale(0.9);
+  transform-origin: left center;
+}
+.brandDesc {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 1rem 0;
+  max-width: 250px;
+}
+.socialIcons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.socialIcons a {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--border-light);
+  transition: all 0.2s ease;
+}
+.socialIcons a:hover {
+  color: white;
+  background: var(--color-blue);
+  transform: translateY(-2px);
+}
+.footerCol {
+  display: flex;
+  flex-direction: column;
+}
+.accordionToggle {
+  display: none;
+}
+.footerSummary {
+  display: block;
+  font-size: 0.95rem;
   font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 1rem 0;
+  pointer-events: none; /* No clicking on desktop */
 }
-.footerCol ul {
+.expandIcon {
+  display: none; /* Hide icon on desktop */
+}
+/* Force open on desktop */
+.accordionContent {
+  display: flex;
   list-style: none;
   padding: 0;
+  flex-direction: column;
+  gap: 0.5rem;
 }
-.footerCol li {
-  margin-bottom: 0.75rem;
+.accordionContent li {
+  margin: 0;
 }
 .footerCol a {
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   transition: color 0.2s;
 }
 .footerCol a:hover {
   color: var(--color-blue);
 }
-.footerBottom {
-  border-top: 1px solid var(--border-light);
-  padding-top: 2rem;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-/* Newsletter */
-.newsletterText {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-  line-height: 1.5;
-}
-.newsletterBox {
-  display: flex;
-  height: 40px;
-}
-.newsletterBox input {
-  flex: 1;
-  border: 1px solid var(--border-light);
-  border-radius: 4px 0 0 4px;
-  padding: 0 1rem;
-  outline: none;
-  font-family: var(--font-body);
-}
-.newsletterBox button {
-  background-color: var(--color-blue);
-  color: white;
-  border: none;
-  padding: 0 1.5rem;
-  border-radius: 0 4px 4px 0;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.newsletterBox button:hover {
-  background-color: #1aa3d4;
-}
 
 @media (max-width: 768px) {
+  .footer {
+    padding: 2rem 5% 1rem;
+  }
   .footerGrid {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1rem;
+  }
+  .footerBrandCol {
+    align-items: center;
+    text-align: center;
+    padding-right: 0;
+    margin-bottom: 1rem;
+  }
+  .brandDesc {
+    margin: 0.5rem 0 1rem;
+  }
+  
+  /* Mobile Accordion Styles */
+  .footerCol {
+    border-bottom: 1px solid var(--border-light);
+  }
+  .footerSummary {
+    pointer-events: auto; /* Enable clicks */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin: 0;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .expandIcon {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--text-muted);
+    transition: transform 0.3s ease;
+  }
+  .accordionToggle:checked + .footerSummary .expandIcon {
+    transform: rotate(45deg); /* Turn + into x */
+  }
+  .accordionContent {
+    display: none;
+  }
+  .accordionToggle:checked ~ .accordionContent {
+    display: flex;
+    padding-bottom: 1rem;
+    padding-left: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .footerSummary {
+    font-size: 0.95rem;
+  }
+  .footerCol a {
+    font-size: 0.85rem;
   }
 }

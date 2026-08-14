@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getLevelColor } from '@/data/mockProducts';
 import { ProductCard } from '@/components/molecules/ProductCard/ProductCard';
+import { BookViewer } from '@/components/organisms/BookViewer/BookViewer';
 import { ShoppingCart } from 'lucide-react';
 import styles from './producto.module.css';
 import { useCart } from '@/context/CartContext';
@@ -130,7 +131,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const naturaleza = realProduct ? (realProduct.naturaleza || realProduct.categoria?.nombre) : fallbackProduct.category;
   const atributos = realProduct?.atributos || {};
 
-  const isBook = naturaleza?.toLowerCase().includes('texto') || naturaleza?.toLowerCase().includes('lector');
+  const isBook = true; // En un e-commerce editorial, forzamos que todos los productos utilicen la visualización premium de libros.
   const brandLabel = isBook ? 'Editorial' : 'Marca';
 
   // Combo calculations
@@ -169,6 +170,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       }))
     : [];
 
+  let categoryPath = '/';
+  if (naturaleza?.toLowerCase().includes('texto')) categoryPath = '/textosescolares';
+  else if (naturaleza?.toLowerCase().includes('lector')) categoryPath = '/plan-lector';
+  else if (naturaleza?.toLowerCase().includes('material')) categoryPath = '/material-escolar';
+  else categoryPath = '/productos';
+
   return (
     <div className={styles.pageWrapper}>
       <main className={styles.mainContent}>
@@ -176,10 +183,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         {/* Breadcrumb */}
         <nav className={styles.breadcrumb} aria-label="Breadcrumb">
           <Link href="/">Inicio</Link>
+          {naturaleza && (
+            <>
+              <span className={styles.separator}>/</span>
+              <Link href={categoryPath}>{naturaleza}</Link>
+            </>
+          )}
           <span className={styles.separator}>/</span>
-          <Link href="/material-escolar">Material Escolar</Link>
-          <span className={styles.separator}>/</span>
-          <span className={styles.current}>{naturaleza || 'Producto'}</span>
+          <span className={styles.current} style={{ display: 'inline-block', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', verticalAlign: 'bottom' }}>
+            {title}
+          </span>
         </nav>
 
         {/* MAIN PRODUCT AREA */}
@@ -187,39 +200,45 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           
           {/* Left: Main Image Only (Variants act as gallery) */}
           <div className={styles.gallerySection}>
-            <div className={styles.mainImageWrapper}>
-              {(hasPromo || comboAhorro > 0) && (
-                <span className={styles.badge}>
-                  -{hasPromo ? discountPercent : comboAhorroPct}%
-                </span>
-              )}
-              <div className={styles.mainImageInner}>
-                <Image 
-                  src={currentMainImage} 
-                  alt={title} 
-                  fill
-                  priority
-                  className={styles.mainImage}
-                  sizes="(max-width: 768px) 100vw, 500px"
-                />
-              </div>
-            </div>
-            
-            {galleryImages.length > 1 && (
-              <div className={styles.thumbnailsContainer}>
-                {galleryImages.map((img, index) => {
-                  const isActive = !previewImageUrl && index === activeImageIndex;
-                  return (
-                    <button 
-                      key={index}
-                      className={`${styles.thumbnailBtn} ${isActive ? styles.activeThumbnail : ''}`}
-                      onClick={() => handleThumbnailClick(index)}
-                    >
-                      <Image src={img} alt={`Thumbnail ${index}`} fill sizes="80px" style={{ objectFit: 'contain' }} />
-                    </button>
-                  );
-                })}
-              </div>
+            {isBook ? (
+              <BookViewer images={galleryImages} title={title} id={id} />
+            ) : (
+              <>
+                <div className={styles.mainImageWrapper}>
+                  {(hasPromo || comboAhorro > 0) && (
+                    <span className={styles.badge}>
+                      -{hasPromo ? discountPercent : comboAhorroPct}%
+                    </span>
+                  )}
+                  <div className={styles.mainImageInner}>
+                    <Image 
+                      src={currentMainImage} 
+                      alt={title} 
+                      fill
+                      priority
+                      className={styles.mainImage}
+                      sizes="(max-width: 768px) 100vw, 500px"
+                    />
+                  </div>
+                </div>
+                
+                {galleryImages.length > 1 && (
+                  <div className={styles.thumbnailsContainer}>
+                    {galleryImages.map((img, index) => {
+                      const isActive = !previewImageUrl && index === activeImageIndex;
+                      return (
+                        <button 
+                          key={index}
+                          className={`${styles.thumbnailBtn} ${isActive ? styles.activeThumbnail : ''}`}
+                          onClick={() => handleThumbnailClick(index)}
+                        >
+                          <Image src={img} alt={`Thumbnail ${index}`} fill sizes="80px" style={{ objectFit: 'contain' }} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
 

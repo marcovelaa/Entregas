@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import PageHeader from '@/components/organisms/PageHeader/PageHeader';
+import { ProductCard } from '@/components/molecules/ProductCard/ProductCard';
 import styles from './planLector.module.css';
 
 // Estructura de categorías jerárquicas
@@ -68,10 +69,11 @@ export default function PlanLectorPage() {
   const [activeGrade, setActiveGrade] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<any[]>([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   React.useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    fetch(`${API_URL}/productos`)
+    fetch(`${API_URL}/productos?page=1&limit=50`)
       .then(res => res.json())
       .then(data => {
         if (data && data.data) {
@@ -108,10 +110,19 @@ export default function PlanLectorPage() {
       />
 
       <div className={styles.layoutContainer}>
+        {/* Mobile Overlay */}
+        <div 
+          className={`${styles.mobileOverlay} ${isMobileMenuOpen ? styles.mobileOverlayOpen : ''}`} 
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+
         {/* Navegación lateral estilo acordeón */}
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarSticky}>
-            <h3 className={styles.sidebarTitle}>Filtrar por Nivel</h3>
+        <aside className={`${styles.sidebarSticky} ${isMobileMenuOpen ? styles.sidebarOpen : ''}`}>
+          <div className={styles.sidebarHeaderMobile}>
+            <h3>Filtrar Catálogo</h3>
+            <button className={styles.closeSidebarBtn} onClick={() => setIsMobileMenuOpen(false)}>×</button>
+          </div>
+          <h3 className={styles.sidebarTitle}>Filtrar por Nivel</h3>
             <nav className={styles.categoryNav}>
               {categories.map(cat => {
                 const isExpanded = expandedCategory === cat.id;
@@ -140,6 +151,7 @@ export default function PlanLectorPage() {
                           } else {
                             setActiveGrade(cat.id);
                             setExpandedCategory(cat.id);
+                            setIsMobileMenuOpen(false);
                           }
                         }
                       }}
@@ -160,7 +172,10 @@ export default function PlanLectorPage() {
                               <button
                                 key={sub.id}
                                 className={`${styles.subGradeBtn} ${activeGrade === sub.id ? styles.subGradeActive : ''}`}
-                                onClick={() => setActiveGrade(sub.id)}
+                                onClick={() => {
+                                  setActiveGrade(sub.id);
+                                  setIsMobileMenuOpen(false);
+                                }}
                               >
                                 {sub.name}
                               </button>
@@ -173,13 +188,29 @@ export default function PlanLectorPage() {
                 );
               })}
             </nav>
-          </div>
         </aside>
 
         {/* Área principal del catálogo */}
         <main className={styles.catalogArea}>
           <div className={styles.catalogHeader}>
-            <h2 className={styles.catalogTitle}>{getActiveGradeName()}</h2>
+            <div className={styles.headerTitleRow}>
+              <h2 className={styles.catalogTitle}>{getActiveGradeName()}</h2>
+              {/* Mobile Filter Button */}
+              <button className={styles.mobileFilterBtn} onClick={() => setIsMobileMenuOpen(true)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <line x1="4" y1="21" x2="4" y2="14"></line>
+                  <line x1="4" y1="10" x2="4" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12" y2="3"></line>
+                  <line x1="20" y1="21" x2="20" y2="16"></line>
+                  <line x1="20" y1="12" x2="20" y2="3"></line>
+                  <line x1="1" y1="14" x2="7" y2="14"></line>
+                  <line x1="9" y1="8" x2="15" y2="8"></line>
+                  <line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+                Filtros
+              </button>
+            </div>
             <div className={styles.searchWrapper}>
               <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"></circle>
@@ -204,25 +235,16 @@ export default function PlanLectorPage() {
                 const numericPrice = Number(book.precio_base) || 0;
 
                 return (
-                  <article key={book.id} className={styles.bookCard}>
-                    <div className={styles.imageContainer}>
-                      <Image src={imageUrl} alt={book.nombre} fill sizes="(max-width: 768px) 100vw, 300px" className={styles.bookImage} />
-                    </div>
-                    <div className={styles.bookContent}>
-                      <div className={styles.bookMeta}>
-                        <span className={styles.publisher}>{book.marca?.nombre || 'General'}</span>
-                        <span className={styles.isbn}>SKU: {book.sku}</span>
-                      </div>
-                      <h3 className={styles.bookTitle} title={book.nombre}>{book.nombre}</h3>
-                      <p className={styles.bookAuthor}>{book.categoria?.nombre || 'General'}</p>
-                      <div className={styles.bookFooter}>
-                        <span className={styles.bookPrice}>Bs. {numericPrice.toFixed(2)}</span>
-                        <button className={styles.addToCartBtn} aria-label="Añadir al carrito">
-                          Añadir
-                        </button>
-                      </div>
-                    </div>
-                  </article>
+                  <ProductCard
+                    key={book.id}
+                    id={book.id.toString()}
+                    title={book.nombre}
+                    category={book.categoria?.nombre || 'General'}
+                    categoryColor="var(--color-blue)"
+                    price={book.precio_base}
+                    imageUrl={imageUrl}
+                    isBook={true}
+                  />
                 );
               })}
             </div>

@@ -73,12 +73,12 @@ export default function Hero() {
               aria-hidden={!isActive}
             >
               {/* Full Native Panoramic Banner (1920x640) */}
-              <div className={styles.imageWrapper} style={{ position: 'absolute', inset: 0 }}>
+              <div className={styles.imageWrapper}>
                 <Image
                   src={slide.image}
                   alt={slide.imageAlt}
                   fill
-                  priority={index === 0}
+                  priority={index <= 1}
                   sizes="(max-width: 1400px) 100vw, 1300px"
                   className={styles.bannerImage}
                 />

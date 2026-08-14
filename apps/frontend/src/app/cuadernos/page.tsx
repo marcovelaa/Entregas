@@ -20,7 +20,7 @@ export default function CuadernosPage() {
   
   React.useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    fetch(`${API_URL}/productos`)
+    fetch(`${API_URL}/productos?page=1&limit=50`)
       .then(res => res.json())
       .then(data => {
         if (data && data.data) {

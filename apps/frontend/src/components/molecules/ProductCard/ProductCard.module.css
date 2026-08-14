@@ -311,3 +311,202 @@
 .favoriteBtn.favorited svg {
   fill: #ef4444;
 }
+
+/* --- ESTÉTICA EDITORIAL (LIBROS) PREMIUM --- */
+.productCardBook {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  perspective: 1200px; /* Add perspective for 3D effect */
+  display: flex;
+  flex-direction: column;
+}
+
+.productCardBook:hover {
+  transform: none; /* El efecto se aplica a la imagen, no a la tarjeta */
+  box-shadow: none;
+}
+
+.productCardBook .imageContainer {
+  aspect-ratio: 1 / 1.45; /* Proporción real de libro físico */
+  background-color: var(--surface-secondary, #F4F1EA);
+  border-bottom: none;
+  padding: 0;
+  border-radius: 2px 6px 6px 2px; /* Lomo más recto */
+  box-shadow: 
+    -4px 0 2px rgba(0,0,0,0.02),
+    inset 4px 0 10px rgba(0,0,0,0.05), 
+    inset -1px 0 2px rgba(255,255,255,0.4),
+    0 8px 15px rgba(0,0,0,0.06);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-style: preserve-3d;
+  transform-origin: center right;
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+/* Efecto levitar del libro al hacer hover con 3D físico */
+.productCardBook:hover .imageContainer {
+  transform: rotateX(var(--rotateX, 0deg)) rotateY(var(--rotateY, 0deg)) translateZ(15px);
+  box-shadow: 
+    -12px 15px 25px rgba(0,0,0,0.10),
+    -4px 8px 15px rgba(0,0,0,0.06),
+    inset 4px 0 10px rgba(0,0,0,0.05), 
+    inset -1px 0 2px rgba(255,255,255,0.4);
+}
+
+/* El lomo del libro (Spine highlight 3D) */
+.productCardBook .imageContainer::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 16px;
+  background: linear-gradient(
+    to right, 
+    rgba(255,255,255,0.4) 0%, 
+    rgba(255,255,255,0.1) 20%, 
+    rgba(0,0,0,0.05) 80%, 
+    rgba(0,0,0,0.2) 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Brillo del plastificado (Glare) que pasa sobre la tapa en hover */
+.productCardBook .imageContainer::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    transparent 45%,
+    rgba(255,255,255,0.15) 50%,
+    transparent 55%,
+    transparent 100%
+  );
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.productCardBook:hover .imageContainer::before {
+  opacity: 1;
+}
+
+.productCardBook .productImg {
+  object-fit: cover;
+  border-radius: 4px 10px 10px 4px;
+}
+
+.productCardBook .productInfo {
+  padding: 0 0.5rem;
+}
+
+.productCardBook .title {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.25rem;
+  line-height: 1.25;
+}
+
+.productCardBook .category {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.productCardBook .price {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Botón Añadir para Libros (Elegante y animado) */
+.productCardBook .addToCartBtn {
+  background-color: #0f172a;
+  border: none;
+  color: white;
+  padding: 0.4rem 1.25rem;
+  border-radius: 999px; /* Forma de píldora */
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.productCardBook:hover .addToCartBtn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.productCardBook .addToCartBtn:hover {
+  background-color: #334155;
+  transform: translateY(0) scale(1.05);
+}
+
+/* En celulares no hay hover, mostrar siempre el botón */
+@media (hover: none) {
+  .productCardBook .addToCartBtn {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .productCardBook:hover .imageContainer {
+    transform: none !important;
+  }
+  .hoverReveal {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .productCardBook .imageContainer,
+  .productCardBook:hover .imageContainer,
+  .hoverReveal,
+  .productCardBook:hover .hoverReveal {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* Hover Reveal for Phase 4 */
+.hoverReveal {
+  opacity: 0;
+  transform: translateY(10px);
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.productCardBook:hover .hoverReveal {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 60px;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.descriptionText {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

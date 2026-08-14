@@ -12,3 +12,14 @@
 .green { color: var(--color-green); }
 .yellow { color: var(--color-yellow); }
 .main { color: var(--text-main); }
+
+@media (max-width: 768px) {
+  .logo {
+    font-size: 1.4rem;
+  }
+}
+@media (max-width: 480px) {
+  .logo {
+    font-size: 1.25rem;
+  }
+}

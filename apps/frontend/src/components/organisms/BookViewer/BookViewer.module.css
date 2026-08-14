@@ -1,0 +1,132 @@
+.viewerContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+  width: 100%;
+  padding: 2rem 0;
+}
+
+.book {
+  position: relative;
+  width: 340px;
+  height: 500px;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 20px 20px 40px rgba(0,0,0,0.1), inset -5px 0 10px rgba(0,0,0,0.05);
+  border-radius: 2px 8px 8px 2px;
+}
+
+.bookOpen {
+  transform: translateX(170px);
+}
+
+@media (max-width: 768px) {
+  .book {
+    width: 240px;
+    height: 360px;
+  }
+  .bookOpen {
+    transform: translateX(60px);
+  }
+}
+
+.page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-style: preserve-3d;
+  cursor: pointer;
+  border-radius: 2px 8px 8px 2px;
+  background-color: white;
+}
+
+.pageTurned {
+  transform: rotateY(-180deg);
+}
+
+.pageFront, .pageBack {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  backface-visibility: hidden;
+  border-radius: 2px 8px 8px 2px;
+  overflow: hidden;
+  background-color: white;
+}
+
+.pageFront {
+  border: 1px solid #e2e8f0;
+}
+
+.pageBack {
+  transform: rotateY(180deg);
+  background-color: #faf9f6;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px 2px 2px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pageShadow {
+  position: absolute;
+  top: 0; left: 0; bottom: 0; width: 30px;
+  background: linear-gradient(to right, rgba(0,0,0,0.1), transparent);
+  pointer-events: none;
+}
+
+.pageBackContent {
+  transform: rotateY(180deg);
+  opacity: 0.1;
+  text-align: center;
+}
+
+.logoWatermark {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #000;
+}
+
+.controls {
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.controlBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-main);
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controlBtn:hover:not(:disabled) {
+  color: var(--accent);
+  transform: scale(1.1);
+}
+
+.controlBtn:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.pageIndicator {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}

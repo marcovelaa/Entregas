@@ -47,9 +47,24 @@
 }
 
 .productsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  display: flex;
+  overflow-x: auto;
   gap: 1.5rem;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 1rem;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.productsGrid::-webkit-scrollbar {
+  height: 6px;
+}
+.productsGrid::-webkit-scrollbar-thumb {
+  background: var(--border-light, #ccc);
+  border-radius: 4px;
+}
+.productsGrid > * {
+  flex: 0 0 calc(20% - 1.2rem); /* 5 columns on desktop */
+  scroll-snap-align: start;
 }
 .productCard {
   background: transparent;
@@ -166,8 +181,10 @@
 
 @media (max-width: 768px) {
   .productsGrid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 2rem 1rem;
+    gap: 1rem;
+  }
+  .productsGrid > * {
+    flex: 0 0 calc(45% - 1rem); /* Show 2 cards and a peek of the next on tablet/mobile */
   }
   .favoriteBtn {
     opacity: 1;

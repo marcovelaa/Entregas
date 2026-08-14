@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ProductCard } from '@/components/molecules/ProductCard/ProductCard';
-import PageHeader from '@/components/organisms/PageHeader/PageHeader';
+import { CatalogSidebar } from '@/components/organisms/CatalogSidebar/CatalogSidebar';
 import styles from './textosescolares.module.css';
 
 // Levels con colores para el header
@@ -100,10 +100,34 @@ export default function TextosEscolaresPage() {
   const [activeGrade, setActiveGrade] = useState<string>('');
   const [activeSubject, setActiveSubject] = useState<string>('all');
   const [products, setProducts] = useState<any[]>([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Lógica para drag-to-scroll en PC
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+    setScrollLeft(scrollContainerRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => setIsDragging(false);
+  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 2;
+    scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+  };
 
   React.useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    fetch(`${API_URL}/productos`)
+    fetch(`${API_URL}/productos?page=1&limit=50`)
       .then(res => res.json())
       .then(data => {
         if (data && data.data) {
@@ -124,124 +148,71 @@ export default function TextosEscolaresPage() {
 
   return (
     <div className={styles.pageWrapper}>
-      {/* Banner Esmeralda */}
-      <PageHeader 
-        title="Textos Escolares"
-        subtitle="Descubre la colección completa de libros de texto para todos los niveles y materias, alineados a la currícula escolar vigente."
-      />
-
-      {/* TABS Nivel Educativo (Header principal colorido) */}
-      <div className={styles.levelTabsContainer}>
-        <div className={styles.tabsInner}>
-          {levels.map(lvl => {
-            if (lvl.href) {
-              return (
-                <a
-                  key={lvl.id}
-                  href={lvl.href}
-                  className={`${styles.levelTabBtn} ${lvl.colorClass}`}
-                >
-                  {lvl.name}
-                </a>
-              );
-            }
-            return (
-              <button
-                key={lvl.id}
-                className={`${styles.levelTabBtn} ${lvl.colorClass} ${activeLevel === lvl.id ? styles.levelTabActive : ''}`}
-                onClick={() => {
-                  if (activeLevel === lvl.id) {
-                    setActiveLevel('');
-                    setActiveGrade('');
-                    setActiveSubject('all');
-                  } else {
-                    setActiveLevel(lvl.id);
-                    setActiveGrade('');
-                    setActiveSubject('all');
-                  }
-                }}
-              >
-                {lvl.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       <div className={styles.layoutContainer}>
-        {/* Sidebar Accordion (Grado -> Materia) */}
-        <aside className={styles.sidebarSticky}>
-          <h3 className={styles.sidebarTitle}>
-            {activeLevel ? `Grados de ${currentLevelName}` : 'Grados'}
-          </h3>
-          <nav className={styles.categoryNav}>
-            {!activeLevel ? (
-              <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: '1.5' }}>
-                Selecciona un nivel en la parte superior para ver los grados disponibles.
-              </p>
-            ) : catalogData[activeLevel].map(grade => {
-              const isExpanded = activeGrade === grade.id;
-
-              return (
-                <div key={grade.id} className={styles.categoryGroup}>
-                  <button 
-                    className={`${styles.categoryBtn} ${isExpanded ? styles.categoryExpanded : ''}`}
-                    onClick={() => {
-                      if (activeGrade === grade.id) {
-                        setActiveGrade('');
-                      } else {
-                        setActiveGrade(grade.id);
-                        setActiveSubject('all');
-                      }
-                    }}
-                  >
-                    <span className={styles.categoryName}>{grade.name}</span>
-                    <svg className={`${styles.chevron} ${isExpanded ? styles.chevronOpen : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                  </button>
-                  
-                  {/* Materias dentro del grado */}
-                  <div className={`${styles.gradesWrapper} ${isExpanded ? styles.gradesOpen : ''}`}>
-                    <div className={styles.gradesInner}>
-                      <div className={styles.gradesList}>
-                        {grade.subjects.map(sub => (
-                          <button
-                            key={sub.id}
-                            className={`${styles.gradeBtn} ${activeSubject === sub.id ? styles.gradeActive : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveGrade(grade.id); // Asegura que estemos en este grado
-                              setActiveSubject(sub.id);
-                            }}
-                          >
-                            {sub.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </nav>
-        </aside>
+        <CatalogSidebar 
+          levels={levels}
+          catalogData={catalogData}
+          activeLevel={activeLevel}
+          setActiveLevel={setActiveLevel}
+          activeGrade={activeGrade}
+          setActiveGrade={setActiveGrade}
+          setActiveSubject={setActiveSubject}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+          styles={styles}
+        />
 
         {/* Content Area */}
         <main>
           <div className={styles.catalogHeader}>
-            <div>
-              <h2 className={styles.catalogTitle}>{currentGradeName}</h2>
-              <p className={styles.activeSubjectSubtitle}>{currentSubjectName}</p>
+            <div className={styles.headerTitleRow}>
+              <div>
+                <h2 className={styles.catalogTitle}>{currentGradeName}</h2>
+                <p className={styles.activeSubjectSubtitle}>
+                  Mostrando {activeSubject === 'all' ? 'todo el material' : currentSubjectName.toLowerCase()}
+                </p>
+              </div>
+              {/* Mobile Filter Button */}
+              <button className={styles.mobileFilterBtn} onClick={() => setIsMobileMenuOpen(true)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <line x1="4" y1="21" x2="4" y2="14"></line>
+                  <line x1="4" y1="10" x2="4" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12" y2="3"></line>
+                  <line x1="20" y1="21" x2="20" y2="16"></line>
+                  <line x1="20" y1="12" x2="20" y2="3"></line>
+                  <line x1="1" y1="14" x2="7" y2="14"></line>
+                  <line x1="9" y1="8" x2="15" y2="8"></line>
+                  <line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+                Filtros
+              </button>
             </div>
-            <div className={styles.searchWrapper}>
-              <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <input type="text" placeholder={`Buscar en ${currentGradeName}...`} className={styles.searchInput} />
-            </div>
+
           </div>
+
+          {/* Píldoras de Materias Dinámicas */}
+          {currentGradeObj && currentGradeObj.subjects && currentGradeObj.subjects.length > 0 && (
+            <div 
+              className={styles.subjectPills}
+              ref={scrollContainerRef}
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+            >
+              {currentGradeObj.subjects.map(sub => (
+                <button
+                  key={sub.id}
+                  className={`${styles.pillBtn} ${activeSubject === sub.id ? styles.pillActive : ''}`}
+                  onClick={() => setActiveSubject(sub.id)}
+                >
+                  {sub.name}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className={styles.booksGrid}>
             {products.length === 0 && <p>No hay productos disponibles.</p>}
@@ -260,6 +231,7 @@ export default function TextosEscolaresPage() {
                     categoryColor="var(--color-blue)"
                     price={p.precio_base}
                     imageUrl={imageUrl}
+                    isBook={true}
                   />
                 )
               })}

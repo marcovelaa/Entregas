@@ -9,7 +9,7 @@ export default async function RecommendedProducts() {
   let products = [];
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    const res = await fetch(`${API_URL}/productos?visibilidad=publica&limit=50`, { next: { revalidate: 0 } });
+    const res = await fetch(`${API_URL}/productos?visibilidad=publica&page=1&limit=50`, { next: { revalidate: 0 } });
     const data = await res.json();
     // Safety net: skip combos the backend marked as sold out or expired
     const allProducts = (data.data || []).filter((p: { estado_venta?: string }) => p.estado_venta !== 'VENCIDO' && p.estado_venta !== 'AGOTADO');
@@ -35,7 +35,6 @@ export default async function RecommendedProducts() {
           <h2 id="recommended-title" className={styles.sectionTitle}>Recomendados para ti</h2>
           <p className={styles.sectionSubtitle}>Catálogo y paquetes disponibles en nuestra tienda.</p>
         </div>
-        <Link href="/catalogo" className={styles.linkBlue}>Ver todo</Link>
       </div>
 
       <div className={styles.productsGrid}>
