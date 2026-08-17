@@ -1,4 +1,4 @@
-﻿-- AlterTable
+-- AlterTable
 ALTER TABLE "bitacora" ADD COLUMN     "cliente_id" BIGINT,
 ADD COLUMN     "public_id" UUID NOT NULL,
 ADD COLUMN     "request_id" VARCHAR(100),

@@ -4,10 +4,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
+import { ensureInventoryStockTarget } from '../../../../common/prisma/inventory-stock-target';
 import { RecibirCompraDto } from '../dtos/compra.dto';
 import { BitacoraService } from '../../../bitacora/application/services/bitacora.service';
-import { TipoActorBitacora, EntidadBitacora } from '../../../bitacora/domain/entities/bitacora-enums';
+import {
+  TipoActorBitacora,
+  EntidadBitacora,
+} from '../../../bitacora/domain/entities/bitacora-enums';
 
 @Injectable()
 export class RecibirCompraUseCase {
@@ -83,19 +88,17 @@ export class RecibirCompraUseCase {
           Number(detalle.precio_costo) + fletePorUnidad;
 
         // 3. Obtener stock e inventario actual
-        let inv = await tx.inventario.findFirst({
-          where: { producto_id: detalle.producto_id },
-        });
-
-        if (!inv) {
-          inv = await tx.inventario.create({
-            data: {
-              producto_id: detalle.producto_id,
-              cantidad_disponible: 0,
-              reservado: 0,
-            },
-          });
-        }
+        const varianteId = await this.resolverVarianteInventario(
+          tx,
+          detalle.producto_id,
+          detalle.variante_id,
+          detalle.empaque_id,
+        );
+        const inv = await ensureInventoryStockTarget(
+          tx,
+          detalle.producto_id,
+          varianteId,
+        );
 
         const stockActual = inv.cantidad_disponible;
 
@@ -125,13 +128,16 @@ export class RecibirCompraUseCase {
         // 6. Incrementar stock disponible en inventario
         await tx.inventario.update({
           where: { id: inv.id },
-          data: { cantidad_disponible: { increment: itemRecibido.cantidad_recibida } },
+          data: {
+            cantidad_disponible: { increment: itemRecibido.cantidad_recibida },
+          },
         });
 
         // 7. Registrar entrada en MovimientosInventario (Kardex)
         await tx.movimientosInventario.create({
           data: {
             producto_id: detalle.producto_id,
+            variante_id: varianteId,
             tipo_movimiento: 'ENTRADA',
             cantidad: itemRecibido.cantidad_recibida,
             motivo: `Ingreso por Recepción de Compra #${compra.numero_nota}`,
@@ -180,5 +186,29 @@ export class RecibirCompraUseCase {
       compraId: result.id.toString(),
       estado: result.estado,
     };
+  }
+
+  private async resolverVarianteInventario(
+    tx: Prisma.TransactionClient,
+    productoId: bigint,
+    varianteId: bigint | null,
+    empaqueId: bigint | null,
+  ): Promise<bigint | null> {
+    if (varianteId) return varianteId;
+
+    if (empaqueId) {
+      const empaque = await tx.empaque.findUnique({
+        where: { id: empaqueId },
+        select: { variante_id: true },
+      });
+      if (empaque) return empaque.variante_id;
+    }
+
+    const variantePorDefecto = await tx.variante.findFirst({
+      where: { producto_id: productoId, activo: true },
+      orderBy: { id: 'asc' },
+      select: { id: true },
+    });
+    return variantePorDefecto?.id ?? null;
   }
 }

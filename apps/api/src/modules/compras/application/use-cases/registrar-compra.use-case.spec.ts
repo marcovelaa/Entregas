@@ -7,16 +7,29 @@ import { PrismaService } from '../../../../common/prisma/prisma.service';
 function createHarness() {
   const FAKE_TX = {
     compra: {
-      update: jest.fn().mockResolvedValue({ id: 1n, subtotal: 50, costo_transporte: 10 }),
+      update: jest
+        .fn()
+        .mockResolvedValue({ id: 1n, subtotal: 50, costo_transporte: 10 }),
     },
     compraDetalle: {
       update: jest.fn().mockResolvedValue({}),
-      findMany: jest.fn().mockResolvedValue([{ cantidad_solicitada: 10, cantidad_recibida: 10 }]),
+      findMany: jest
+        .fn()
+        .mockResolvedValue([
+          { cantidad_solicitada: 10, cantidad_recibida: 10 },
+        ]),
     },
+    $queryRaw: jest
+      .fn()
+      .mockResolvedValue([{ id: 100n, cantidad_disponible: 10, reservado: 0 }]),
     inventario: {
-      findFirst: jest.fn().mockResolvedValue({ id: 100n, cantidad_disponible: 10 }),
-      create: jest.fn().mockResolvedValue({ id: 100n, cantidad_disponible: 0 }),
       update: jest.fn().mockResolvedValue({}),
+    },
+    variante: {
+      findFirst: jest.fn().mockResolvedValue({ id: 501n }),
+    },
+    empaque: {
+      findUnique: jest.fn(),
     },
     producto: {
       findUnique: jest.fn().mockResolvedValue({ costo_promedio: 5.0 }),
@@ -28,7 +41,9 @@ function createHarness() {
   };
 
   const compraRepo = {
-    crear: jest.fn().mockResolvedValue({ id: 1n, estado: 'BORRADOR', total: 50 }),
+    crear: jest
+      .fn()
+      .mockResolvedValue({ id: 1n, estado: 'BORRADOR', total: 50 }),
     listar: jest.fn(),
     obtenerPorId: jest.fn(),
   } as unknown as jest.Mocked<ICompraRepository>;
@@ -92,7 +107,11 @@ describe('Compras Use Cases', () => {
 
       expect(res.success).toBe(true);
       expect(compraRepo.crear).toHaveBeenCalledWith(
-        expect.objectContaining({ total: 50, estado: 'BORRADOR', usuario_id: 42n }),
+        expect.objectContaining({
+          total: 50,
+          estado: 'BORRADOR',
+          usuario_id: 42n,
+        }),
         FAKE_TX,
       );
     });
@@ -109,6 +128,32 @@ describe('Compras Use Cases', () => {
         ),
       ).rejects.toBeInstanceOf(UnauthorizedException);
       expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('acredita una compra completada en el inventario de la variante comprada', async () => {
+      const { registrarUseCase, FAKE_TX } = createHarness();
+
+      await registrarUseCase.execute(
+        {
+          estado: 'COMPLETADO',
+          detalles: [
+            {
+              producto_id: '500',
+              variante_id: '501',
+              cantidad: 10,
+              costo_unitario: 5,
+            },
+          ],
+        },
+        '42',
+      );
+
+      expect(FAKE_TX.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(FAKE_TX.movimientosInventario.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ variante_id: 501n }),
+        }),
+      );
     });
   });
 
@@ -143,6 +188,40 @@ describe('Compras Use Cases', () => {
             tipo_movimiento: 'ENTRADA',
             cantidad: 10,
           }),
+        }),
+      );
+    });
+
+    it('acredita la recepción en la variante solicitada', async () => {
+      const { recibirUseCase, prisma, FAKE_TX } = createHarness();
+      (prisma.compra.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: 1n,
+        estado: 'EMITIDA',
+        costo_transporte: 0,
+        subtotal: 50,
+        detalles: [
+          {
+            id: 101n,
+            producto_id: 500n,
+            variante_id: 501n,
+            empaque_id: null,
+            cantidad_solicitada: 10,
+            cantidad_recibida: 0,
+            precio_costo: 5,
+          },
+        ],
+      });
+
+      await recibirUseCase.execute(
+        '1',
+        { detalles_recibidos: [{ detalle_id: '101', cantidad_recibida: 10 }] },
+        '42',
+      );
+
+      expect(FAKE_TX.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(FAKE_TX.movimientosInventario.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ variante_id: 501n }),
         }),
       );
     });

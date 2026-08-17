@@ -58,6 +58,15 @@ describe('RBAC route metadata', () => {
     expect(
       requiredPermission(
         VentasController.prototype as unknown as Record<string, unknown>,
+        'listar',
+      ),
+    ).toBe('ventas:ver');
+    expect(
+      methodMetadata(VentasController.prototype, 'listar', IS_PUBLIC_KEY),
+    ).toBeUndefined();
+    expect(
+      requiredPermission(
+        VentasController.prototype as unknown as Record<string, unknown>,
         'anular',
       ),
     ).toBe('ventas:anular');

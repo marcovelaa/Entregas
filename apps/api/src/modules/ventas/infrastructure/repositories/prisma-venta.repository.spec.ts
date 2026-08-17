@@ -45,6 +45,7 @@ type TxMock = {
   descuentoUso: { create: jest.Mock };
   movimientosInventario: { create: jest.Mock };
   $executeRaw: jest.Mock;
+  $queryRaw: jest.Mock;
 };
 
 type CupoState = { cupoUsado: number };
@@ -79,6 +80,7 @@ function createTx(): TxMock {
     descuentoUso: { create: jest.fn() },
     movimientosInventario: { create: jest.fn() },
     $executeRaw: jest.fn().mockResolvedValue(1),
+    $queryRaw: jest.fn().mockResolvedValue([{ value: 1n }]),
   };
 }
 
@@ -94,6 +96,7 @@ function createHarness(tx: TxMock, discountEngine?: { evaluate: jest.Mock }) {
     descuentoUso: tx.descuentoUso,
     movimientosInventario: tx.movimientosInventario,
     $executeRaw: tx.$executeRaw,
+    $queryRaw: tx.$queryRaw,
     $transaction: jest.fn(async (fn: (t: TxMock) => unknown) => fn(tx)),
   } as unknown as PrismaService;
   const engine = (discountEngine ?? {
@@ -135,6 +138,7 @@ function ventaRow() {
     cliente_id: null,
     usuario_id: 1n,
     cliente: null,
+    usuario: { nombres: 'Cajero', apellidos: 'POS' },
     detalles: [
       {
         id: 10n,
@@ -279,6 +283,7 @@ function setupRevertir(
 
 const ventaData: VentaCreateData = {
   usuario_id: '1',
+  idempotency_key: 'venta-fixture-key',
   metodo_pago: 'EFECTIVO',
   monto_pagado: 50,
   detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 50 }],
@@ -659,6 +664,7 @@ describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de
 
     const result = await repo.crear({
       usuario_id: '1',
+      idempotency_key: 'venta-test-key',
       metodo_pago: 'EFECTIVO',
       monto_pagado: 50,
       detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 50 }],
@@ -695,6 +701,7 @@ describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de
 
     const result = await repo.crear({
       usuario_id: '1',
+      idempotency_key: 'venta-test-key',
       metodo_pago: 'EFECTIVO',
       monto_pagado: 40,
       aprobador_usuario_id: '100',
@@ -732,6 +739,7 @@ describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de
     await expect(
       repo.crear({
         usuario_id: '1',
+        idempotency_key: 'venta-test-key',
         metodo_pago: 'EFECTIVO',
         monto_pagado: 40,
         detalles: [{ producto_id: '99', cantidad: 1, precio_unitario: 40 }],
@@ -751,6 +759,7 @@ describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de
     await expect(
       repo.crear({
         usuario_id: '1',
+        idempotency_key: 'venta-test-key',
         metodo_pago: 'EFECTIVO',
         monto_pagado: 40,
         aprobador_usuario_id: '999',
@@ -776,6 +785,7 @@ describe('PrismaVentaRepository.crear - rebaja manual de precio y aprobación de
     await expect(
       repo.crear({
         usuario_id: '1',
+        idempotency_key: 'venta-test-key',
         metodo_pago: 'EFECTIVO',
         monto_pagado: 40,
         aprobador_usuario_id: '200',
@@ -827,6 +837,7 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
 
     await repo.crear({
       usuario_id: '1',
+      idempotency_key: 'venta-test-key',
       metodo_pago: 'EFECTIVO',
       monto_pagado: 35,
       descuento_id: '10',
@@ -881,6 +892,7 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
     await expect(
       repo.crear({
         usuario_id: '1',
+        idempotency_key: 'venta-test-key',
         metodo_pago: 'EFECTIVO',
         monto_pagado: 45,
         descuento_id: '10',
@@ -917,6 +929,7 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
 
     const venta = {
       usuario_id: '1',
+      idempotency_key: 'venta-test-key',
       metodo_pago: 'EFECTIVO',
       monto_pagado: 45,
       descuento_id: '10',
@@ -943,6 +956,7 @@ describe('PrismaVentaRepository.crear - validación server-side del descuento (1
 
     const result = await repo.crear({
       usuario_id: '1',
+      idempotency_key: 'venta-test-key',
       metodo_pago: 'EFECTIVO',
       monto_pagado: 50,
       descuento_id: '999', // descuento inexistente o ya no vigente
@@ -1007,6 +1021,7 @@ describe('PrismaVentaRepository.crear - batching de lecturas dentro de la transa
 
     const result = await repo.crear({
       usuario_id: '1',
+      idempotency_key: 'venta-test-key',
       metodo_pago: 'EFECTIVO',
       monto_pagado: 30,
       detalles: [
@@ -1032,5 +1047,189 @@ describe('PrismaVentaRepository.crear - batching de lecturas dentro de la transa
     // Writes: still one atomic SQL guard per movement — that is the concurrency guard.
     expect(tx.$executeRaw).toHaveBeenCalledTimes(2);
     expect(tx.movimientosInventario.create).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('PrismaVentaRepository.crear - integridad de producto, variante y empaque', () => {
+  it('rechaza una variante que pertenece a otro producto antes de iniciar escrituras', async () => {
+    const { repo, tx, prisma } = createHarness(createTx());
+    tx.producto.findMany.mockResolvedValue([comboRow()]);
+    tx.variante.findMany.mockResolvedValue([
+      {
+        id: 701n,
+        producto_id: 7n,
+        activo: true,
+        producto: { id: 7n, precio_base: 50, precio_promocional: null },
+      },
+    ]);
+
+    await expect(
+      repo.crear({
+        ...ventaData,
+        detalles: [
+          {
+            producto_id: '99',
+            variante_id: '701',
+            cantidad: 1,
+            precio_unitario: 50,
+          },
+        ],
+      }),
+    ).rejects.toThrow('La variante 701 no pertenece al producto 99.');
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.venta.create).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un empaque que no pertenece al producto seleccionado', async () => {
+    const { repo, tx, prisma } = createHarness(createTx());
+    tx.producto.findMany.mockResolvedValue([comboRow()]);
+    tx.empaque.findMany.mockResolvedValue([
+      {
+        id: 801n,
+        variante_id: 701n,
+        multiplicador_unidades: 1,
+        precio: 50,
+        precio_promocional: null,
+        variante: { id: 701n, producto_id: 7n },
+      },
+    ]);
+
+    await expect(
+      repo.crear({
+        ...ventaData,
+        detalles: [
+          {
+            producto_id: '99',
+            empaque_id: '801',
+            cantidad: 1,
+            precio_unitario: 50,
+          },
+        ],
+      }),
+    ).rejects.toThrow('El empaque 801 no pertenece al producto 99.');
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.venta.create).not.toHaveBeenCalled();
+  });
+
+  it('rechaza combinar un empaque con una variante distinta del mismo producto', async () => {
+    const { repo, tx, prisma } = createHarness(createTx());
+    tx.producto.findMany.mockResolvedValue([comboRow()]);
+    tx.variante.findMany.mockResolvedValue([
+      {
+        id: 700n,
+        producto_id: 99n,
+        activo: true,
+        producto: { id: 99n, precio_base: 50, precio_promocional: null },
+      },
+    ]);
+    tx.empaque.findMany.mockResolvedValue([
+      {
+        id: 801n,
+        variante_id: 701n,
+        multiplicador_unidades: 1,
+        precio: 50,
+        precio_promocional: null,
+        variante: { id: 701n, producto_id: 99n },
+      },
+    ]);
+
+    await expect(
+      repo.crear({
+        ...ventaData,
+        detalles: [
+          {
+            producto_id: '99',
+            variante_id: '700',
+            empaque_id: '801',
+            cantidad: 1,
+            precio_unitario: 50,
+          },
+        ],
+      }),
+    ).rejects.toThrow('El empaque 801 no pertenece a la variante 700.');
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.venta.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('PrismaVentaRepository.crear - ticket e idempotencia', () => {
+  it('asigna el ticket mediante la secuencia atómica de PostgreSQL', async () => {
+    const { repo, tx } = createHarness(createTx());
+    setupCrear(tx);
+    tx.$queryRaw.mockResolvedValue([{ value: 42n }]);
+
+    await repo.crear({
+      ...ventaData,
+      idempotency_key: 'ticket-sequence-key',
+    });
+
+    expect(tx.$queryRaw.mock.calls[0][0].join('')).toContain(
+      'ventas_numero_ticket_seq',
+    );
+    expect(tx.venta.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          numero_ticket: 'TK-000042',
+          idempotency_key: 'ticket-sequence-key',
+        }),
+      }),
+    );
+  });
+
+  it('devuelve la venta original en un reintento y no vuelve a descontar stock ni consumir el cupo de descuento', async () => {
+    const discountEngine = {
+      evaluate: jest.fn().mockResolvedValue({
+        id: '9',
+        codigo: 'POS-RETRY',
+        montoDescontado: 5,
+      }),
+    };
+    const { repo, tx, prisma } = createHarness(createTx(), discountEngine);
+    setupCrear(tx);
+    const original = ventaRow();
+    tx.venta.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(original);
+
+    const input = {
+      ...ventaData,
+      descuento_id: '9',
+      idempotency_key: 'retry-same-checkout-key',
+    };
+    const primera = await repo.crear(input);
+    const segunda = await repo.crear(input);
+
+    expect(primera.id).toBe('1');
+    expect(segunda.id).toBe('1');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.venta.create).toHaveBeenCalledTimes(1);
+    expect(tx.movimientosInventario.create).toHaveBeenCalledTimes(1);
+    expect(tx.descuentoUso.create).toHaveBeenCalledTimes(1);
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it('recupera la venta confirmada cuando dos solicitudes con la misma clave chocan en la restricción única', async () => {
+    const { repo, tx, prisma } = createHarness(createTx());
+    setupCrear(tx);
+    const original = ventaRow();
+    tx.venta.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(original);
+    (prisma.$transaction as jest.Mock).mockRejectedValue({
+      code: 'P2002',
+      meta: { target: ['usuario_id', 'idempotency_key'] },
+    });
+
+    const result = await repo.crear({
+      ...ventaData,
+      idempotency_key: 'concurrent-checkout-key',
+    });
+
+    expect(result.id).toBe('1');
+    expect(tx.venta.create).not.toHaveBeenCalled();
+    expect(tx.movimientosInventario.create).not.toHaveBeenCalled();
   });
 });

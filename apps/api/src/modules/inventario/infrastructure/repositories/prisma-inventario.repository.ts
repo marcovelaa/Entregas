@@ -1,6 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
+import { ensureInventoryStockTarget } from '../../../../common/prisma/inventory-stock-target';
 import { IInventarioRepository } from '../../domain/repositories/inventario.repository.interface';
 
 @Injectable()
@@ -91,9 +92,11 @@ export class PrismaInventarioRepository implements IInventarioRepository {
       motivo?: string;
       usuario_id?: bigint;
     },
-    tx?: any,
+    tx?: Prisma.TransactionClient,
   ) {
-    const execute = async (client: any) => {
+    const execute = async (
+      client: PrismaService | Prisma.TransactionClient,
+    ) => {
       let targetVarianteId = data.variante_id;
       if (!targetVarianteId) {
         const defaultVar = await client.variante.findFirst({
@@ -117,46 +120,31 @@ export class PrismaInventarioRepository implements IInventarioRepository {
         },
       });
 
-      // 2. Actualizar stock
-      const stockItem = await client.inventario.findFirst({
-        where: {
-          producto_id: data.producto_id,
-          variante_id: targetVarianteId || null,
-        },
-      });
+      // 2. Resolve the sole stock target atomically. PostgreSQL enforces this
+      // compound key with NULLS NOT DISTINCT for base products.
+      const stockItem = await ensureInventoryStockTarget(
+        client,
+        data.producto_id,
+        targetVarianteId ?? null,
+        'PRINCIPAL',
+      );
 
       const cantidadDelta = data.tipo_movimiento.includes('INGRESO')
         ? data.cantidad
         : -data.cantidad;
-
-      if (stockItem) {
-        if (
-          !data.tipo_movimiento.includes('INGRESO') &&
-          stockItem.cantidad_disponible + cantidadDelta < 0
-        ) {
-          throw new ConflictException(
-            'Stock insuficiente para realizar este movimiento negativo.',
-          );
-        }
-        await client.inventario.update({
-          where: { id: stockItem.id },
-          data: { cantidad_disponible: { increment: cantidadDelta } },
-        });
-      } else {
-        if (!data.tipo_movimiento.includes('INGRESO')) {
-          throw new ConflictException(
-            'Stock insuficiente, no hay registro previo para este producto.',
-          );
-        }
-        await client.inventario.create({
-          data: {
-            producto_id: data.producto_id,
-            variante_id: targetVarianteId,
-            cantidad_disponible: cantidadDelta,
-            ubicacion: 'PRINCIPAL',
-          },
-        });
+      if (
+        !data.tipo_movimiento.includes('INGRESO') &&
+        stockItem.cantidad_disponible + cantidadDelta < 0
+      ) {
+        throw new ConflictException(
+          'Stock insuficiente para realizar este movimiento negativo.',
+        );
       }
+
+      await client.inventario.update({
+        where: { id: stockItem.id },
+        data: { cantidad_disponible: { increment: cantidadDelta } },
+      });
 
       return mov;
     };

@@ -105,7 +105,18 @@ export class PrismaDevolucionRepository implements IDevolucionRepository {
           evaluado_por_usuario_id: BigInt(evaluacion.evaluadoPorUsuarioId),
           evaluado_en: new Date(),
         },
-        include: { detalles: true },
+        include: {
+          detalles: {
+            include: {
+              pedido_detalle: {
+                select: {
+                  variante_id: true,
+                  empaque: { select: { variante_id: true } },
+                },
+              },
+            },
+          },
+        },
       });
 
       // Si fue aprobada o completada con destino RESTOCK en inventario
@@ -115,8 +126,15 @@ export class PrismaDevolucionRepository implements IDevolucionRepository {
         evaluacion.destinoFisico === DestinoFisicoItem.INVENTARIO_RESTOCK
       ) {
         for (const d of devolucionActualizada.detalles) {
+          const varianteId =
+            d.pedido_detalle.variante_id ??
+            d.pedido_detalle.empaque?.variante_id ??
+            null;
           const inv = await tx.inventario.findFirst({
-            where: { producto_id: d.producto_id },
+            where: {
+              producto_id: d.producto_id,
+              variante_id: varianteId,
+            },
           });
 
           if (inv) {
@@ -130,6 +148,7 @@ export class PrismaDevolucionRepository implements IDevolucionRepository {
             await tx.movimientosInventario.create({
               data: {
                 producto_id: d.producto_id,
+                variante_id: varianteId ?? undefined,
                 tipo_movimiento: 'ENTRADA',
                 cantidad: d.cantidad,
                 motivo: `Devolución Aprobada #${devolucionActualizada.public_id}`,

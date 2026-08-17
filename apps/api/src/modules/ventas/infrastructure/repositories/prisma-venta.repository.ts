@@ -16,6 +16,38 @@ import { InventoryReservationsService } from '../../application/services/invento
 
 const MODOS_VIGENCIA = new Set(['RANGO_FECHAS', 'FECHA_HORA', 'MIXTO']);
 
+const CHECKOUT_VENTA_INCLUDE = {
+  cliente: true,
+  usuario: { select: { nombres: true, apellidos: true } },
+  detalles: {
+    include: { producto: true, variante: true, empaque: true },
+  },
+} satisfies Prisma.VentaInclude;
+
+type CheckoutVenta = Prisma.VentaGetPayload<{
+  include: typeof CHECKOUT_VENTA_INCLUDE;
+}>;
+
+function isIdempotencyKeyUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+
+  const prismaError = error as {
+    code?: unknown;
+    meta?: { target?: unknown };
+  };
+  if (prismaError.code !== 'P2002') return false;
+
+  const target = prismaError.meta?.target;
+  if (Array.isArray(target)) {
+    return target.includes('usuario_id') && target.includes('idempotency_key');
+  }
+  return (
+    typeof target === 'string' &&
+    target.includes('usuario_id') &&
+    target.includes('idempotency_key')
+  );
+}
+
 @Injectable()
 export class PrismaVentaRepository implements IVentaRepository {
   constructor(
@@ -25,6 +57,12 @@ export class PrismaVentaRepository implements IVentaRepository {
   ) {}
 
   async crear(data: VentaCreateData) {
+    const ventaExistente = await this.obtenerVentaPorIdempotencia(
+      data.usuario_id,
+      data.idempotency_key,
+    );
+    if (ventaExistente) return this.serializarVentaCheckout(ventaExistente);
+
     // 0. Batch-fetch every producto/empaque/variante referenced by the cart in a
     // handful of queries (instead of one findUnique/findFirst per detalle) so the
     // rest of the method resolves prices, combo rules and inventory targets purely
@@ -50,6 +88,11 @@ export class PrismaVentaRepository implements IVentaRepository {
     const empaques = empaqueIds.length
       ? await this.prisma.empaque.findMany({
           where: { id: { in: empaqueIds } },
+          include: {
+            variante: {
+              select: { id: true, producto_id: true },
+            },
+          },
         })
       : [];
     const empaqueMap = new Map(empaques.map((e) => [e.id.toString(), e]));
@@ -70,6 +113,51 @@ export class PrismaVentaRepository implements IVentaRepository {
     const varianteMap = new Map(
       variantesExplicitas.map((v) => [v.id.toString(), v]),
     );
+
+    // Never trust a client-supplied product/variant/package combination. The
+    // database relations alone cannot protect this boundary because each ID can
+    // be valid while referring to a different catalog branch.
+    for (const detalle of data.detalles) {
+      const producto = productoMap.get(detalle.producto_id);
+      if (!producto) {
+        throw new NotFoundException(
+          `El producto ${detalle.producto_id} no existe.`,
+        );
+      }
+
+      const variante = detalle.variante_id
+        ? varianteMap.get(detalle.variante_id)
+        : undefined;
+      if (detalle.variante_id && !variante) {
+        throw new NotFoundException(
+          `La variante ${detalle.variante_id} no existe.`,
+        );
+      }
+      if (variante && variante.producto_id !== producto.id) {
+        throw new BadRequestException(
+          `La variante ${detalle.variante_id} no pertenece al producto ${detalle.producto_id}.`,
+        );
+      }
+
+      const empaque = detalle.empaque_id
+        ? empaqueMap.get(detalle.empaque_id)
+        : undefined;
+      if (detalle.empaque_id && !empaque) {
+        throw new NotFoundException(
+          `El empaque ${detalle.empaque_id} no existe.`,
+        );
+      }
+      if (empaque && empaque.variante.producto_id !== producto.id) {
+        throw new BadRequestException(
+          `El empaque ${detalle.empaque_id} no pertenece al producto ${detalle.producto_id}.`,
+        );
+      }
+      if (variante && empaque && empaque.variante_id !== variante.id) {
+        throw new BadRequestException(
+          `El empaque ${detalle.empaque_id} no pertenece a la variante ${detalle.variante_id}.`,
+        );
+      }
+    }
 
     // Producto ids needing a "default active variant" lookup: a non-combo main detalle
     // (or one whose producto wasn't found) with neither empaque_id nor variante_id,
@@ -331,259 +419,297 @@ export class PrismaVentaRepository implements IVentaRepository {
       ]),
     );
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Expired reservations must be released before any current stock predicate
-      // runs. The service is optional only for legacy unit harnesses; production
-      // wiring always injects it through VentasModule.
-      if (this.inventoryReservations) {
-        await this.inventoryReservations.releaseExpiredInTransaction(tx);
-      }
-
-      const lastVenta = await tx.venta.findFirst({
-        orderBy: { id: 'desc' },
-        select: { id: true }
-      });
-      const nextId = lastVenta ? Number(lastVenta.id) + 1 : 1;
-      const numeroTicket = `TK-${String(nextId).padStart(6, '0')}`;
-
-      // 1. Create Venta
-      const venta = await tx.venta.create({
-        data: {
-          numero_ticket: numeroTicket,
-          cliente_id: data.cliente_id ? BigInt(data.cliente_id) : null,
-          usuario_id: BigInt(data.usuario_id),
-          caja_id: data.caja_id ? BigInt(data.caja_id) : null,
-          metodo_pago: data.metodo_pago,
-          monto_pagado: data.monto_pagado,
-          total,
-          descuento_total: descuentoTotal,
-          codigo_cupon: codigoCuponAplicado,
-          vuelto,
-          estado: 'COMPLETADA',
-          detalles: {
-            create: detallesEvaluados.map((d) => ({
-              producto_id: BigInt(d.producto_id),
-              variante_id: d.variante_id ? BigInt(d.variante_id) : null,
-              empaque_id: d.empaque_id ? BigInt(d.empaque_id) : null,
-              cantidad: d.cantidad,
-              precio_unitario: d.precioAplicado,
-              precio_unitario_catalogo: d.precioCatalogo,
-              aprobado_por_usuario_id: d.esRebaja ? aprobadorId : null,
-              motivo_ajuste: d.esRebaja
-                ? d.motivo_ajuste || data.motivo_ajuste || 'Rebaja manual POS'
-                : null,
-              subtotal: d.cantidad * d.precioAplicado,
-            })),
-          },
-        },
-        include: {
-          cliente: true,
-          usuario: { select: { nombres: true, apellidos: true } },
-          detalles: {
-            include: { producto: true, variante: true, empaque: true },
-          },
-        },
-      });
-
-      // Si se especificó una caja, registramos el movimiento
-      if (data.caja_id && data.metodo_pago === 'EFECTIVO') {
-        await tx.movimientoCaja.create({
-          data: {
-            caja_id: BigInt(data.caja_id),
-            usuario_id: BigInt(data.usuario_id),
-            tipo_movimiento: 'INGRESO',
-            concepto: `Venta POS #${numeroTicket}`,
-            monto: total, // El monto efectivo que ingresa a la caja (no incluye vuelto)
-            metodo_pago: 'EFECTIVO',
-            referencia_id: venta.id.toString(),
+    try {
+      return await this.prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+          // Expired reservations must be released before any current stock predicate
+          // runs. The service is optional only for legacy unit harnesses; production
+          // wiring always injects it through VentasModule.
+          if (this.inventoryReservations) {
+            await this.inventoryReservations.releaseExpiredInTransaction(tx);
           }
-        });
-      }
 
-      // A reservation is consumed only by the exact stock targets it originally
-      // locked. Its state transition and the later stock decrement share this
-      // transaction, so failed checkout work restores the reservation automatically.
-      const reservationTargets = data.reserva_id
-        ? movimientos.map((movement) => {
-            const inventory = inventarioMap.get(
-              `${movement.producto_id}_${movement.variante_id ?? 'null'}`,
+          const ticketSequence = await tx.$queryRaw<
+            Array<{ value: bigint }>
+          >`SELECT nextval('ventas_numero_ticket_seq') AS value`;
+          const nextTicketNumber = ticketSequence[0]?.value;
+          if (nextTicketNumber == null) {
+            throw new ConflictException(
+              'No se pudo asignar un número de ticket.',
             );
-            if (!inventory)
-              throw new NotFoundException(movement.errorNoInventario);
-            return { inventarioId: inventory.id, cantidad: movement.cantidad };
-          })
-        : null;
-      if (data.reserva_id) {
-        if (!this.inventoryReservations) {
-          throw new ConflictException(
-            'Las reservas de inventario no están disponibles en este entorno.',
-          );
-        }
-        await this.inventoryReservations.consumeForSale(
-          tx,
-          data.reserva_id,
-          venta.id,
-          data.usuario_id,
-          reservationTargets!,
-        );
-      }
+          }
+          const numeroTicket = `TK-${nextTicketNumber.toString().padStart(6, '0')}`;
 
-      // 2. Reserve a discount use atomically. The engine's earlier cap check only
-      // selects an eligible promotion; it cannot authorize consumption because a
-      // concurrent checkout may consume the last use before this transaction.
-      if (descuentoIdAplicado) {
-        // Prisma's updateMany cannot compare two columns from the same row. Keep
-        // the comparison in PostgreSQL so an admin changing limite_usos cannot
-        // race a separate findUnique/updateMany pair. NULL remains unlimited.
-        const usosReservados = await tx.$executeRaw`
+          // 1. Create Venta
+          const venta = await tx.venta.create({
+            data: {
+              numero_ticket: numeroTicket,
+              idempotency_key: data.idempotency_key,
+              cliente_id: data.cliente_id ? BigInt(data.cliente_id) : null,
+              usuario_id: BigInt(data.usuario_id),
+              caja_id: data.caja_id ? BigInt(data.caja_id) : null,
+              metodo_pago: data.metodo_pago,
+              monto_pagado: data.monto_pagado,
+              total,
+              descuento_total: descuentoTotal,
+              codigo_cupon: codigoCuponAplicado,
+              vuelto,
+              estado: 'COMPLETADA',
+              detalles: {
+                create: detallesEvaluados.map((d) => ({
+                  producto_id: BigInt(d.producto_id),
+                  variante_id: d.variante_id ? BigInt(d.variante_id) : null,
+                  empaque_id: d.empaque_id ? BigInt(d.empaque_id) : null,
+                  cantidad: d.cantidad,
+                  precio_unitario: d.precioAplicado,
+                  precio_unitario_catalogo: d.precioCatalogo,
+                  aprobado_por_usuario_id: d.esRebaja ? aprobadorId : null,
+                  motivo_ajuste: d.esRebaja
+                    ? d.motivo_ajuste ||
+                      data.motivo_ajuste ||
+                      'Rebaja manual POS'
+                    : null,
+                  subtotal: d.cantidad * d.precioAplicado,
+                })),
+              },
+            },
+            include: {
+              cliente: true,
+              usuario: { select: { nombres: true, apellidos: true } },
+              detalles: {
+                include: { producto: true, variante: true, empaque: true },
+              },
+            },
+          });
+
+          // Si se especificó una caja, registramos el movimiento
+          if (data.caja_id && data.metodo_pago === 'EFECTIVO') {
+            await tx.movimientoCaja.create({
+              data: {
+                caja_id: BigInt(data.caja_id),
+                usuario_id: BigInt(data.usuario_id),
+                tipo_movimiento: 'INGRESO',
+                concepto: `Venta POS #${numeroTicket}`,
+                monto: total, // El monto efectivo que ingresa a la caja (no incluye vuelto)
+                metodo_pago: 'EFECTIVO',
+                referencia_id: venta.id.toString(),
+              },
+            });
+          }
+
+          // A reservation is consumed only by the exact stock targets it originally
+          // locked. Its state transition and the later stock decrement share this
+          // transaction, so failed checkout work restores the reservation automatically.
+          const reservationTargets = data.reserva_id
+            ? movimientos.map((movement) => {
+                const inventory = inventarioMap.get(
+                  `${movement.producto_id}_${movement.variante_id ?? 'null'}`,
+                );
+                if (!inventory)
+                  throw new NotFoundException(movement.errorNoInventario);
+                return {
+                  inventarioId: inventory.id,
+                  cantidad: movement.cantidad,
+                };
+              })
+            : null;
+          if (data.reserva_id) {
+            if (!this.inventoryReservations) {
+              throw new ConflictException(
+                'Las reservas de inventario no están disponibles en este entorno.',
+              );
+            }
+            await this.inventoryReservations.consumeForSale(
+              tx,
+              data.reserva_id,
+              venta.id,
+              data.usuario_id,
+              reservationTargets!,
+            );
+          }
+
+          // 2. Reserve a discount use atomically. The engine's earlier cap check only
+          // selects an eligible promotion; it cannot authorize consumption because a
+          // concurrent checkout may consume the last use before this transaction.
+          if (descuentoIdAplicado) {
+            // Prisma's updateMany cannot compare two columns from the same row. Keep
+            // the comparison in PostgreSQL so an admin changing limite_usos cannot
+            // race a separate findUnique/updateMany pair. NULL remains unlimited.
+            const usosReservados = await tx.$executeRaw`
           UPDATE descuentos
           SET usos_actuales = usos_actuales + 1
           WHERE id = ${descuentoIdAplicado}
             AND (limite_usos IS NULL OR usos_actuales < limite_usos)
         `;
 
-        if (usosReservados === 0) {
-          throw new ConflictException('Cupo de descuento agotado.');
-        }
+            if (usosReservados === 0) {
+              throw new ConflictException('Cupo de descuento agotado.');
+            }
 
-        await tx.descuentoUso.create({
-          data: {
-            descuento_id: descuentoIdAplicado,
-            venta_id: venta.id,
-            cliente_id: data.cliente_id ? BigInt(data.cliente_id) : null,
-            monto_descontado: descuentoTotal,
-          },
-        });
-      }
-
-      // 3. Reserve combo cupos with conditional writes. The inventory plan and
-      // snapshot above are intentionally read-only preflight work.
-      for (const d of data.detalles) {
-        const productoInfo = productoMap.get(d.producto_id);
-        if (
-          productoInfo?.tipo_producto !== 'COMBO' ||
-          productoInfo.cupo_maximo == null
-        )
-          continue;
-
-        const cupoReservado = await tx.producto.updateMany({
-          where: {
-            id: BigInt(d.producto_id),
-            cupo_maximo: { not: null },
-            cupo_usado: { lte: productoInfo.cupo_maximo - d.cantidad },
-          },
-          data: { cupo_usado: { increment: d.cantidad } },
-        });
-        if (cupoReservado.count === 0) {
-          throw new ConflictException(
-            `Cupo agotado para el combo ${productoInfo.nombre}`,
-          );
-        }
-      }
-
-      // 3c. Apply the atomic decrements and record each movimiento. Still sequential —
-      // each updateMany's conditional WHERE is the real concurrency guard — but now
-      // backed by the batched read above instead of one findFirst per movement.
-      for (const m of movimientos) {
-        const key = `${m.producto_id}_${m.variante_id ?? 'null'}`;
-        const inv = inventarioMap.get(key);
-
-        if (!inv) {
-          throw new NotFoundException(m.errorNoInventario);
-        }
-
-        // Do not reject from the preloaded reserved value: it may have included
-        // an expired reservation just released above. The live SQL predicate is
-        // the authoritative stock evaluation for ordinary checkouts.
-
-        const updated = data.reserva_id
-          ? await tx.inventario.updateMany({
-              where: {
-                id: inv.id,
-                cantidad_disponible: { gte: m.cantidad },
-                reservado: { gte: m.cantidad },
-              },
+            await tx.descuentoUso.create({
               data: {
-                cantidad_disponible: { decrement: m.cantidad },
-                reservado: { decrement: m.cantidad },
+                descuento_id: descuentoIdAplicado,
+                venta_id: venta.id,
+                cliente_id: data.cliente_id ? BigInt(data.cliente_id) : null,
+                monto_descontado: descuentoTotal,
               },
-            })
-          : await tx.$executeRaw`
+            });
+          }
+
+          // 3. Reserve combo cupos with conditional writes. The inventory plan and
+          // snapshot above are intentionally read-only preflight work.
+          for (const d of data.detalles) {
+            const productoInfo = productoMap.get(d.producto_id);
+            if (
+              productoInfo?.tipo_producto !== 'COMBO' ||
+              productoInfo.cupo_maximo == null
+            )
+              continue;
+
+            const cupoReservado = await tx.producto.updateMany({
+              where: {
+                id: BigInt(d.producto_id),
+                cupo_maximo: { not: null },
+                cupo_usado: { lte: productoInfo.cupo_maximo - d.cantidad },
+              },
+              data: { cupo_usado: { increment: d.cantidad } },
+            });
+            if (cupoReservado.count === 0) {
+              throw new ConflictException(
+                `Cupo agotado para el combo ${productoInfo.nombre}`,
+              );
+            }
+          }
+
+          // 3c. Apply the atomic decrements and record each movimiento. Still sequential —
+          // each updateMany's conditional WHERE is the real concurrency guard — but now
+          // backed by the batched read above instead of one findFirst per movement.
+          for (const m of movimientos) {
+            const key = `${m.producto_id}_${m.variante_id ?? 'null'}`;
+            const inv = inventarioMap.get(key);
+
+            if (!inv) {
+              throw new NotFoundException(m.errorNoInventario);
+            }
+
+            // Do not reject from the preloaded reserved value: it may have included
+            // an expired reservation just released above. The live SQL predicate is
+            // the authoritative stock evaluation for ordinary checkouts.
+
+            const updated = data.reserva_id
+              ? await tx.inventario.updateMany({
+                  where: {
+                    id: inv.id,
+                    cantidad_disponible: { gte: m.cantidad },
+                    reservado: { gte: m.cantidad },
+                  },
+                  data: {
+                    cantidad_disponible: { decrement: m.cantidad },
+                    reservado: { decrement: m.cantidad },
+                  },
+                })
+              : await tx.$executeRaw`
               UPDATE inventario
               SET cantidad_disponible = cantidad_disponible - ${m.cantidad}
               WHERE id = ${inv.id}
                 AND cantidad_disponible - reservado >= ${m.cantidad}
             `;
 
-        if ((typeof updated === 'number' ? updated : updated.count) === 0) {
-          throw new ConflictException(m.errorConcurrencia);
-        }
-
-        // Reflect the decrement in the shared in-memory snapshot so a later movement
-        // targeting the SAME inventario row (e.g. the same producto/variante appearing
-        // twice in the cart) validates against the just-applied value.
-        inv.cantidad_disponible -= m.cantidad;
-
-        await tx.movimientosInventario.create({
-          data: {
-            producto_id: m.producto_id,
-            variante_id: m.variante_id || inv.variante_id,
-            tipo_movimiento: 'SALIDA',
-            cantidad: m.cantidad,
-            motivo: m.motivo,
-            tipo_documento_origen: 'VENTA',
-            documento_origen_id: venta.id,
-            usuario_id: BigInt(data.usuario_id),
-          },
-        });
-      }
-
-      return {
-        ...venta,
-        id: venta.id.toString(),
-        cliente_id: venta.cliente_id?.toString(),
-        usuario_id: venta.usuario_id.toString(),
-        nombre_cajero: (venta as any).usuario 
-          ? `${(venta as any).usuario.nombres} ${(venta as any).usuario.apellidos || ''}`.trim() 
-          : venta.usuario_id.toString(),
-        cliente: venta.cliente
-          ? {
-              ...venta.cliente,
-              id: venta.cliente.id.toString(),
+            if ((typeof updated === 'number' ? updated : updated.count) === 0) {
+              throw new ConflictException(m.errorConcurrencia);
             }
-          : null,
-        detalles: venta.detalles.map(
-          (
-            det: Prisma.VentaDetalleGetPayload<{
-              include: { producto: true; variante: true; empaque: true };
-            }>,
-          ) => ({
-            ...det,
-            id: det.id.toString(),
-            venta_id: det.venta_id.toString(),
-            producto_id: det.producto_id.toString(),
-            variante_id: det.variante_id?.toString(),
-            empaque_id: det.empaque_id?.toString(),
-            aprobado_por_usuario_id: det.aprobado_por_usuario_id?.toString(),
-            producto: det.producto
-              ? {
-                  ...det.producto,
-                  id: det.producto.id.toString(),
-                  categoria_id: det.producto.categoria_id.toString(),
-                  marca_id: det.producto.marca_id?.toString(),
-                }
-              : undefined,
-            variante: det.variante
-              ? {
-                  ...det.variante,
-                  id: det.variante.id.toString(),
-                  producto_id: det.variante.producto_id.toString(),
-                }
-              : undefined,
-          }),
-        ),
-      };
+
+            // Reflect the decrement in the shared in-memory snapshot so a later movement
+            // targeting the SAME inventario row (e.g. the same producto/variante appearing
+            // twice in the cart) validates against the just-applied value.
+            inv.cantidad_disponible -= m.cantidad;
+
+            await tx.movimientosInventario.create({
+              data: {
+                producto_id: m.producto_id,
+                variante_id: m.variante_id || inv.variante_id,
+                tipo_movimiento: 'SALIDA',
+                cantidad: m.cantidad,
+                motivo: m.motivo,
+                tipo_documento_origen: 'VENTA',
+                documento_origen_id: venta.id,
+                usuario_id: BigInt(data.usuario_id),
+              },
+            });
+          }
+
+          return this.serializarVentaCheckout(venta);
+        },
+      );
+    } catch (error) {
+      if (isIdempotencyKeyUniqueViolation(error)) {
+        const ventaConcurrente = await this.obtenerVentaPorIdempotencia(
+          data.usuario_id,
+          data.idempotency_key,
+        );
+        if (ventaConcurrente) {
+          return this.serializarVentaCheckout(ventaConcurrente);
+        }
+      }
+      throw error;
+    }
+  }
+
+  private async obtenerVentaPorIdempotencia(
+    usuarioId: string,
+    idempotencyKey: string,
+  ): Promise<CheckoutVenta | null> {
+    return this.prisma.venta.findUnique({
+      where: {
+        usuario_id_idempotency_key: {
+          usuario_id: BigInt(usuarioId),
+          idempotency_key: idempotencyKey,
+        },
+      },
+      include: CHECKOUT_VENTA_INCLUDE,
     });
+  }
+
+  private serializarVentaCheckout(venta: CheckoutVenta) {
+    const { idempotency_key: _idempotencyKey, ...ventaSinClave } = venta;
+
+    return {
+      ...ventaSinClave,
+      id: venta.id.toString(),
+      cliente_id: venta.cliente_id?.toString(),
+      usuario_id: venta.usuario_id.toString(),
+      caja_id: venta.caja_id?.toString(),
+      nombre_cajero:
+        `${venta.usuario.nombres} ${venta.usuario.apellidos || ''}`.trim(),
+      cliente: venta.cliente
+        ? {
+            ...venta.cliente,
+            id: venta.cliente.id.toString(),
+          }
+        : null,
+      detalles: venta.detalles.map((det) => ({
+        ...det,
+        id: det.id.toString(),
+        venta_id: det.venta_id.toString(),
+        producto_id: det.producto_id.toString(),
+        variante_id: det.variante_id?.toString(),
+        empaque_id: det.empaque_id?.toString(),
+        aprobado_por_usuario_id: det.aprobado_por_usuario_id?.toString(),
+        producto: {
+          ...det.producto,
+          id: det.producto.id.toString(),
+          categoria_id: det.producto.categoria_id.toString(),
+          marca_id: det.producto.marca_id?.toString(),
+        },
+        variante: det.variante
+          ? {
+              ...det.variante,
+              id: det.variante.id.toString(),
+              producto_id: det.variante.producto_id.toString(),
+            }
+          : undefined,
+      })),
+    };
   }
 
   async listar(params: { offset: number; limit: number }) {
@@ -610,43 +736,48 @@ export class PrismaVentaRepository implements IVentaRepository {
           v: Prisma.VentaGetPayload<{
             include: {
               cliente: true;
-              usuario: { select: { nombres: true, apellidos: true } };
+              usuario: { select: { nombres: true; apellidos: true } };
               detalles: { include: { producto: true } };
             };
           }>,
-        ) => ({
-          ...v,
-          id: v.id.toString(),
-          cliente_id: v.cliente_id?.toString(),
-          usuario_id: v.usuario_id.toString(),
-          nombre_cajero: v.usuario 
-            ? `${v.usuario.nombres} ${v.usuario.apellidos || ''}`.trim() 
-            : v.usuario_id.toString(),
-          cliente: v.cliente
-            ? {
-                ...v.cliente,
-                id: v.cliente.id.toString(),
-              }
-            : null,
-          detalles: v.detalles.map(
-            (
-              det: Prisma.VentaDetalleGetPayload<{
-                include: { producto: true };
-              }>,
-            ) => ({
-              ...det,
-              id: det.id.toString(),
-              venta_id: det.venta_id.toString(),
-              producto_id: det.producto_id.toString(),
-              producto: {
-                ...det.producto,
-                id: det.producto.id.toString(),
-                categoria_id: det.producto.categoria_id.toString(),
-                marca_id: det.producto.marca_id?.toString(),
-              },
-            }),
-          ),
-        }),
+        ) => {
+          const { idempotency_key: _idempotencyKey, ...ventaSinClave } = v;
+
+          return {
+            ...ventaSinClave,
+            id: v.id.toString(),
+            cliente_id: v.cliente_id?.toString(),
+            usuario_id: v.usuario_id.toString(),
+            caja_id: v.caja_id?.toString(),
+            nombre_cajero: v.usuario
+              ? `${v.usuario.nombres} ${v.usuario.apellidos || ''}`.trim()
+              : v.usuario_id.toString(),
+            cliente: v.cliente
+              ? {
+                  ...v.cliente,
+                  id: v.cliente.id.toString(),
+                }
+              : null,
+            detalles: v.detalles.map(
+              (
+                det: Prisma.VentaDetalleGetPayload<{
+                  include: { producto: true };
+                }>,
+              ) => ({
+                ...det,
+                id: det.id.toString(),
+                venta_id: det.venta_id.toString(),
+                producto_id: det.producto_id.toString(),
+                producto: {
+                  ...det.producto,
+                  id: det.producto.id.toString(),
+                  categoria_id: det.producto.categoria_id.toString(),
+                  marca_id: det.producto.marca_id?.toString(),
+                },
+              }),
+            ),
+          };
+        },
       ),
     };
   }
@@ -738,7 +869,7 @@ export class PrismaVentaRepository implements IVentaRepository {
             monto: prepared.venta.total,
             metodo_pago: 'EFECTIVO',
             referencia_id: prepared.venta.id.toString(),
-          }
+          },
         });
       }
 
@@ -833,7 +964,7 @@ export class PrismaVentaRepository implements IVentaRepository {
             monto: prepared.venta.total,
             metodo_pago: 'EFECTIVO',
             referencia_id: prepared.venta.id.toString(),
-          }
+          },
         });
       }
 

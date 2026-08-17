@@ -315,7 +315,10 @@ model Inventario {
   variante Variante?                  @relation(fields: [variante_id], references: [id], onDelete: Cascade)
   reservas ReservaInventarioDetalle[]
 
-  @@unique([producto_id, variante_id, ubicacion])
+  // `ubicacion` remains descriptive metadata; stock is keyed only by product and variant.
+  // The migration creates this PostgreSQL index with NULLS NOT DISTINCT so base products
+  // (whose variante_id is NULL) also have exactly one stock row.
+  @@unique([producto_id, variante_id])
   @@map("inventario")
 }
 
@@ -467,6 +470,7 @@ model Venta {
   usuario_id       BigInt
   caja_id          BigInt?
   numero_ticket    String   @unique @default(cuid()) @db.VarChar(100)
+  idempotency_key  String?  @db.VarChar(100)
   estado           String   @default("COMPLETADA") @db.VarChar(50) // COMPLETADA, ANULADA
   motivo_anulacion String?  @db.Text
   total            Decimal  @default(0) @db.Decimal(14, 2)
@@ -487,6 +491,7 @@ model Venta {
   reserva_inventario ReservaInventario?
 
   @@index([estado, creado_en])
+  @@unique([usuario_id, idempotency_key])
   @@map("ventas")
 }
 

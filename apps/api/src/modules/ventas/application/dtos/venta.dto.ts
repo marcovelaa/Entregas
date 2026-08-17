@@ -6,6 +6,7 @@ import {
   IsArray,
   ValidateNested,
   Min,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationDto } from '../../../../common/dto/pagination.dto';
@@ -64,6 +65,14 @@ export class RegistrarVentaDto {
   @IsOptional()
   @IsString()
   cliente_id?: string;
+
+  @ApiProperty({
+    description:
+      'UUID único generado por el POS para que los reintentos del mismo cobro sean idempotentes',
+  })
+  @IsString()
+  @MaxLength(100)
+  idempotency_key!: string;
 
   @ApiProperty({ description: 'Método de pago', example: 'EFECTIVO' })
   @IsString()

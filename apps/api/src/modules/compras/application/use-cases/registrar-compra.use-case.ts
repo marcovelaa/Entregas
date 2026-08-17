@@ -3,9 +3,13 @@ import { COMPRA_REPOSITORY } from '../../domain/repositories/compra.repository.i
 import { RegistrarCompraDto } from '../dtos/compra.dto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
+import { ensureInventoryStockTarget } from '../../../../common/prisma/inventory-stock-target';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { BitacoraService } from '../../../bitacora/application/services/bitacora.service';
-import { TipoActorBitacora, EntidadBitacora } from '../../../bitacora/domain/entities/bitacora-enums';
+import {
+  TipoActorBitacora,
+  EntidadBitacora,
+} from '../../../bitacora/domain/entities/bitacora-enums';
 
 @Injectable()
 export class RegistrarCompraUseCase {
@@ -61,19 +65,17 @@ export class RegistrarCompraUseCase {
         // 2. Si se crea directamente como RECIBIDA o COMPLETADO, procesar ingreso de inventario
         if (estadoInicial === 'RECIBIDA' || estadoInicial === 'COMPLETADO') {
           for (const d of detalles) {
-            let inv = await tx.inventario.findFirst({
-              where: { producto_id: d.producto_id },
-            });
-
-            if (!inv) {
-              inv = await tx.inventario.create({
-                data: {
-                  producto_id: d.producto_id,
-                  cantidad_disponible: 0,
-                  reservado: 0,
-                },
-              });
-            }
+            const varianteId = await this.resolverVarianteInventario(
+              tx,
+              d.producto_id,
+              d.variante_id,
+              d.empaque_id,
+            );
+            const inv = await ensureInventoryStockTarget(
+              tx,
+              d.producto_id,
+              varianteId,
+            );
 
             const stockActual = inv.cantidad_disponible;
             const producto = await tx.producto.findUnique({
@@ -84,20 +86,26 @@ export class RegistrarCompraUseCase {
 
             // Prorrateo de flete
             const subtotalItem = d.cantidad * d.costo_unitario;
-            const proporcionFlete = subtotal > 0 ? (subtotalItem / subtotal) * costoTransporte : 0;
-            const costoEfectivo = d.costo_unitario + (proporcionFlete / d.cantidad);
+            const proporcionFlete =
+              subtotal > 0 ? (subtotalItem / subtotal) * costoTransporte : 0;
+            const costoEfectivo =
+              d.costo_unitario + proporcionFlete / d.cantidad;
 
             const stockNuevo = stockActual + d.cantidad;
             const costoPromedioNuevo =
               stockNuevo > 0
-                ? (stockActual * costoPromedioActual + d.cantidad * costoEfectivo) / stockNuevo
+                ? (stockActual * costoPromedioActual +
+                    d.cantidad * costoEfectivo) /
+                  stockNuevo
                 : costoEfectivo;
 
             await tx.producto.update({
               where: { id: d.producto_id },
-              data: { 
+              data: {
                 costo_promedio: costoPromedioNuevo,
-                ...(d.precio_venta && d.precio_venta > 0 && !d.variante_id ? { precio_base: d.precio_venta } : {})
+                ...(d.precio_venta && d.precio_venta > 0 && !d.variante_id
+                  ? { precio_base: d.precio_venta }
+                  : {}),
               },
             });
 
@@ -116,6 +124,7 @@ export class RegistrarCompraUseCase {
             await tx.movimientosInventario.create({
               data: {
                 producto_id: d.producto_id,
+                variante_id: varianteId,
                 tipo_movimiento: 'ENTRADA',
                 cantidad: d.cantidad,
                 motivo: 'Ingreso por Compra',
@@ -143,6 +152,34 @@ export class RegistrarCompraUseCase {
       },
     });
 
-    return { success: true, compraId: result.id.toString(), estado: result.estado };
+    return {
+      success: true,
+      compraId: result.id.toString(),
+      estado: result.estado,
+    };
+  }
+
+  private async resolverVarianteInventario(
+    tx: Prisma.TransactionClient,
+    productoId: bigint,
+    varianteId?: bigint,
+    empaqueId?: bigint,
+  ): Promise<bigint | null> {
+    if (varianteId) return varianteId;
+
+    if (empaqueId) {
+      const empaque = await tx.empaque.findUnique({
+        where: { id: empaqueId },
+        select: { variante_id: true },
+      });
+      if (empaque) return empaque.variante_id;
+    }
+
+    const variantePorDefecto = await tx.variante.findFirst({
+      where: { producto_id: productoId, activo: true },
+      orderBy: { id: 'asc' },
+      select: { id: true },
+    });
+    return variantePorDefecto?.id ?? null;
   }
 }

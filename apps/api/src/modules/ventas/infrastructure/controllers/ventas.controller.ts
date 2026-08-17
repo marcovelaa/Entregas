@@ -24,7 +24,6 @@ import {
   type AuthenticatedUser,
 } from '../../../iam/auth/decorators/current-user.decorator';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
-import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @ApiTags('ventas')
 @Controller('ventas')
@@ -60,7 +59,7 @@ export class VentasController {
     @Body() dto: RegistrarVentaDto,
     @CurrentUser() usuario: AuthenticatedUser | undefined,
   ) {
-    const sellerId = usuario ? usuario.id : '1';
+    const sellerId = requireAuthenticatedUser(usuario).id;
     return this.registrarVentaUseCase.execute(
       dto,
       sellerId,
@@ -173,7 +172,7 @@ export class VentasController {
   }
 
   @Get()
-  @Public()
+  @RequierePermiso('ventas:ver')
   @ApiOperation({ summary: 'Listar ventas paginadas' })
   @ApiResponse({ status: 200, description: 'Listado paginado de ventas' })
   async listar(@Query() dto: ListarVentasDto) {
