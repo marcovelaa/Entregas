@@ -117,7 +117,6 @@ El backend ya tiene módulos de catálogo, inventario, compras, clientes, provee
 - **Verificación:** 29/29 suites unitarias passed; 7/7 suites e2e passed en backend; `tsc --noEmit` y `next build` pasaron limpiamente en el frontend compilando 19 rutas estáticas y dinámicas.
 
 
-
 **No iniciar:** automatización de marketing, favoritos avanzados o un rediseño amplio del storefront antes de 2.4. Un checkout visual sin pedido, reserva y pago correctos no genera una venta confiable.
 
 ## Fase 3 — Postventa y operación ERP
