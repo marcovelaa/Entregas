@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Ban, Search, FileText, RotateCcw } from 'lucide-react';
+import { Ban, FileText, RotateCcw } from 'lucide-react';
 import { api } from '../../../lib/axios';
 import { TicketImpresion } from '../../../components/molecules/TicketImpresion/TicketImpresion';
 import styles from './VentasHistorial.module.css';
@@ -95,97 +95,116 @@ export function VentasHistorial() {
 
   return (
     <div className={styles.container}>
-      {/* Table container takes full width now, header removed */}
       <div className={styles.tableContainer}>
         <table className={styles.table}>
+          <colgroup>
+            <col className={styles.ticketColumn} />
+            <col className={styles.dateColumn} />
+            <col className={styles.clientColumn} />
+            <col className={styles.productsColumn} />
+            <col className={styles.totalColumn} />
+            <col className={styles.methodColumn} />
+            <col className={styles.statusColumn} />
+            <col className={styles.actionsColumn} />
+          </colgroup>
           <thead>
             <tr>
-              <th>Ticket #</th>
-              <th>Fecha</th>
-              <th>Cliente</th>
-              <th>Productos</th>
-              <th>Total</th>
-              <th>Método</th>
-              <th>Estado</th>
-              <th style={{ textAlign: 'right' }}>Acciones</th>
+              <th scope="col">Ticket #</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Cliente</th>
+              <th scope="col">Productos</th>
+              <th className={styles.alignEnd} scope="col">Total</th>
+              <th scope="col">Método</th>
+              <th scope="col">Estado</th>
+              <th className={styles.alignEnd} scope="col">Acciones</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody aria-busy={loading}>
             {loading ? (
-              <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: '2rem' }}>Cargando ventas...</td>
+              <tr className={styles.statusRow}>
+                <td colSpan={8}>Cargando ventas...</td>
               </tr>
             ) : ventas.length === 0 ? (
-              <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>No hay ventas registradas</td>
+              <tr className={styles.statusRow}>
+                <td className={styles.emptyState} colSpan={8}>No hay ventas registradas</td>
               </tr>
             ) : (
-              ventas.map((venta) => (
-                <tr key={venta.id}>
-                  <td style={{ fontWeight: 600 }}>
-                    <span title={`Ticket #${String(venta.id).padStart(7, '0')}`}>
-                      {String(venta.id).padStart(7, '0')}
-                    </span>
-                  </td>
-                  <td>{new Date(venta.creado_en).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                  <td>{venta.cliente ? `${venta.cliente.nombres} ${venta.cliente.apellidos || ''}` : 'Consumidor Final'}</td>
-                  <td>
-                    <div style={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#475569' }} title={venta.detalles?.map((d: any) => `${d.cantidad}x ${d.producto?.nombre}`).join(', ')}>
-                      {venta.detalles?.length === 0 ? 'Sin productos' : (
-                        venta.detalles?.length === 1 ? (
-                          `${venta.detalles[0].cantidad}x ${venta.detalles[0].producto?.nombre || 'Producto'}`
-                        ) : (
-                          `${venta.detalles?.length} artículos variados`
-                        )
+              ventas.map((venta) => {
+                const ticket = String(venta.id).padStart(7, '0');
+                const cliente = venta.cliente
+                  ? `${venta.cliente.nombres} ${venta.cliente.apellidos || ''}`.trim()
+                  : 'Consumidor Final';
+                const detalles = venta.detalles ?? [];
+                const productos = detalles
+                  .map((detalle: any) => `${detalle.cantidad}x ${detalle.producto?.nombre}`)
+                  .join(', ');
+                const resumenProductos = detalles.length === 0
+                  ? 'Sin productos'
+                  : detalles.length === 1
+                    ? `${detalles[0].cantidad}x ${detalles[0].producto?.nombre || 'Producto'}`
+                    : `${detalles.length} artículos variados`;
+                const anulada = venta.estado === 'ANULADA';
+
+                return (
+                  <tr className={styles.saleRow} key={venta.id}>
+                    <td className={styles.ticketCell} data-label="Ticket #">
+                      <span title={`Ticket #${ticket}`}>{ticket}</span>
+                    </td>
+                    <td className={styles.dateCell} data-label="Fecha">
+                      {new Date(venta.creado_en).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' })}
+                    </td>
+                    <td className={styles.clientCell} data-label="Cliente">
+                      <span className={styles.truncate} title={cliente}>{cliente}</span>
+                    </td>
+                    <td className={styles.productsCell} data-label="Productos">
+                      <span className={styles.productSummary} title={productos}>{resumenProductos}</span>
+                    </td>
+                    <td className={styles.totalCell} data-label="Total">Bs. {parseFloat(venta.total).toFixed(2)}</td>
+                    <td className={styles.methodCell} data-label="Método">{venta.metodo_pago}</td>
+                    <td className={styles.statusCell} data-label="Estado">
+                      <span className={`${styles.statusBadge} ${anulada ? styles.statusCancelled : styles.statusCompleted}`}>
+                        {venta.estado}
+                      </span>
+                      {anulada && venta.motivo_anulacion && (
+                        <span className={styles.statusReason} title={venta.motivo_anulacion}>
+                          {venta.motivo_anulacion}
+                        </span>
                       )}
-                    </div>
-                  </td>
-                  <td style={{ fontWeight: 'bold' }}>Bs. {parseFloat(venta.total).toFixed(2)}</td>
-                  <td>{venta.metodo_pago}</td>
-                  <td>
-                    <span style={{ 
-                      display: 'inline-flex', alignItems: 'center', padding: '0.2rem 0.6rem', 
-                      borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.02em',
-                      backgroundColor: venta.estado === 'COMPLETADA' ? '#f0fdf4' : '#fef2f2',
-                      color: venta.estado === 'COMPLETADA' ? '#166534' : '#991b1b',
-                      border: venta.estado === 'COMPLETADA' ? '1px solid #bbf7d0' : '1px solid #fecaca'
-                    }}>
-                      {venta.estado}
-                    </span>
-                    {venta.estado === 'ANULADA' && venta.motivo_anulacion && (
-                      <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={venta.motivo_anulacion}>
-                        {venta.motivo_anulacion}
+                    </td>
+                    <td className={styles.actionsCell} data-label="Acciones">
+                      <div className={styles.actions}>
+                        <button
+                          aria-label={`Ver detalles de la venta ${ticket}`}
+                          className={styles.btnIcon}
+                          onClick={() => setVentaSeleccionada(venta)}
+                          type="button"
+                        >
+                          <FileText aria-hidden="true" size={18} />
+                        </button>
+                        {anulada ? (
+                          <button
+                            aria-label={`Revertir anulación de la venta ${ticket}`}
+                            className={styles.btnIconWarning}
+                            onClick={() => handleRevertir(venta)}
+                            type="button"
+                          >
+                            <RotateCcw aria-hidden="true" size={18} />
+                          </button>
+                        ) : (
+                          <button
+                            aria-label={`Anular venta ${ticket}`}
+                            className={styles.btnIconDanger}
+                            onClick={() => openAnularModal(venta)}
+                            type="button"
+                          >
+                            <Ban aria-hidden="true" size={18} />
+                          </button>
+                        )}
                       </div>
-                    )}
-                  </td>
-                  <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button 
-                      className={styles.btnIcon}
-                      onClick={() => setVentaSeleccionada(venta)}
-                      title="Ver Detalles"
-                    >
-                      <FileText size={18} />
-                    </button>
-                    {venta.estado === 'ANULADA' ? (
-                      <button 
-                        className={styles.btnIconWarning}
-                        onClick={() => handleRevertir(venta)}
-                        title="Revertir Anulación"
-                      >
-                        <RotateCcw size={18} />
-                      </button>
-                    ) : (
-                      <button 
-                        className={styles.btnIconDanger} 
-                        onClick={() => openAnularModal(venta)}
-                        title="Anular Venta"
-                      >
-                        <Ban size={18} />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
