@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import { Loader2, Plus, Package, Copy, Edit2, X, Check } from 'lucide-react';
 import styles from '../productos.module.css';
 import { api } from '../../../../lib/axios';
@@ -36,21 +37,26 @@ export default function EmpaquesSection({ varianteId, varianteNombre, varianteSk
   const [editValues, setEditValues] = useState<any>({});
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const fetchEmpaques = useCallback(async () => {
+  const fetchEmpaques = useCallback(async (signal?: AbortSignal) => {
     if (!varianteId) return;
     setLoading(true);
     try {
-      const res = await api.get(`/empaques/variante/${varianteId}`);
+      const res = await api.get(`/empaques/variante/${varianteId}`, { signal });
       setEmpaques(res.data);
-    } catch { /* silent */ } finally {
+    } catch (err: any) {
+      if (axios.isCancel(err) || err?.name === 'CanceledError' || err?.name === 'AbortError') return;
+      /* silent */
+    } finally {
       setLoading(false);
     }
   }, [varianteId]);
 
   useEffect(() => {
     if (varianteId) {
-      fetchEmpaques();
+      const controller = new AbortController();
+      fetchEmpaques(controller.signal);
       setSelectedVariantsToApply([String(varianteId)]);
+      return () => controller.abort();
     }
   }, [varianteId, fetchEmpaques]);
 
@@ -148,8 +154,9 @@ export default function EmpaquesSection({ varianteId, varianteNombre, varianteSk
       
       <form onSubmit={handleAdd} className={styles.variantAddRow} style={{ marginBottom: '1rem' }}>
         <div className={styles.formGroup} style={{ flex: 2 }}>
-          <label className={styles.formLabel}>Nombre (Ej: Unidad, Caja x12)</label>
+          <label className={styles.formLabel} htmlFor="empaque-nombre">Nombre (Ej: Unidad, Caja x12)</label>
           <input
+            id="empaque-nombre"
             required
             className={styles.formInput}
             value={nombre}
@@ -157,8 +164,9 @@ export default function EmpaquesSection({ varianteId, varianteNombre, varianteSk
           />
         </div>
         <div className={styles.formGroup} style={{ flex: 1 }}>
-          <label className={styles.formLabel}>Contiene (Unidades)</label>
+          <label className={styles.formLabel} htmlFor="empaque-multiplicador">Contiene (Unidades)</label>
           <input
+            id="empaque-multiplicador"
             required
             type="number"
             min="1"
@@ -168,8 +176,9 @@ export default function EmpaquesSection({ varianteId, varianteNombre, varianteSk
           />
         </div>
         <div className={styles.formGroup} style={{ flex: 1 }}>
-          <label className={styles.formLabel}>Precio (Bs.)</label>
+          <label className={styles.formLabel} htmlFor="empaque-precio">Precio (Bs.)</label>
           <input
+            id="empaque-precio"
             required
             type="number"
             step="0.01"

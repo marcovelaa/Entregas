@@ -1,8 +1,9 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
 import { Loader2, Plus, Package, ImagePlus, Edit2, Check, X } from 'lucide-react';
 import styles from '../productos.module.css';
-import { api } from '../../../../lib/axios';
+import { api, getApiAssetUrl } from '../../../../lib/axios';
 import EmpaquesSection from './EmpaquesSection';
 
 interface Props {
@@ -27,19 +28,25 @@ export default function VariantesSection({ productoId, productoSku, imagenes = [
   const [editValues, setEditValues] = useState<any>({});
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const fetchVariantes = useCallback(async () => {
+  const fetchVariantes = useCallback(async (signal?: AbortSignal) => {
     if (!productoId) return;
     setLoading(true);
     try {
-      const res = await api.get(`/variantes/producto/${productoId}`);
+      const res = await api.get(`/variantes/producto/${productoId}`, { signal });
       setVariantes(res.data);
-    } catch { /* silent */ } finally {
+    } catch (err: any) {
+      if (axios.isCancel(err) || err?.name === 'CanceledError' || err?.name === 'AbortError') return;
+      /* silent */
+    } finally {
       setLoading(false);
     }
   }, [productoId]);
 
   useEffect(() => {
-    if (productoId) fetchVariantes();
+    if (!productoId) return;
+    const controller = new AbortController();
+    fetchVariantes(controller.signal);
+    return () => controller.abort();
   }, [productoId, fetchVariantes]);
 
   const handleSelectGalleryImage = async (variantId: string, url: string) => {
@@ -118,18 +125,12 @@ export default function VariantesSection({ productoId, productoSku, imagenes = [
     const formData = new FormData();
     formData.append('image', file);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${API_URL}/variantes/upload-imagen/${uploadingVariantId}`, {
-        method: 'POST',
-        body: formData,
+      await api.post(`/variantes/upload-imagen/${uploadingVariantId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || 'Error al subir imagen');
-      }
       fetchVariantes();
     } catch (err: any) {
-      alert(err.message || 'Error al subir imagen de variante');
+      alert(err?.response?.data?.message || err.message || 'Error al subir imagen de variante');
     } finally {
       setUploadingVariantId(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -150,8 +151,9 @@ export default function VariantesSection({ productoId, productoSku, imagenes = [
       {/* Quick add form */}
       <form onSubmit={handleAdd} className={styles.variantAddRow}>
         <div className={styles.formGroup} style={{ flex: 2 }}>
-          <label className={styles.formLabel}>Nombre de variante</label>
+          <label className={styles.formLabel} htmlFor="variante-nombre">Nombre de variante</label>
           <input
+            id="variante-nombre"
             required
             className={styles.formInput}
             placeholder="Ej. Azul, Rojo, Negro, Verde (separar por comas para lote)"
@@ -199,7 +201,7 @@ export default function VariantesSection({ productoId, productoSku, imagenes = [
                       title="Click para subir foto de archivo"
                     >
                       {v.imagen_url ? (
-                        <img src={`http://localhost:3001${v.imagen_url}`} alt="" className={styles.variantImgCellImg} />
+                        <img src={getApiAssetUrl(v.imagen_url)} alt={`Imagen de la variante ${v.nombre}`} className={styles.variantImgCellImg} />
                       ) : (
                         <ImagePlus size={18} color="#94a3b8" />
                       )}
@@ -224,24 +226,30 @@ export default function VariantesSection({ productoId, productoSku, imagenes = [
                             display: 'flex', flexDirection: 'column', gap: '0.25rem'
                           }}>
                             {imagenes.map((img: any) => (
-                              <div
+                              <button
                                 key={img.id}
+                                type="button"
                                 onClick={() => {
                                   handleSelectGalleryImage(v.id, img.url);
                                   setOpenGalleryDropdown(null);
                                 }}
                                 style={{
                                   display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.4rem',
-                                  borderRadius: '6px', cursor: 'pointer', background: v.imagen_url === img.url ? '#f1f5f9' : 'transparent'
+                                  borderRadius: '6px', cursor: 'pointer', background: v.imagen_url === img.url ? '#f1f5f9' : 'transparent',
+                                  border: 'none', width: '100%', textAlign: 'left', font: 'inherit'
                                 }}
                                 onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
                                 onMouseLeave={e => e.currentTarget.style.background = v.imagen_url === img.url ? '#f1f5f9' : 'transparent'}
                               >
-                                <img src={`http://localhost:3001${img.url}`} alt="" style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e2e8f0', flexShrink: 0 }} />
+                                <img
+                                  src={getApiAssetUrl(img.url)}
+                                  alt={img.es_principal ? `Imagen principal disponible para ${v.nombre}` : `Imagen disponible para ${v.nombre}`}
+                                  style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e2e8f0', flexShrink: 0 }}
+                                />
                                 <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {img.es_principal ? 'Portada' : `Imagen`}
                                 </span>
-                              </div>
+                              </button>
                             ))}
                           </div>
                         )}
@@ -273,10 +281,10 @@ export default function VariantesSection({ productoId, productoSku, imagenes = [
                       </span>
                     </td>
                     <td style={{ display: 'flex', gap: '0.3rem' }}>
-                      <button className={styles.btnSecondary} onClick={() => setEditingVarianteId(null)} disabled={savingEdit} title="Cancelar" style={{ padding: '0.4rem', height: '32px' }}>
+                      <button className={styles.btnSecondary} onClick={() => setEditingVarianteId(null)} disabled={savingEdit} title="Cancelar" aria-label="Cancelar edición de variante" style={{ padding: '0.4rem', height: '32px' }}>
                         <X size={14} />
                       </button>
-                      <button className={styles.btnPrimary} onClick={handleSaveEdit} disabled={savingEdit} title="Guardar" style={{ padding: '0.4rem', height: '32px' }}>
+                      <button className={styles.btnPrimary} onClick={handleSaveEdit} disabled={savingEdit} title="Guardar" aria-label="Guardar cambios de variante" style={{ padding: '0.4rem', height: '32px' }}>
                         {savingEdit ? <Loader2 size={14} className={styles.spin} /> : <Check size={14} />}
                       </button>
                     </td>
@@ -295,6 +303,7 @@ export default function VariantesSection({ productoId, productoSku, imagenes = [
                         className={styles.btnSecondary}
                         onClick={() => handleStartEdit(v)}
                         title="Editar"
+                        aria-label={`Editar variante ${v.nombre}`}
                         style={{ padding: '0.4rem', height: '32px' }}
                       >
                         <Edit2 size={14} />

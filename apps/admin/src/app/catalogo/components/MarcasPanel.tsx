@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Plus, Loader2, Pencil, Search, ToggleLeft, ToggleRight, Tag, Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/molecules/Modal/Modal';
 import styles from '../page.module.css';
@@ -9,9 +11,13 @@ import { Marca } from '../types';
 import { slugify, emptyMarca } from '../utils';
 
 export default function MarcasPanel() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [marcas, setMarcas] = useState<Marca[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => searchParams.get('q') || '');
   const [error, setError] = useState<string | null>(null);
 
   const [panelOpen, setPanelOpen] = useState(false);
@@ -20,16 +26,22 @@ export default function MarcasPanel() {
   const [form, setForm] = useState({ ...emptyMarca });
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (signal?: AbortSignal) => {
     setLoading(true); setError(null);
     try {
-      const res = await api.get('/marcas');
+      const res = await api.get('/marcas', { signal });
       setMarcas(Array.isArray(res.data) ? res.data : res.data.data || []);
-    } catch (err: any) { setError('Error al cargar marcas.'); } 
-    finally { setLoading(false); }
+    } catch (err: any) {
+      if (axios.isCancel(err) || err?.name === 'CanceledError' || err?.name === 'AbortError') return;
+      setError('Error al cargar marcas.');
+    } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchAll(controller.signal);
+    return () => controller.abort();
+  }, [fetchAll]);
 
   function openCrear() {
     setModalMode('crear'); setEditingId(null);
@@ -61,6 +73,23 @@ export default function MarcasPanel() {
   }
 
   const filtered = marcas.filter(m => m.nombre.toLowerCase().includes(search.toLowerCase()));
+
+  // Sync search to the URL (shareable link) without gating the instant local filter above
+  const isFirstRun = useRef(true);
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (search) params.set('q', search); else params.delete('q');
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   return (
     <>
@@ -113,8 +142,8 @@ export default function MarcasPanel() {
                     </td>
                     <td>
                       <div className={styles.actionsCell}>
-                        <button className={styles.btnAction} title="Editar" onClick={() => openEditar(m)}><Pencil size={18} /></button>
-                        <button className={`${styles.btnAction} ${styles.btnToggle}`} title={m.activo ? 'Desactivar' : 'Activar'} onClick={() => handleToggleActivo(m.id, m.activo)}>
+                        <button className={styles.btnAction} title="Editar" aria-label={`Editar marca ${m.nombre}`} onClick={() => openEditar(m)}><Pencil size={18} /></button>
+                        <button className={`${styles.btnAction} ${styles.btnToggle}`} title={m.activo ? 'Desactivar' : 'Activar'} aria-label={m.activo ? `Desactivar marca ${m.nombre}` : `Activar marca ${m.nombre}`} onClick={() => handleToggleActivo(m.id, m.activo)}>
                           {m.activo ? <ToggleRight size={20} color="var(--color-green)" /> : <ToggleLeft size={20} color="var(--text-muted)" />}
                         </button>
                       </div>
@@ -131,16 +160,16 @@ export default function MarcasPanel() {
         <form onSubmit={handleSubmit} className={styles.slideForm}>
           <div className={styles.formSection}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Nombre *</label>
-              <input required className={styles.formInput} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value, slug: slugify(e.target.value) }))} />
+              <label className={styles.formLabel} htmlFor="marca-nombre">Nombre *</label>
+              <input id="marca-nombre" required className={styles.formInput} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value, slug: slugify(e.target.value) }))} />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Slug (URL friendly)</label>
-              <input className={styles.formInput} value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} />
+              <label className={styles.formLabel} htmlFor="marca-slug">Slug (URL friendly)</label>
+              <input id="marca-slug" className={styles.formInput} value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Descripción</label>
-              <textarea className={styles.formTextarea} value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} rows={3} />
+              <label className={styles.formLabel} htmlFor="marca-descripcion">Descripción</label>
+              <textarea id="marca-descripcion" className={styles.formTextarea} value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} rows={3} />
             </div>
           </div>
           <div className={styles.formFooter} style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, Star, Trash2, Loader2, ImagePlus } from 'lucide-react';
 import styles from '../productos.module.css';
-import { api } from '../../../../lib/axios';
+import { api, getApiAssetUrl } from '../../../../lib/axios';
 
 interface Props {
   productoId: string | null;
@@ -23,14 +23,9 @@ export default function MediaSection({ productoId, imagenes, onRefresh }: Props)
       for (const file of Array.from(files)) {
         const formData = new FormData();
         formData.append('image', file);
-        const res = await fetch(`http://localhost:3001/api/producto-imagenes/upload/${productoId}`, {
-          method: 'POST',
-          body: formData,
+        await api.post(`/producto-imagenes/upload/${productoId}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.message || 'Error al subir imagen');
-        }
       }
       onRefresh();
     } catch (err: any) {
@@ -119,8 +114,8 @@ export default function MediaSection({ productoId, imagenes, onRefresh }: Props)
               className={`${styles.imageThumb} ${img.es_principal ? styles.imageThumbPrincipal : ''}`}
             >
               <img
-                src={`http://localhost:3001${img.url}`}
-                alt=""
+                src={getApiAssetUrl(img.url)}
+                alt={img.es_principal ? 'Imagen principal del producto' : 'Imagen del producto'}
                 className={styles.imageThumbImg}
               />
               {img.es_principal && <Star size={16} className={styles.imageThumbStar} fill="#f59e0b" />}

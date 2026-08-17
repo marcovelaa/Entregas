@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { api } from '../../../../lib/axios';
@@ -18,10 +19,11 @@ export default function EditarProductoPage() {
 
   useEffect(() => {
     if (!id) return;
+    const controller = new AbortController();
     Promise.all([
-      api.get(`/productos/${id}`),
-      api.get('/categorias'),
-      api.get('/marcas')
+      api.get(`/productos/${id}`, { signal: controller.signal }),
+      api.get('/categorias', { signal: controller.signal }),
+      api.get('/marcas', { signal: controller.signal })
     ])
       .then(([pRes, cRes, mRes]) => {
         setProducto(pRes.data.data || pRes.data);
@@ -29,9 +31,11 @@ export default function EditarProductoPage() {
         setMarcas(Array.isArray(mRes.data) ? mRes.data : mRes.data.data || []);
       })
       .catch((err: any) => {
+        if (axios.isCancel(err) || err?.name === 'CanceledError' || err?.name === 'AbortError') return;
         setError(err?.response?.data?.message || 'Error al cargar producto');
       })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [id]);
 
   if (loading) {

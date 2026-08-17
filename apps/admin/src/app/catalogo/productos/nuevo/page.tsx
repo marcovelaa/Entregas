@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, Suspense } from 'react';
+import axios from 'axios';
 import { useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { api } from '../../../../lib/axios';
@@ -12,15 +13,25 @@ function NuevoProductoContent() {
   const [categorias, setCategorias] = useState<any[]>([]);
   const [marcas, setMarcas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([api.get('/categorias'), api.get('/marcas')])
+    const controller = new AbortController();
+    setError(null);
+    Promise.all([
+      api.get('/categorias', { signal: controller.signal }),
+      api.get('/marcas', { signal: controller.signal }),
+    ])
       .then(([cRes, mRes]) => {
         setCategorias(Array.isArray(cRes.data) ? cRes.data : cRes.data.data || []);
         setMarcas(Array.isArray(mRes.data) ? mRes.data : mRes.data.data || []);
       })
-      .catch(() => {})
+      .catch((err: any) => {
+        if (axios.isCancel(err) || err?.name === 'CanceledError' || err?.name === 'AbortError') return;
+        setError(err?.response?.data?.message || 'Error al cargar categorías y marcas.');
+      })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   if (loading) {
@@ -33,12 +44,20 @@ function NuevoProductoContent() {
   }
 
   return (
-    <ProductEditor
-      mode="create"
-      tipo={tipo}
-      categorias={categorias}
-      marcas={marcas}
-    />
+    <>
+      {error && (
+        <div className={styles.errorBanner}>
+          <span>⚠️ {error}</span>
+          <button onClick={() => setError(null)} className={styles.errorClose}>✕</button>
+        </div>
+      )}
+      <ProductEditor
+        mode="create"
+        tipo={tipo}
+        categorias={categorias}
+        marcas={marcas}
+      />
+    </>
   );
 }
 

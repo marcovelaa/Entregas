@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import axios from 'axios';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Loader2, Package, Tag, Search, Plus, Pencil, ToggleLeft, ToggleRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './page.module.css';
-import { api } from '../../lib/axios';
+import { api, getApiAssetUrl } from '../../lib/axios';
 import { Producto, Categoria, ActiveTab } from './types';
 import MarcasPanel from './components/MarcasPanel';
 
-export default function CatalogoPage() {
+function CatalogoContent() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<ActiveTab>('productos');
 
   // Data states
@@ -21,43 +24,74 @@ export default function CatalogoPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Pagination & Search states
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [page, setPage] = useState(1);
+  // Pagination & Search states (seeded from the URL so links are shareable)
+  const [search, setSearch] = useState(() => searchParams.get('q') || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get('q') || '');
+  const [page, setPage] = useState(() => Number(searchParams.get('page')) || 1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
-  // 1. Debounce search input (waits 500ms after user stops typing)
+  function updateUrl(next: { q?: string; page?: number }) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next.q !== undefined) {
+      if (next.q) params.set('q', next.q); else params.delete('q');
+    }
+    if (next.page !== undefined) {
+      if (next.page > 1) params.set('page', String(next.page)); else params.delete('page');
+    }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
+
+  function goToPage(next: number) {
+    setPage(next);
+    updateUrl({ page: next });
+  }
+
+  // 1. Debounce search input (waits 500ms after user stops typing), then sync to the URL
+  const isFirstRun = useRef(true);
   useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1); // Reset to page 1 on new search
+      updateUrl({ q: search, page: 1 });
     }, 500);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   // 2. Fetch static metadata (categories and brands) once
-  const fetchMetadata = useCallback(async () => {
+  const fetchMetadata = useCallback(async (signal?: AbortSignal) => {
     try {
-      const [cRes, mRes] = await Promise.all([api.get('/categorias'), api.get('/marcas')]);
+      const [cRes, mRes] = await Promise.all([
+        api.get('/categorias', { signal }),
+        api.get('/marcas', { signal }),
+      ]);
       setCategorias(Array.isArray(cRes.data) ? cRes.data : cRes.data.data || []);
       setMarcas(Array.isArray(mRes.data) ? mRes.data : mRes.data.data || []);
     } catch (err: any) {
+      if (axios.isCancel(err) || err?.name === 'CanceledError' || err?.name === 'AbortError') return;
       console.error('Error fetching metadata');
     }
   }, []);
 
   useEffect(() => {
-    fetchMetadata();
+    const controller = new AbortController();
+    fetchMetadata(controller.signal);
+    return () => controller.abort();
   }, [fetchMetadata]);
 
   // 3. Fetch paginated products (depends on page and search)
-  const fetchProductos = useCallback(async () => {
+  const fetchProductos = useCallback(async (signal?: AbortSignal) => {
     setLoading(true); setError(null);
     try {
       const pRes = await api.get('/productos', {
-        params: { page, limit: 20, search: debouncedSearch }
+        params: { page, limit: 20, search: debouncedSearch },
+        signal,
       });
 
       if (pRes.data.meta) {
@@ -71,6 +105,7 @@ export default function CatalogoPage() {
         setTotalCount(arr.length);
       }
     } catch (err: any) {
+      if (axios.isCancel(err) || err?.name === 'CanceledError' || err?.name === 'AbortError') return;
       setError(err?.response?.data?.message || 'Error al conectar con la API.');
     } finally {
       setLoading(false);
@@ -78,7 +113,9 @@ export default function CatalogoPage() {
   }, [page, debouncedSearch]);
 
   useEffect(() => {
-    fetchProductos();
+    const controller = new AbortController();
+    fetchProductos(controller.signal);
+    return () => controller.abort();
   }, [fetchProductos]);
 
   function openCrearProducto() {
@@ -190,7 +227,7 @@ export default function CatalogoPage() {
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                             {p.imagenes && p.imagenes.length > 0 ? (
-                              <img src={`http://localhost:3001${p.imagenes[0].url}`} alt={p.nombre} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }} />
+                              <img src={getApiAssetUrl(p.imagenes[0].url)} alt={p.nombre} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }} />
                             ) : (
                               <div style={{ width: '40px', height: '40px', background: '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
                                 <Package size={20} />
@@ -225,10 +262,10 @@ export default function CatalogoPage() {
                         <td><span className={`${styles.pill} ${p.activo ? styles.pillGreen : styles.pillRed}`}>{p.activo ? 'Activo' : 'Inactivo'}</span></td>
                         <td>
                           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                            <button className={styles.btnSecondary} style={{ padding: '0.5rem 0.8rem', gap: '0.4rem', fontSize: '0.85rem' }} title="Editar Producto" onClick={() => openEditarProducto(p)}>
+                            <button className={styles.btnSecondary} style={{ padding: '0.5rem 0.8rem', gap: '0.4rem', fontSize: '0.85rem' }} title="Editar Producto" aria-label={`Editar producto ${p.nombre}`} onClick={() => openEditarProducto(p)}>
                               <Pencil size={15} /> Editar
                             </button>
-                            <button className={styles.btnSecondary} style={{ padding: '0.5rem' }} title={p.activo ? 'Desactivar' : 'Activar'} onClick={() => handleToggleActivo(p.id, p.activo)}>
+                            <button className={styles.btnSecondary} style={{ padding: '0.5rem' }} title={p.activo ? 'Desactivar' : 'Activar'} aria-label={p.activo ? `Desactivar producto ${p.nombre}` : `Activar producto ${p.nombre}`} onClick={() => handleToggleActivo(p.id, p.activo)}>
                               {p.activo ? <ToggleRight size={18} color="var(--color-green)" /> : <ToggleLeft size={18} />}
                             </button>
                           </div>
@@ -242,9 +279,9 @@ export default function CatalogoPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderTop: '1px solid #e2e8f0', color: '#64748b', fontSize: '0.9rem' }}>
                   <span>Mostrando {productos.length} de {totalCount} resultados</span>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <button className={styles.btnSecondary} disabled={page === 1} onClick={() => setPage(p => p - 1)} style={{ padding: '0.4rem' }}><ChevronLeft size={16} /></button>
+                    <button className={styles.btnSecondary} disabled={page === 1} onClick={() => goToPage(page - 1)} style={{ padding: '0.4rem' }}><ChevronLeft size={16} /></button>
                     <span>Página {page} de {totalPages}</span>
-                    <button className={styles.btnSecondary} disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} style={{ padding: '0.4rem' }}><ChevronRight size={16} /></button>
+                    <button className={styles.btnSecondary} disabled={page >= totalPages} onClick={() => goToPage(page + 1)} style={{ padding: '0.4rem' }}><ChevronRight size={16} /></button>
                   </div>
                 </div>
               </>
@@ -255,5 +292,13 @@ export default function CatalogoPage() {
         <MarcasPanel />
       )}
     </div>
+  );
+}
+
+export default function CatalogoPage() {
+  return (
+    <Suspense fallback={<div className={styles.loadingCenter}><Loader2 className={styles.spin} size={32} color="#64748b" /></div>}>
+      <CatalogoContent />
+    </Suspense>
   );
 }

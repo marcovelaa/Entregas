@@ -24,6 +24,9 @@
 .tabActive { background: #fff; color: var(--color-blue); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 .tabActive .tabBadge { background: #e0f2fe; color: #0369a1; }
 .searchWrapper { position: relative; display: flex; align-items: center; width: 300px; }
+@media (max-width: 768px) {
+  .searchWrapper { width: 100%; }
+}
 .searchIcon { position: absolute; left: 0.8rem; color: #64748b; pointer-events: none; }
 .searchInput { width: 100%; padding: 0.6rem 1rem 0.6rem 2.4rem; border: 1px solid #cbd5e1; background-color: #ffffff; border-radius: 8px; font-family: var(--font-body); font-size: 0.95rem; transition: all 0.2s; color: var(--text-main); }
 .searchInput:focus { border-color: #64748b; box-shadow: none; outline: none; }

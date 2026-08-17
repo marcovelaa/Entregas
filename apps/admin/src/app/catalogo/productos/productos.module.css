@@ -113,6 +113,11 @@
   grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
 }
+@media (max-width: 768px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
 .formGridFull {
   grid-column: 1 / -1;
 }

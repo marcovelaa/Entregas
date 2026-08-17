@@ -52,8 +52,9 @@ export default function InfoGeneralSection({ productPayload, setProductPayload, 
   return (
     <div className={styles.formGrid}>
       <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
-        <label className={styles.formLabel}>Categoría / Tipo de Producto *</label>
+        <label className={styles.formLabel} htmlFor="producto-categoria">Categoría / Tipo de Producto *</label>
         <select
+          id="producto-categoria"
           required
           className={styles.formSelect}
           value={productPayload.categoria_id || ''}
@@ -67,8 +68,9 @@ export default function InfoGeneralSection({ productPayload, setProductPayload, 
       </div>
 
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>Nombre del Producto *</label>
+        <label className={styles.formLabel} htmlFor="producto-nombre">Nombre del Producto *</label>
         <input
+          id="producto-nombre"
           required
           className={styles.formInput}
           placeholder="Ej. Bolígrafo Faber Castell Azul o Cuaderno Top 100H"
@@ -77,8 +79,9 @@ export default function InfoGeneralSection({ productPayload, setProductPayload, 
         />
       </div>
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>SKU</label>
+        <label className={styles.formLabel} htmlFor="producto-sku">SKU</label>
         <input
+          id="producto-sku"
           className={styles.formInput}
           placeholder="Auto-generado si se deja vacío"
           value={productPayload.sku || ''}
@@ -87,9 +90,9 @@ export default function InfoGeneralSection({ productPayload, setProductPayload, 
         <span className={styles.formHint}>Identificador único del producto</span>
       </div>
       <div className={styles.formGroup}>
-        <label className={styles.formLabel} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <label className={styles.formLabel} htmlFor="producto-marca" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>Marca / Fabricante</span>
-          <button 
+          <button
             type="button"
             onClick={() => setIsAddingMarca(true)}
             style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 600 }}
@@ -99,6 +102,7 @@ export default function InfoGeneralSection({ productPayload, setProductPayload, 
         </label>
 
         <select
+          id="producto-marca"
           className={styles.formSelect}
           value={productPayload.marca_id || ''}
           onChange={e => setProductPayload({ ...productPayload, marca_id: e.target.value })}
@@ -110,8 +114,9 @@ export default function InfoGeneralSection({ productPayload, setProductPayload, 
         </select>
       </div>
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>Precio Base (Bs.) *</label>
+        <label className={styles.formLabel} htmlFor="producto-precio-base">Precio Base (Bs.) *</label>
         <input
+          id="producto-precio-base"
           required
           type="number"
           step="0.01"
@@ -123,8 +128,9 @@ export default function InfoGeneralSection({ productPayload, setProductPayload, 
         />
       </div>
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>Precio Promocional (Bs.)</label>
+        <label className={styles.formLabel} htmlFor="producto-precio-promocional">Precio Promocional (Bs.)</label>
         <input
+          id="producto-precio-promocional"
           type="number"
           step="0.01"
           min="0"
@@ -140,16 +146,16 @@ export default function InfoGeneralSection({ productPayload, setProductPayload, 
         <form onSubmit={handleAddMarca} className={styles.slideForm}>
           <div className={styles.formSection}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Nombre *</label>
-              <input required autoFocus className={styles.formInput} value={marcaForm.nombre} onChange={e => setMarcaForm(f => ({ ...f, nombre: e.target.value, slug: slugify(e.target.value) }))} />
+              <label className={styles.formLabel} htmlFor="info-general-marca-nombre">Nombre *</label>
+              <input id="info-general-marca-nombre" required autoFocus className={styles.formInput} value={marcaForm.nombre} onChange={e => setMarcaForm(f => ({ ...f, nombre: e.target.value, slug: slugify(e.target.value) }))} />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Slug (URL friendly)</label>
-              <input className={styles.formInput} value={marcaForm.slug} onChange={e => setMarcaForm(f => ({ ...f, slug: e.target.value }))} />
+              <label className={styles.formLabel} htmlFor="info-general-marca-slug">Slug (URL friendly)</label>
+              <input id="info-general-marca-slug" className={styles.formInput} value={marcaForm.slug} onChange={e => setMarcaForm(f => ({ ...f, slug: e.target.value }))} />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Descripción</label>
-              <textarea className={styles.formTextarea} value={marcaForm.descripcion} onChange={e => setMarcaForm(f => ({ ...f, descripcion: e.target.value }))} rows={3} />
+              <label className={styles.formLabel} htmlFor="info-general-marca-descripcion">Descripción</label>
+              <textarea id="info-general-marca-descripcion" className={styles.formTextarea} value={marcaForm.descripcion} onChange={e => setMarcaForm(f => ({ ...f, descripcion: e.target.value }))} rows={3} />
             </div>
           </div>
           <div className={styles.formFooter} style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
