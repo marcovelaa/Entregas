@@ -60,8 +60,12 @@ export interface PedidoHistorialData {
 export interface PedidoData {
   id: string;
   numero_pedido: string;
-  cliente_id?: string | null;
-  reserva_id?: string | null;
+  cliente_id: string | null;
+  reserva_id: string | null;
+  preparador_id?: string | null;
+  repartidor_id?: string | null;
+  nombre_preparador?: string | null;
+  nombre_repartidor?: string | null;
   estado: EstadoPedido;
   direccion_envio_snapshot: DireccionEnvioSnapshot;
   costo_envio: number;
@@ -97,6 +101,7 @@ export interface IPedidoRepository {
       cambiadoPorUsuarioId?: string | null;
       cambiadoPorClienteId?: string | null;
       motivo?: string | null;
+      costoEnvio?: number;
     },
   ): Promise<PedidoData>;
 }

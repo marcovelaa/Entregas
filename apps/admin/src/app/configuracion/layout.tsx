@@ -9,7 +9,7 @@ export default function ConfiguracionLayout({ children }: { children: React.Reac
   const pathname = usePathname();
 
   const tabs = [
-    { name: 'General', href: '/configuracion/general' },
+    { name: 'Datos del Negocio', href: '/configuracion/negocio' },
     { name: 'Usuarios', href: '/configuracion/usuarios' },
     { name: 'Roles y Permisos', href: '/configuracion/roles' },
   ];

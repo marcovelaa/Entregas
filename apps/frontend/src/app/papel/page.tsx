@@ -2,7 +2,6 @@
 import React from 'react';
 import styles from './papel.module.css';
 import { MaterialCard } from '@/components/molecules/MaterialCard/MaterialCard';
-import PageHeader from '@/components/organisms/PageHeader/PageHeader';
 
 export default function PapelPage() {
   const [products, setProducts] = React.useState<any[]>([]);
@@ -22,11 +21,6 @@ export default function PapelPage() {
 
   return (
     <main className={styles.main}>
-      <PageHeader 
-        title="Papel"
-        subtitle="Todo tipo de papel para impresión, escritura y manualidades. Desde resmas hasta cartulinas especiales."
-      />
-
       <div className={styles.container}>
         <div className={styles.layout}>
           {/* SIDEBAR DE FILTROS */}

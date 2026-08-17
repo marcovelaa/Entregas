@@ -27,6 +27,7 @@ export class CambiarEstadoPedidoUseCase {
     motivo?: string | null;
     usuarioId?: string | null;
     clienteId?: string | null;
+    costo_envio?: number;
   }): Promise<PedidoData> {
     const pedido = await this.pedidoRepo.obtenerPorId(params.pedidoId);
     if (!pedido) {
@@ -51,6 +52,7 @@ export class CambiarEstadoPedidoUseCase {
       cambiadoPorUsuarioId: params.usuarioId || null,
       cambiadoPorClienteId: params.clienteId || null,
       motivo: params.motivo || null,
+      costoEnvio: params.costo_envio,
     });
   }
 }

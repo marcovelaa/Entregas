@@ -339,11 +339,20 @@ export class PrismaVentaRepository implements IVentaRepository {
         await this.inventoryReservations.releaseExpiredInTransaction(tx);
       }
 
+      const lastVenta = await tx.venta.findFirst({
+        orderBy: { id: 'desc' },
+        select: { id: true }
+      });
+      const nextId = lastVenta ? Number(lastVenta.id) + 1 : 1;
+      const numeroTicket = `TK-${String(nextId).padStart(6, '0')}`;
+
       // 1. Create Venta
       const venta = await tx.venta.create({
         data: {
+          numero_ticket: numeroTicket,
           cliente_id: data.cliente_id ? BigInt(data.cliente_id) : null,
           usuario_id: BigInt(data.usuario_id),
+          caja_id: data.caja_id ? BigInt(data.caja_id) : null,
           metodo_pago: data.metodo_pago,
           monto_pagado: data.monto_pagado,
           total,
@@ -369,11 +378,27 @@ export class PrismaVentaRepository implements IVentaRepository {
         },
         include: {
           cliente: true,
+          usuario: { select: { nombres: true, apellidos: true } },
           detalles: {
             include: { producto: true, variante: true, empaque: true },
           },
         },
       });
+
+      // Si se especificó una caja, registramos el movimiento
+      if (data.caja_id && data.metodo_pago === 'EFECTIVO') {
+        await tx.movimientoCaja.create({
+          data: {
+            caja_id: BigInt(data.caja_id),
+            usuario_id: BigInt(data.usuario_id),
+            tipo_movimiento: 'INGRESO',
+            concepto: `Venta POS #${numeroTicket}`,
+            monto: total, // El monto efectivo que ingresa a la caja (no incluye vuelto)
+            metodo_pago: 'EFECTIVO',
+            referencia_id: venta.id.toString(),
+          }
+        });
+      }
 
       // A reservation is consumed only by the exact stock targets it originally
       // locked. Its state transition and the later stock decrement share this
@@ -518,6 +543,9 @@ export class PrismaVentaRepository implements IVentaRepository {
         id: venta.id.toString(),
         cliente_id: venta.cliente_id?.toString(),
         usuario_id: venta.usuario_id.toString(),
+        nombre_cajero: (venta as any).usuario 
+          ? `${(venta as any).usuario.nombres} ${(venta as any).usuario.apellidos || ''}`.trim() 
+          : venta.usuario_id.toString(),
         cliente: venta.cliente
           ? {
               ...venta.cliente,
@@ -567,6 +595,7 @@ export class PrismaVentaRepository implements IVentaRepository {
         orderBy: { creado_en: 'desc' },
         include: {
           cliente: true,
+          usuario: { select: { nombres: true, apellidos: true } },
           detalles: {
             include: { producto: true },
           },
@@ -581,6 +610,7 @@ export class PrismaVentaRepository implements IVentaRepository {
           v: Prisma.VentaGetPayload<{
             include: {
               cliente: true;
+              usuario: { select: { nombres: true, apellidos: true } };
               detalles: { include: { producto: true } };
             };
           }>,
@@ -589,6 +619,9 @@ export class PrismaVentaRepository implements IVentaRepository {
           id: v.id.toString(),
           cliente_id: v.cliente_id?.toString(),
           usuario_id: v.usuario_id.toString(),
+          nombre_cajero: v.usuario 
+            ? `${v.usuario.nombres} ${v.usuario.apellidos || ''}`.trim() 
+            : v.usuario_id.toString(),
           cliente: v.cliente
             ? {
                 ...v.cliente,
@@ -695,6 +728,20 @@ export class PrismaVentaRepository implements IVentaRepository {
         }
       }
 
+      if (prepared.venta.caja_id && prepared.venta.metodo_pago === 'EFECTIVO') {
+        await tx.movimientoCaja.create({
+          data: {
+            caja_id: prepared.venta.caja_id,
+            usuario_id: BigInt(usuario_id),
+            tipo_movimiento: 'EGRESO',
+            concepto: `Anulación de Venta #${prepared.venta.numero_ticket}`,
+            monto: prepared.venta.total,
+            metodo_pago: 'EFECTIVO',
+            referencia_id: prepared.venta.id.toString(),
+          }
+        });
+      }
+
       return {
         success: true,
         message: 'Venta anulada y stock retornado correctamente',
@@ -774,6 +821,20 @@ export class PrismaVentaRepository implements IVentaRepository {
             },
           });
         }
+      }
+
+      if (prepared.venta.caja_id && prepared.venta.metodo_pago === 'EFECTIVO') {
+        await tx.movimientoCaja.create({
+          data: {
+            caja_id: prepared.venta.caja_id,
+            usuario_id: BigInt(usuario_id),
+            tipo_movimiento: 'INGRESO',
+            concepto: `Reversión Anulación #${prepared.venta.numero_ticket}`,
+            monto: prepared.venta.total,
+            metodo_pago: 'EFECTIVO',
+            referencia_id: prepared.venta.id.toString(),
+          }
+        });
       }
 
       return {

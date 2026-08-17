@@ -124,6 +124,9 @@ export class PrismaPedidoRepository implements IPedidoRepository {
         take: params.limit,
         orderBy: { creado_en: 'desc' },
         include: {
+          cliente: true,
+          preparador: { select: { nombres: true, apellidos: true } },
+          repartidor: { select: { nombres: true, apellidos: true } },
           detalles: true,
           historialEstado: {
             orderBy: { creado_en: 'asc' },
@@ -146,32 +149,60 @@ export class PrismaPedidoRepository implements IPedidoRepository {
       cambiadoPorUsuarioId?: string | null;
       cambiadoPorClienteId?: string | null;
       motivo?: string | null;
+      costoEnvio?: number;
     },
   ): Promise<PedidoData> {
-    const pedido = await this.prisma.pedido.update({
-      where: { id: BigInt(pedidoId) },
-      data: {
-        estado: nuevoEstado,
-        historialEstado: {
-          create: {
-            estado_anterior: historial.estadoAnterior,
-            estado_nuevo: nuevoEstado,
-            cambiado_por_usuario_id: historial.cambiadoPorUsuarioId
+    const pedido = await this.prisma.$transaction(async (tx) => {
+      const p = await tx.pedido.update({
+        where: { id: BigInt(pedidoId) },
+        data: {
+          estado: nuevoEstado,
+          costo_envio: historial.costoEnvio !== undefined ? historial.costoEnvio : undefined,
+          preparador_id:
+            nuevoEstado === EstadoPedido.EN_PREPARACION && historial.cambiadoPorUsuarioId
               ? BigInt(historial.cambiadoPorUsuarioId)
-              : null,
-            cambiado_por_cliente_id: historial.cambiadoPorClienteId
-              ? BigInt(historial.cambiadoPorClienteId)
-              : null,
-            motivo: historial.motivo || null,
+              : undefined,
+          repartidor_id:
+            nuevoEstado === EstadoPedido.ENVIADO && historial.cambiadoPorUsuarioId
+              ? BigInt(historial.cambiadoPorUsuarioId)
+              : undefined,
+          historialEstado: {
+            create: {
+              estado_anterior: historial.estadoAnterior,
+              estado_nuevo: nuevoEstado,
+              cambiado_por_usuario_id: historial.cambiadoPorUsuarioId
+                ? BigInt(historial.cambiadoPorUsuarioId)
+                : null,
+              cambiado_por_cliente_id: historial.cambiadoPorClienteId
+                ? BigInt(historial.cambiadoPorClienteId)
+                : null,
+              motivo: historial.motivo || null,
+            },
           },
         },
-      },
-      include: {
-        detalles: true,
-        historialEstado: {
-          orderBy: { creado_en: 'asc' },
+        include: {
+          cliente: true,
+          preparador: { select: { nombres: true, apellidos: true } },
+          repartidor: { select: { nombres: true, apellidos: true } },
+          detalles: true,
+          historialEstado: {
+            orderBy: { creado_en: 'asc' },
+          },
         },
-      },
+      });
+
+      if (historial.costoEnvio !== undefined && historial.costoEnvio > 0 && historial.cambiadoPorUsuarioId) {
+        await tx.gastoOperativo.create({
+          data: {
+            usuario_id: BigInt(historial.cambiadoPorUsuarioId),
+            categoria: 'LOGISTICA',
+            descripcion: `Delivery subsidiado (Pedido #${p.numero_pedido})`,
+            monto: historial.costoEnvio,
+          },
+        });
+      }
+
+      return p;
     });
 
     return this.serialize(pedido);
@@ -183,6 +214,10 @@ export class PrismaPedidoRepository implements IPedidoRepository {
       numero_pedido: pedido.numero_pedido,
       cliente_id: pedido.cliente_id ? pedido.cliente_id.toString() : null,
       reserva_id: pedido.reserva_id ? pedido.reserva_id.toString() : null,
+      preparador_id: pedido.preparador_id ? pedido.preparador_id.toString() : null,
+      repartidor_id: pedido.repartidor_id ? pedido.repartidor_id.toString() : null,
+      nombre_preparador: pedido.preparador ? `${pedido.preparador.nombres} ${pedido.preparador.apellidos || ''}`.trim() : null,
+      nombre_repartidor: pedido.repartidor ? `${pedido.repartidor.nombres} ${pedido.repartidor.apellidos || ''}`.trim() : null,
       estado: pedido.estado as EstadoPedido,
       direccion_envio_snapshot: pedido.direccion_envio_snapshot as any,
       costo_envio: Number(pedido.costo_envio),

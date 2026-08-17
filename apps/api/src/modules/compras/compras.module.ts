@@ -6,6 +6,7 @@ import { PrismaCompraRepository } from './infrastructure/repositories/prisma-com
 import { RegistrarCompraUseCase } from './application/use-cases/registrar-compra.use-case';
 import { RecibirCompraUseCase } from './application/use-cases/recibir-compra.use-case';
 import { ActualizarEstadoCompraUseCase } from './application/use-cases/actualizar-estado-compra.use-case';
+import { AnularCompraUseCase } from './application/use-cases/anular-compra.use-case';
 import { ListarComprasUseCase } from './application/use-cases/listar-compras.use-case';
 import { ObtenerCompraUseCase } from './application/use-cases/obtener-compra.use-case';
 import { InventarioModule } from '../inventario/inventario.module';
@@ -23,6 +24,7 @@ import { BitacoraModule } from '../bitacora/bitacora.module';
     RegistrarCompraUseCase,
     RecibirCompraUseCase,
     ActualizarEstadoCompraUseCase,
+    AnularCompraUseCase,
     ListarComprasUseCase,
     ObtenerCompraUseCase,
   ],
@@ -31,6 +33,7 @@ import { BitacoraModule } from '../bitacora/bitacora.module';
     RegistrarCompraUseCase,
     RecibirCompraUseCase,
     ActualizarEstadoCompraUseCase,
+    AnularCompraUseCase,
     ListarComprasUseCase,
     ObtenerCompraUseCase,
   ],

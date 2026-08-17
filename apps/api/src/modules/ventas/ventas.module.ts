@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 import { DescuentosModule } from '../descuentos/descuentos.module';
+import { CajaModule } from '../caja/caja.module';
 import { VentasController } from './infrastructure/controllers/ventas.controller';
 import { VENTA_REPOSITORY } from './domain/repositories/venta.repository.interface';
 import { PrismaVentaRepository } from './infrastructure/repositories/prisma-venta.repository';
@@ -8,11 +9,12 @@ import { RegistrarVentaUseCase } from './application/use-cases/registrar-venta.u
 import { ListarVentasUseCase } from './application/use-cases/listar-ventas.use-case';
 import { AnularVentaUseCase } from './application/use-cases/anular-venta.use-case';
 import { RevertirAnulacionVentaUseCase } from './application/use-cases/revertir-anulacion-venta.use-case';
+import { CAJA_REPOSITORY } from '../caja/domain/repositories/caja.repository.interface';
 import { InventoryReservationsService } from './application/services/inventory-reservations.service';
 import { InventoryReservationExpirationJob } from './application/services/inventory-reservation-expiration.job';
 
 @Module({
-  imports: [PrismaModule, DescuentosModule],
+  imports: [PrismaModule, DescuentosModule, CajaModule],
   controllers: [VentasController],
   providers: [
     InventoryReservationsService,
@@ -23,8 +25,8 @@ import { InventoryReservationExpirationJob } from './application/services/invent
     },
     {
       provide: RegistrarVentaUseCase,
-      useFactory: (repo) => new RegistrarVentaUseCase(repo),
-      inject: [VENTA_REPOSITORY],
+      useFactory: (repo, cajaRepo) => new RegistrarVentaUseCase(repo, cajaRepo),
+      inject: [VENTA_REPOSITORY, CAJA_REPOSITORY],
     },
     {
       provide: ListarVentasUseCase,

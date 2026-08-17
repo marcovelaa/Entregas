@@ -1,9 +1,9 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Loader2, Plus, Pencil, ToggleLeft, ToggleRight, Building2, Phone, MapPin, Mail, Truck } from 'lucide-react';
+import { Loader2, Plus, Pencil, ToggleLeft, ToggleRight, Building2, Phone, MapPin, Mail, Search } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { Modal } from '../../components/molecules/Modal/Modal';
-import styles from '../catalogo/page.module.css'; // Reusing catalog styles for consistency
+import styles from './page.module.css';
 
 interface Proveedor {
   id: string;
@@ -18,6 +18,7 @@ interface Proveedor {
 export default function ProveedoresPage() {
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -94,19 +95,35 @@ export default function ProveedoresPage() {
     }
   }
 
+  const filteredProveedores = proveedores.filter(p => {
+    const term = searchTerm.toLowerCase();
+    return (
+      p.nombre.toLowerCase().includes(term) ||
+      (p.contacto && p.contacto.toLowerCase().includes(term)) ||
+      (p.telefono && p.telefono.includes(term))
+    );
+  });
+
   return (
-    <div className={styles.container}>
+    <div className={styles.pageContainer}>
       <header className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            Proveedores
-          </h1>
-          <p className={styles.pageSubtitle}>Directorio de proveedores y contactos</p>
+          <h1 className={styles.pageTitle}>Proveedores</h1>
         </div>
       </header>
 
-      <main className={styles.main}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+      <main>
+        <div className={styles.controlsWrapper}>
+          <div style={{ position: 'relative', width: '380px' }}>
+            <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input 
+              type="text" 
+              placeholder="Buscar por nombre, contacto o teléfono..." 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className={styles.searchInput}
+            />
+          </div>
           <button className={styles.btnPrimary} onClick={openNew}>
             <Plus size={16} strokeWidth={1.5} /> Nuevo Proveedor
           </button>
@@ -114,57 +131,78 @@ export default function ProveedoresPage() {
         <div className={styles.card}>
           <div className={styles.tableWrapper}>
           {loading ? (
-            <div className={styles.loadingCenter}><Loader2 className={styles.spin} size={24} /></div>
+            <div style={{ padding: '4rem', textAlign: 'center' }}><Loader2 className={styles.spin} size={40} style={{ display: 'inline', color: '#3b82f6' }} /></div>
           ) : (
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th>Proveedor</th>
                   <th>Contacto</th>
-                  <th>Ubicación / Email</th>
+                  <th>Teléfono</th>
+                  <th>Email</th>
+                  <th>Ubicación</th>
                   <th>Estado</th>
                   <th style={{ textAlign: 'right' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {proveedores.length === 0 ? (
+                {filteredProveedores.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                      No hay proveedores registrados aún.
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                      No se encontraron proveedores.
                     </td>
                   </tr>
                 ) : (
-                  proveedores.map(p => (
+                  filteredProveedores.map(p => (
                     <tr key={p.id} style={{ opacity: p.activo ? 1 : 0.6 }}>
                       <td>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <Building2 size={16} color="var(--text-muted)" /> {p.nombre}
+                        <div style={{ fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Building2 size={16} color="#64748b" /> {p.nombre}
                         </div>
                       </td>
                       <td>
-                        {p.contacto && <div style={{ fontSize: '0.9rem' }}>{p.contacto}</div>}
-                        {p.telefono && <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}><Phone size={12}/> {p.telefono}</div>}
-                        {!p.contacto && !p.telefono && <span style={{ color: 'var(--text-muted)' }}>-</span>}
+                        {p.contacto ? <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>{p.contacto}</span> : <span style={{ color: '#cbd5e1' }}>-</span>}
                       </td>
                       <td>
-                        {p.email && <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}><Mail size={12}/> {p.email}</div>}
-                        {p.direccion && <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}><MapPin size={12}/> {p.direccion}</div>}
-                        {!p.email && !p.direccion && <span style={{ color: 'var(--text-muted)' }}>-</span>}
-                      </td>
-                      <td>
-                        {p.activo ? (
-                          <span className={styles.statusActive}>Activo</span>
+                        {p.telefono ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#475569' }}>
+                            <Phone size={14}/> {p.telefono}
+                          </div>
                         ) : (
-                          <span className={styles.statusInactive}>Inactivo</span>
+                          <span style={{ color: '#cbd5e1' }}>-</span>
                         )}
+                      </td>
+                      <td>
+                        {p.email ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', color: '#475569' }}>
+                            <Mail size={14}/> {p.email}
+                          </div>
+                        ) : (
+                          <span style={{ color: '#cbd5e1' }}>-</span>
+                        )}
+                      </td>
+                      <td>
+                        {p.direccion ? (
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', fontSize: '0.85rem', color: '#475569' }}>
+                            <MapPin size={14} style={{ marginTop: '0.1rem', flexShrink: 0 }}/> 
+                            <span style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.direccion}</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: '#cbd5e1' }}>-</span>
+                        )}
+                      </td>
+                      <td>
+                        <span style={{ color: p.activo ? '#10b981' : '#ef4444', fontWeight: 600, fontSize: '13px' }}>
+                          {p.activo ? 'Activo' : 'Inactivo'}
+                        </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          <button className={styles.btnSecondary} style={{ padding: '0.4rem' }} title="Editar" onClick={() => openEdit(p)}>
+                          <button className={styles.btnSecondary} title="Editar" onClick={() => openEdit(p)}>
                             <Pencil size={16} />
                           </button>
-                          <button className={styles.btnSecondary} style={{ padding: '0.4rem' }} title="Activar/Desactivar" onClick={() => handleToggleActivo(p.id, p.activo)}>
-                            {p.activo ? <ToggleRight size={16} color="var(--color-green)" /> : <ToggleLeft size={16} />}
+                          <button className={styles.btnSecondary} title={p.activo ? "Desactivar" : "Activar"} onClick={() => handleToggleActivo(p.id, p.activo)}>
+                            {p.activo ? <ToggleRight size={16} color="#10b981" /> : <ToggleLeft size={16} />}
                           </button>
                         </div>
                       </td>

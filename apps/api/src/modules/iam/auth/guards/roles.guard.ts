@@ -22,7 +22,7 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user: AuthenticatedUser | undefined = request.user;
 
-    if (!user || !user.permisos?.includes(requiredPermiso)) {
+    if (!user || (!user.permisos?.includes(requiredPermiso) && !user.permisos?.includes('*'))) {
       throw new ForbiddenException(`Requiere el permiso "${requiredPermiso}"`);
     }
 

@@ -86,7 +86,7 @@ export class PrismaCompraRepository implements ICompraRepository {
     const compra = await this.prisma.compra.findUnique({
       where: { id: BigInt(id) },
       include: {
-        proveedor: { select: { nombre: true } },
+        proveedor: { select: { nombre: true, contacto: true, telefono: true } },
         usuario: { select: { nombres: true, apellidos: true } },
         detalles: {
           include: {

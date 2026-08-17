@@ -21,9 +21,7 @@ export function Logo({ isCollapsed = false }: LogoProps) {
       <div className={styles.iconWrapper}>
         <ColoredBooksIcon size={32} />
       </div>
-      {!isCollapsed && (
-        <span className={styles.brandText}>ENTREGAS</span>
-      )}
+      <span className={styles.brandText}>ENTREGAS</span>
     </Link>
   );
 }

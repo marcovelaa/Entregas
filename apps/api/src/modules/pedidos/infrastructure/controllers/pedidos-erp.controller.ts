@@ -53,6 +53,7 @@ export class PedidosErpController {
       pedidoId: id,
       nuevoEstado: dto.nuevo_estado,
       motivo: dto.motivo,
+      costo_envio: dto.costo_envio,
       usuarioId: usuarioId ? usuarioId.toString() : null,
     });
   }

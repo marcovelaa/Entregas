@@ -24,6 +24,9 @@ import { PagosModule } from './modules/pagos/pagos.module';
 import { DevolucionesModule } from './modules/devoluciones/devoluciones.module';
 import { BitacoraModule } from './modules/bitacora/bitacora.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ReportesModule } from './modules/reportes/reportes.module';
+import { GastosModule } from './modules/gastos/gastos.module';
+import { CajaModule } from './modules/caja/caja.module';
 import { join } from 'path';
 
 @Module({
@@ -50,6 +53,9 @@ import { join } from 'path';
     PagosModule,
     DevolucionesModule,
     BitacoraModule,
+    ReportesModule,
+    GastosModule,
+    CajaModule,
   ],
   controllers: [AppController],
   providers: [

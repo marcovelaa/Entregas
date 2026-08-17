@@ -95,8 +95,18 @@ export class RegistrarCompraUseCase {
 
             await tx.producto.update({
               where: { id: d.producto_id },
-              data: { costo_promedio: costoPromedioNuevo },
+              data: { 
+                costo_promedio: costoPromedioNuevo,
+                ...(d.precio_venta && d.precio_venta > 0 && !d.variante_id ? { precio_base: d.precio_venta } : {})
+              },
             });
+
+            if (d.variante_id && d.precio_venta && d.precio_venta > 0) {
+              await tx.variante.update({
+                where: { id: d.variante_id },
+                data: { precio_unitario: d.precio_venta },
+              });
+            }
 
             await tx.inventario.update({
               where: { id: inv.id },

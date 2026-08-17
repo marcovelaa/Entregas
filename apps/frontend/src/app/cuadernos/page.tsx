@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import styles from './materialEscolar.module.css';
 import { MaterialCard } from '@/components/molecules/MaterialCard/MaterialCard';
-import PageHeader from '@/components/organisms/PageHeader/PageHeader';
 
 // Mock Data
 const categories = [
@@ -53,11 +52,6 @@ export default function CuadernosPage() {
 
   return (
     <div className={styles.pageWrapper}>
-      <PageHeader 
-        title="Cuadernos"
-        subtitle="Encontrá los mejores cuadernos para este ciclo lectivo: anillados, cosidos, universitarios y más."
-      />
-
       <div className={styles.layoutContainer}>
         {/* Sidebar Filters */}
         <aside className={styles.sidebar}>

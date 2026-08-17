@@ -1,8 +1,14 @@
-import { ICompraRepository } from '../../domain/repositories/compra.repository.interface';
+import { Injectable, Inject } from '@nestjs/common';
+import type { ICompraRepository } from '../../domain/repositories/compra.repository.interface';
+import { COMPRA_REPOSITORY } from '../../domain/repositories/compra.repository.interface';
 import { ListarComprasDto } from '../dtos/compra.dto';
 
+@Injectable()
 export class ListarComprasUseCase {
-  constructor(private readonly compraRepo: ICompraRepository) {}
+  constructor(
+    @Inject(COMPRA_REPOSITORY)
+    private readonly compraRepo: ICompraRepository
+  ) {}
 
   async execute(dto: ListarComprasDto) {
     const page = dto.page || 1;

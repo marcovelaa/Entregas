@@ -21,4 +21,5 @@ export interface IInventarioRepository {
     },
     tx?: any,
   ): Promise<any>;
+  listarAlertas(): Promise<any[]>;
 }

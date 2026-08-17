@@ -16,7 +16,7 @@
 }
 
 .svgIcon {
-  transform: translateY(-2px);
+  /* removed transform for true vertical centering */
 }
 
 .brandText {
@@ -26,5 +26,14 @@
   font-weight: 800;
   letter-spacing: 2px;
   line-height: 1;
-  transform: translateY(5px);
+  white-space: nowrap;
+  opacity: 1;
+  max-width: 200px;
+  transition: max-width 0.3s ease, opacity 0.3s ease;
+  display: inline-block;
+}
+
+.collapsedLogo .brandText {
+  opacity: 0;
+  max-width: 0;
 }

@@ -12,6 +12,7 @@ export type VentaDetalleData = {
 export type VentaCreateData = {
   cliente_id?: string;
   usuario_id: string;
+  caja_id?: string;
   metodo_pago: string;
   monto_pagado: number;
   descuento_id?: string;

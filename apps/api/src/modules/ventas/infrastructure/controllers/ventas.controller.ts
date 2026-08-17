@@ -60,9 +60,10 @@ export class VentasController {
     @Body() dto: RegistrarVentaDto,
     @CurrentUser() usuario: AuthenticatedUser | undefined,
   ) {
+    const sellerId = usuario ? usuario.id : '1';
     return this.registrarVentaUseCase.execute(
       dto,
-      requireAuthenticatedUser(usuario).id,
+      sellerId,
     );
   }
 

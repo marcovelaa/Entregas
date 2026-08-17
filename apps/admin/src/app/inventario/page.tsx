@@ -4,11 +4,16 @@ import { Loader2, Package, ArrowRightLeft } from 'lucide-react';
 import { api } from '../../lib/axios';
 import styles from './page.module.css';
 
+import { StockItem, MovimientoItem } from './InventarioTypes';
+import { AjusteManualModal } from './components/AjusteManualModal';
+
 export default function InventarioPage() {
   const [tab, setTab] = useState<'stock' | 'movimientos'>('stock');
-  const [stock, setStock] = useState<any[]>([]);
-  const [movimientos, setMovimientos] = useState<any[]>([]);
+  const [stock, setStock] = useState<StockItem[]>([]);
+  const [movimientos, setMovimientos] = useState<MovimientoItem[]>([]);
+  const [alertas, setAlertas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ajusteItem, setAjusteItem] = useState<StockItem | null>(null);
 
   // Filtro UX para el Kardex
   const [filtroKardex, setFiltroKardex] = useState<'TODOS' | 'ENTRADAS' | 'SALIDAS'>('TODOS');
@@ -21,8 +26,12 @@ export default function InventarioPage() {
     setLoading(true);
     try {
       if (tab === 'stock') {
-        const res = await api.get('/inventario/stock');
-        setStock(res.data.data || []);
+        const [resStock, resAlertas] = await Promise.all([
+          api.get('/inventario/stock'),
+          api.get('/inventario/alertas')
+        ]);
+        setStock(resStock.data.data || []);
+        setAlertas(resAlertas.data || []);
       } else {
         const res = await api.get('/inventario/movimientos');
         setMovimientos(res.data.data || []);
@@ -36,8 +45,8 @@ export default function InventarioPage() {
 
   const movimientosFiltrados = movimientos.filter(m => {
     if (filtroKardex === 'TODOS') return true;
-    if (filtroKardex === 'ENTRADAS') return m.tipo_movimiento.includes('INGRESO');
-    if (filtroKardex === 'SALIDAS') return !m.tipo_movimiento.includes('INGRESO');
+    if (filtroKardex === 'ENTRADAS') return m.tipo_movimiento === 'ENTRADA';
+    if (filtroKardex === 'SALIDAS') return m.tipo_movimiento === 'SALIDA';
     return true;
   });
 
@@ -46,7 +55,6 @@ export default function InventarioPage() {
       <header className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Inventario (Kardex)</h1>
-          <p className={styles.pageDescription}>Controla el stock en tiempo real y rastrea la historia de movimientos.</p>
         </div>
       </header>
 
@@ -107,11 +115,12 @@ export default function InventarioPage() {
                   <th>Estado</th>
                   <th>Cant. Disponible</th>
                   <th>Reservado</th>
+                  <th style={{ textAlign: 'right' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {stock.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>No hay inventario registrado.</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>No hay inventario registrado.</td></tr>
                 ) : stock.map(s => {
                   const minStock = s.stock_minimo || 5;
                   const isAgotado = s.cantidad_disponible === 0;
@@ -130,8 +139,7 @@ export default function InventarioPage() {
                         </span>
                       </td>
                       <td>
-                        <span style={{ color: '#334155', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isAgotado ? '#ef4444' : isBajoStock ? '#f59e0b' : '#10b981' }}></span>
+                        <span style={{ color: isAgotado ? '#ef4444' : isBajoStock ? '#f59e0b' : '#334155', fontWeight: 600, fontSize: '13px' }}>
                           {isAgotado ? 'Agotado' : isBajoStock ? 'Bajo stock' : 'Normal'}
                         </span>
                       </td>
@@ -139,6 +147,23 @@ export default function InventarioPage() {
                         {s.cantidad_disponible}
                       </td>
                       <td style={{ color: '#94a3b8', fontWeight: 500 }}>{s.reservado}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button 
+                          onClick={() => setAjusteItem(s)}
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '6px',
+                            padding: '0.3rem 0.6rem',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            color: '#0f172a',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Ajustar
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -160,7 +185,7 @@ export default function InventarioPage() {
                 {movimientosFiltrados.length === 0 ? (
                   <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>No hay movimientos para este filtro.</td></tr>
                 ) : movimientosFiltrados.map(m => {
-                  const isIngreso = m.tipo_movimiento.includes('INGRESO');
+                  const isIngreso = m.tipo_movimiento === 'ENTRADA';
                   return (
                     <tr key={m.id}>
                       <td style={{ color: '#64748b', fontSize: '0.9rem' }}>
@@ -171,8 +196,7 @@ export default function InventarioPage() {
                         {m.variante && <span style={{ color: '#64748b', fontWeight: 400, marginLeft: '0.4rem', fontSize: '0.8rem' }}>- {m.variante.nombre}</span>}
                       </td>
                       <td>
-                        <span style={{ color: '#334155', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isIngreso ? '#10b981' : '#ef4444' }}></span>
+                        <span style={{ color: isIngreso ? '#10b981' : '#ef4444', fontWeight: 600, fontSize: '13px' }}>
                           {m.tipo_movimiento.replace('_', ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
                         </span>
                       </td>
@@ -191,6 +215,17 @@ export default function InventarioPage() {
           )}
         </div>
       </div>
+      
+      {ajusteItem && (
+        <AjusteManualModal 
+          item={ajusteItem} 
+          onClose={() => setAjusteItem(null)} 
+          onSuccess={() => {
+            setAjusteItem(null);
+            fetchData();
+          }} 
+        />
+      )}
     </div>
   );
 }

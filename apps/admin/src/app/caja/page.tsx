@@ -1,8 +1,9 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote, CheckCircle2, QrCode, AlertTriangle, Tag, Package, Layers } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote, CheckCircle2, QrCode, AlertTriangle, Tag, Package, Layers, Edit2 } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { Modal } from '../../components/molecules/Modal/Modal';
+import { TicketImpresion } from '../../components/molecules/TicketImpresion/TicketImpresion';
 import styles from './page.module.css';
 
 export default function CajaPage() {
@@ -23,6 +24,8 @@ export default function CajaPage() {
   // Checkout Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<string>('');
+  const [isClientEditing, setIsClientEditing] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TARJETA' | 'QR'>('EFECTIVO');
   const [montoPagado, setMontoPagado] = useState<string>('');
   
@@ -32,6 +35,9 @@ export default function CajaPage() {
   const [aprobadorQuery, setAprobadorQuery] = useState('');
   const [aprobadorSeleccionado, setAprobadorSeleccionado] = useState<any>(null);
   const [motivoAjuste, setMotivoAjuste] = useState('');
+  
+  const [itemToAdjust, setItemToAdjust] = useState<any>(null);
+  const [nuevoPrecioValue, setNuevoPrecioValue] = useState<string>('');
   
   const [toastMessage, setToastMessage] = useState<{msg: string, type: 'error'|'success'} | null>(null);
   const showToast = (msg: string, type: 'error'|'success' = 'error') => {
@@ -214,15 +220,46 @@ export default function CajaPage() {
     }));
   };
 
-  const updatePrecio = (cartId: string, val: string) => {
-    if (val === '') {
-      setCarrito(carrito.map(item => item.cart_id === cartId ? { ...item, precio: '' } : item));
+  const abrirModalAjuste = (item: any) => {
+    setItemToAdjust(item);
+    setNuevoPrecioValue(String(item.precio));
+    setAprobadorSeleccionado(item.aprobador_id ? aprobadores.find(a => a.id === item.aprobador_id) : null);
+    setMotivoAjuste(item.motivo_ajuste || '');
+    setIsApprovalModalOpen(true);
+  };
+
+  const aplicarAjustePrecio = () => {
+    if (!itemToAdjust) return;
+    const num = parseFloat(nuevoPrecioValue);
+    if (isNaN(num) || num < 0) {
+      showToast('Ingrese un precio válido');
       return;
     }
 
-    const num = parseFloat(val);
-    if (isNaN(num) || num < 0) return;
-    setCarrito(carrito.map(item => item.cart_id === cartId ? { ...item, precio: num } : item));
+    const catalogPrice = Number(itemToAdjust.precio_catalogo ?? itemToAdjust.precio);
+    const requiresApproval = num < catalogPrice - 0.0001;
+
+    if (requiresApproval && (!aprobadorSeleccionado || !motivoAjuste.trim())) {
+      showToast('Seleccione un aprobador y brinde un motivo para rebajar el precio.', 'error');
+      return;
+    }
+
+    setCarrito(carrito.map(item => {
+      if (item.cart_id === itemToAdjust.cart_id) {
+        return { 
+          ...item, 
+          precio: num,
+          aprobador_id: requiresApproval ? aprobadorSeleccionado.id : undefined,
+          motivo_ajuste: requiresApproval ? motivoAjuste.trim() : undefined
+        };
+      }
+      return item;
+    }));
+
+    setIsApprovalModalOpen(false);
+    setItemToAdjust(null);
+    setAprobadorSeleccionado(null);
+    setMotivoAjuste('');
   };
 
   const updateCantidad = (cartId: string, delta: number) => {
@@ -256,14 +293,10 @@ export default function CajaPage() {
     if (carrito.length === 0) return showToast('El carrito está vacío');
     if (metodoPago === 'EFECTIVO' && pagado < totalNeto) return showToast('El monto pagado es insuficiente');
 
-    const tieneRebaja = carrito.some(c => Number(c.precio) < Number(c.precio_catalogo ?? c.precio) - 0.0001);
-    if (tieneRebaja && !aprobadorSeleccionado) {
-      setIsCheckoutOpen(false);
-      setIsApprovalModalOpen(true);
-      return;
-    }
-
     try {
+      // Tomamos el aprobador_id global si algún item tiene rebaja
+      const itemConRebaja = carrito.find(c => c.aprobador_id);
+      
       const payload = {
         cliente_id: clienteSeleccionado || undefined,
         metodo_pago: metodoPago,
@@ -271,15 +304,15 @@ export default function CajaPage() {
         descuento_id: descuentoAplicado ? descuentoAplicado.id : undefined,
         descuento_total: montoDescuento,
         codigo_cupon: codigoCuponInput ? codigoCuponInput.trim().toUpperCase() : undefined,
-        aprobador_usuario_id: aprobadorSeleccionado ? String(aprobadorSeleccionado.id) : undefined,
-        motivo_ajuste: motivoAjuste ? motivoAjuste.trim() : undefined,
+        aprobador_usuario_id: itemConRebaja ? String(itemConRebaja.aprobador_id) : undefined,
+        motivo_ajuste: itemConRebaja ? itemConRebaja.motivo_ajuste : undefined,
         detalles: carrito.map(c => ({
           producto_id: String(c.id),
           variante_id: c.variante_id ? String(c.variante_id) : undefined,
           empaque_id: c.empaque_id ? String(c.empaque_id) : undefined,
           cantidad: Number(c.cantidad) * c.multiplicador,
           precio_unitario: Number(c.precio) / c.multiplicador,
-          motivo_ajuste: motivoAjuste ? motivoAjuste.trim() : undefined
+          motivo_ajuste: c.motivo_ajuste || undefined
         }))
       };
 
@@ -505,26 +538,10 @@ export default function CajaPage() {
                     </div>
                   </div>
 
-                  {hasVariants ? (
-                    <button style={{ 
-                      fontSize: '0.75rem', 
-                      fontWeight: 700, 
-                      color: 'white', 
-                      backgroundColor: '#3b82f6', 
-                      padding: '0.4rem 0.8rem', 
-                      borderRadius: '6px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      Ver Variantes
-                    </button>
+                  {stockToShow > 0 ? (
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#16a34a', backgroundColor: '#dcfce7', padding: '0.3rem 0.8rem', borderRadius: '6px', whiteSpace: 'nowrap' }}>Stock: {stockToShow}</span>
                   ) : (
-                    stockPrincipal > 0 ? (
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#16a34a', backgroundColor: '#dcfce7', padding: '0.3rem 0.8rem', borderRadius: '6px', whiteSpace: 'nowrap' }}>Stock: {stockPrincipal}</span>
-                    ) : (
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ef4444', backgroundColor: '#fef2f2', padding: '0.3rem 0.8rem', borderRadius: '6px', whiteSpace: 'nowrap' }}>Agotado</span>
-                    )
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ef4444', backgroundColor: '#fef2f2', padding: '0.3rem 0.8rem', borderRadius: '6px', whiteSpace: 'nowrap' }}>Agotado</span>
                   )}
                 </div>
               </div>
@@ -572,9 +589,9 @@ export default function CajaPage() {
                               if (!e.target.value || e.target.value === '0') setCantidadValue(item.cart_id, '1');
                             }}
                             style={{
-                              width: '36px', textAlign: 'center', border: '1px solid #cbd5e1', 
-                              borderRadius: '4px', fontSize: '0.85rem', fontWeight: 600, color: '#0f172a',
-                              padding: '0.2rem', outline: 'none'
+                              width: '32px', textAlign: 'center', border: '1px solid transparent', 
+                              backgroundColor: 'transparent', fontSize: '0.8rem', fontWeight: 700, color: '#0f172a',
+                              padding: '0', outline: 'none'
                             }}
                           />
                           <button onClick={() => updateCantidad(item.cart_id, 1)}><Plus size={14} /></button>
@@ -583,31 +600,32 @@ export default function CajaPage() {
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                           {tieneRebajaItem && (
-                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', textDecoration: 'line-through' }}>
+                            <span style={{ fontSize: '0.65rem', color: '#94a3b8', textDecoration: 'line-through', marginBottom: '-2px' }}>
                               Bs. {(item.precio_catalogo ?? item.precio).toFixed(2)}
                             </span>
                           )}
-                          <input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            value={item.precio}
-                            onChange={(e) => updatePrecio(item.cart_id, e.target.value)}
-                            onBlur={(e) => {
-                              if (!e.target.value) updatePrecio(item.cart_id, String(item.precio_catalogo ?? 0));
+                          <div 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.3rem', 
+                              cursor: 'pointer',
+                              padding: '0.1rem 0.3rem',
+                              borderRadius: '4px',
+                              backgroundColor: tieneRebajaItem ? '#fef2f2' : 'transparent',
+                              border: tieneRebajaItem ? '1px solid #fecaca' : '1px solid transparent'
                             }}
-                            style={{
-                              width: '65px', textAlign: 'right', 
-                              border: tieneRebajaItem ? '1px solid #f59e0b' : '1px solid #cbd5e1', 
-                              backgroundColor: tieneRebajaItem ? '#fffbeb' : '#ffffff',
-                              borderRadius: '4px', fontSize: '0.85rem', fontWeight: 600, 
-                              color: tieneRebajaItem ? '#d97706' : '#0f172a',
-                              padding: '0.2rem', outline: 'none'
-                            }}
-                          />
+                            onClick={() => abrirModalAjuste(item)}
+                            title="Ajustar precio manualmente"
+                          >
+                            <span style={{ fontWeight: 600, fontSize: '0.75rem', color: tieneRebajaItem ? '#ef4444' : '#0f172a' }}>
+                              Bs. {Number(item.precio).toFixed(2)}
+                            </span>
+                            <Edit2 size={12} color={tieneRebajaItem ? '#ef4444' : '#cbd5e1'} style={{ marginTop: '1px' }} />
+                          </div>
                         </div>
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: tieneRebajaItem ? '#d97706' : '#0f172a' }}>
+                      <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '0.8rem', color: tieneRebajaItem ? '#d97706' : '#0f172a' }}>
                         Bs. {(item.precio * item.cantidad).toFixed(2)}
                       </td>
                       <td style={{ textAlign: 'right' }}>
@@ -700,102 +718,122 @@ export default function CajaPage() {
           <button 
             className={styles.checkoutBtn} 
             disabled={carrito.length === 0}
-            onClick={() => setIsCheckoutOpen(true)}
+            onClick={() => { setIsClientEditing(false); setClientSearchQuery(''); setIsCheckoutOpen(true); }}
           >
             COBRAR Bs. {totalNeto.toFixed(2)}
           </button>
         </div>
       </div>
 
-      {/* ADMIN APPROVAL MODAL FOR MANUAL PRICE OVERRIDE */}
-      <Modal isOpen={isApprovalModalOpen} onClose={() => setIsApprovalModalOpen(false)} title="Autorización de Administrador" maxWidth="450px">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem 0' }}>
-          <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '0.8rem', display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
-            <AlertTriangle size={20} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div style={{ fontSize: '0.85rem', color: '#92400e' }}>
-              <strong>Rebaja manual detectada:</strong> Uno o más productos tienen un precio menor al de catálogo. Se requiere la autorización de un Administrador o Super Usuario.
-            </div>
-          </div>
-
-          <div>
-            <label className={styles.label}>Administrador que autorizó</label>
-            {aprobadorSeleccionado ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.8rem', border: '1px solid #d97706', borderRadius: '6px', marginTop: '0.2rem', backgroundColor: '#fffbeb' }}>
-                <div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>{aprobadorSeleccionado.nombres} {aprobadorSeleccionado.apellidos}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{aprobadorSeleccionado.email}</div>
-                </div>
-                <button
-                  onClick={() => setAprobadorSeleccionado(null)}
-                  style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                  Cambiar
-                </button>
+      {/* MODAL DE AJUSTE MANUAL DE PRECIO */}
+      <Modal isOpen={isApprovalModalOpen} onClose={() => { setIsApprovalModalOpen(false); setItemToAdjust(null); }} title="Ajuste de Precio Manual" maxWidth="450px">
+        {itemToAdjust && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', padding: '0.5rem 0' }}>
+            <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.95rem' }}>{itemToAdjust.nombre}</div>
+                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem' }}>Catálogo: Bs. {Number(itemToAdjust.precio_catalogo ?? itemToAdjust.precio).toFixed(2)}</div>
               </div>
-            ) : (
+            </div>
+
+            <div>
+              <label className={styles.label}>Nuevo Precio de Venta (Bs.)</label>
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                value={nuevoPrecioValue}
+                onChange={(e) => setNuevoPrecioValue(e.target.value)}
+                className={styles.inputRefined}
+                style={{ fontSize: '1.2rem', fontWeight: 700 }}
+                autoFocus
+              />
+            </div>
+
+            {parseFloat(nuevoPrecioValue) < Number(itemToAdjust.precio_catalogo ?? itemToAdjust.precio) - 0.0001 && (
               <>
-                <input
-                  type="text"
-                  placeholder="Buscar administrador por nombre o email..."
-                  value={aprobadorQuery}
-                  onChange={(e) => setAprobadorQuery(e.target.value)}
-                  className={styles.searchInput}
-                  style={{ width: '100%', marginTop: '0.2rem' }}
-                />
-                <div style={{ maxHeight: '160px', overflowY: 'auto', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  {aprobadores
-                    .filter((a) => {
-                      const q = aprobadorQuery.trim().toLowerCase();
-                      if (!q) return true;
-                      return `${a.nombres} ${a.apellidos} ${a.email}`.toLowerCase().includes(q);
-                    })
-                    .map((a) => (
+                <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '0.8rem', display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
+                  <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div style={{ fontSize: '0.8rem', color: '#92400e', lineHeight: 1.4 }}>
+                    <strong>Rebaja detectada.</strong> Debes adjuntar al superior que autorizó la rebaja y un motivo.
+                  </div>
+                </div>
+
+                <div>
+                  <label className={styles.label}>Autorizado por</label>
+                  {aprobadorSeleccionado ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.8rem', border: '1px solid #d97706', borderRadius: '8px', backgroundColor: '#fffbeb', boxShadow: '0 2px 8px rgba(217, 119, 6, 0.1)' }}>
+                      <div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>{aprobadorSeleccionado.nombres} {aprobadorSeleccionado.apellidos}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{aprobadorSeleccionado.email}</div>
+                      </div>
                       <button
-                        key={a.id}
-                        onClick={() => setAprobadorSeleccionado(a)}
-                        style={{ textAlign: 'left', padding: '0.5rem 0.7rem', border: '1px solid #e2e8f0', borderRadius: '6px', backgroundColor: '#fff', cursor: 'pointer' }}
+                        onClick={() => setAprobadorSeleccionado(null)}
+                        style={{ fontSize: '0.75rem', fontWeight: 600, color: '#d97706', background: 'none', border: 'none', cursor: 'pointer', padding: '0.4rem' }}
                       >
-                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>{a.nombres} {a.apellidos}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{a.email}</div>
+                        Cambiar
                       </button>
-                    ))}
-                  {aprobadores.length === 0 && (
-                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', padding: '0.4rem' }}>No hay administradores disponibles.</div>
+                    </div>
+                  ) : (
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+                      <div style={{ padding: '0.5rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+                        <input
+                          type="text"
+                          placeholder="Buscar administrador..."
+                          value={aprobadorQuery}
+                          onChange={(e) => setAprobadorQuery(e.target.value)}
+                          className={styles.inputRefined}
+                          style={{ padding: '0.5rem', fontSize: '0.85rem' }}
+                        />
+                      </div>
+                      <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
+                        {aprobadores
+                          .filter((a) => {
+                            const q = aprobadorQuery.trim().toLowerCase();
+                            if (!q) return true;
+                            return `${a.nombres} ${a.apellidos} ${a.email}`.toLowerCase().includes(q);
+                          })
+                          .map((a) => (
+                            <div
+                              key={a.id}
+                              onClick={() => setAprobadorSeleccionado(a)}
+                              className={styles.userListItem}
+                            >
+                              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>{a.nombres} {a.apellidos}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{a.email}</div>
+                            </div>
+                          ))}
+                        {aprobadores.length === 0 && (
+                          <div style={{ fontSize: '0.8rem', color: '#94a3b8', padding: '1rem', textAlign: 'center' }}>No hay administradores disponibles.</div>
+                        )}
+                      </div>
+                    </div>
                   )}
+                </div>
+
+                <div>
+                  <label className={styles.label}>Motivo del Ajuste</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Fidelidad, descuento por cantidad..."
+                    value={motivoAjuste}
+                    onChange={(e) => setMotivoAjuste(e.target.value)}
+                    className={styles.inputRefined}
+                  />
                 </div>
               </>
             )}
-          </div>
 
-          <div>
-            <label className={styles.label}>Motivo del Ajuste (Opcional)</label>
-            <input
-              type="text"
-              placeholder="Ej: Descuento autorizado por fidelidad"
-              value={motivoAjuste}
-              onChange={(e) => setMotivoAjuste(e.target.value)}
-              className={styles.searchInput}
-              style={{ width: '100%', marginTop: '0.2rem' }}
-            />
+            <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button className={styles.btnSecondary} onClick={() => { setIsApprovalModalOpen(false); setItemToAdjust(null); }}>
+                Cancelar
+              </button>
+              <button className={styles.btnPrimary} onClick={aplicarAjustePrecio}>
+                Aplicar Ajuste
+              </button>
+            </div>
           </div>
-
-          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-            <button className={styles.btnSecondary} onClick={() => setIsApprovalModalOpen(false)}>
-              Cancelar
-            </button>
-            <button
-              className={styles.btnPrimary}
-              style={{ backgroundColor: '#d97706', borderColor: '#b45309' }}
-              disabled={!aprobadorSeleccionado}
-              onClick={() => {
-                if (!aprobadorSeleccionado) return showToast('Seleccione qué administrador autorizó la rebaja');
-                handleCobrar();
-              }}
-            >
-              Autorizar y Continuar
-            </button>
-          </div>
-        </div>
+        )}
       </Modal>
 
       {/* CHECKOUT MODAL */}
@@ -804,16 +842,66 @@ export default function CajaPage() {
           
           <div>
             <label className={styles.label}>Cliente</label>
-            <select 
-              className={styles.select} 
-              value={clienteSeleccionado}
-              onChange={(e) => setClienteSeleccionado(e.target.value)}
-            >
-              <option value="">Consumidor Final</option>
-              {clientes.map(c => (
-                <option key={c.id} value={c.id}>{c.nombre} - {c.documento_id || 'Sin CI'}</option>
-              ))}
-            </select>
+            {!isClientEditing ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.8rem', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                <div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>
+                    {clienteSeleccionado ? clientes.find(c => c.id === clienteSeleccionado)?.nombre : 'Consumidor Final'}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    {clienteSeleccionado ? `Doc: ${clientes.find(c => c.id === clienteSeleccionado)?.documento_id || 'S/N'}` : 'Sin Documento'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsClientEditing(true)}
+                  style={{ fontSize: '0.8rem', fontWeight: 600, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', padding: '0.4rem' }}
+                >
+                  Cambiar
+                </button>
+              </div>
+            ) : (
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+                <div style={{ padding: '0.5rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff', display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    placeholder="Buscar cliente..."
+                    value={clientSearchQuery}
+                    onChange={(e) => setClientSearchQuery(e.target.value)}
+                    className={styles.inputRefined}
+                    style={{ padding: '0.5rem', fontSize: '0.85rem' }}
+                    autoFocus
+                  />
+                  <button 
+                    onClick={() => { setClienteSeleccionado(''); setIsClientEditing(false); }}
+                    className={styles.btnSecondary}
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                  >
+                    Consumidor Final
+                  </button>
+                </div>
+                <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                  {clientes
+                    .filter((c) => {
+                      const q = clientSearchQuery.trim().toLowerCase();
+                      if (!q) return true;
+                      return `${c.nombre} ${c.documento_id || ''}`.toLowerCase().includes(q);
+                    })
+                    .map((c) => (
+                      <div
+                        key={c.id}
+                        onClick={() => { setClienteSeleccionado(c.id); setIsClientEditing(false); }}
+                        className={styles.userListItem}
+                      >
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>{c.nombre}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Doc: {c.documento_id || 'S/N'}</div>
+                      </div>
+                    ))}
+                  {clientes.length === 0 && (
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', padding: '1rem', textAlign: 'center' }}>No hay clientes registrados.</div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -823,19 +911,19 @@ export default function CajaPage() {
                 className={`${styles.payBtn} ${metodoPago === 'EFECTIVO' ? styles.payBtnActive : ''}`}
                 onClick={() => setMetodoPago('EFECTIVO')}
               >
-                <Banknote size={24} /> EFECTIVO
+                <Banknote size={22} /> EFECTIVO
               </button>
               <button 
                 className={`${styles.payBtn} ${metodoPago === 'TARJETA' ? styles.payBtnActive : ''}`}
                 onClick={() => setMetodoPago('TARJETA')}
               >
-                <CreditCard size={24} /> TARJETA
+                <CreditCard size={22} /> TARJETA
               </button>
               <button 
                 className={`${styles.payBtn} ${metodoPago === 'QR' ? styles.payBtnActive : ''}`}
                 onClick={() => setMetodoPago('QR')}
               >
-                <QrCode size={24} /> QR FIJO
+                <QrCode size={22} /> QR FIJO
               </button>
             </div>
           </div>
@@ -845,12 +933,13 @@ export default function CajaPage() {
               <div className={styles.cashInputGroup}>
                 <label className={styles.label}>Monto Recibido</label>
                 <div className={styles.currencyInput}>
-                  <span>Bs. </span>
+                  <span>Bs.</span>
                   <input 
                     type="number" 
                     value={montoPagado} 
                     onChange={(e) => setMontoPagado(e.target.value)}
                     placeholder="0.00"
+                    autoFocus
                   />
                 </div>
               </div>
@@ -867,14 +956,15 @@ export default function CajaPage() {
             </div>
           )}
 
-          <button 
-            className={styles.checkoutBtn} 
-            onClick={handleCobrar}
-            style={{ marginTop: '0', backgroundColor: '#10b981' }}
-          >
-            <CheckCircle2 size={24} style={{ marginRight: '0.5rem' }} />
-            CONFIRMAR VENTA (Bs. {totalNeto.toFixed(2)})
-          </button>
+          <div style={{ marginTop: '0.5rem' }}>
+            <button 
+              className={styles.checkoutBtn} 
+              onClick={handleCobrar}
+            >
+              <CheckCircle2 size={22} style={{ marginRight: '0.5rem' }} />
+              CONFIRMAR VENTA (Bs. {totalNeto.toFixed(2)})
+            </button>
+          </div>
         </div>
       </Modal>
 
@@ -957,82 +1047,16 @@ export default function CajaPage() {
       {/* TICKET PRINTER MODAL */}
       <Modal isOpen={!!ticketData} onClose={() => setTicketData(null)} title="Comprobante de Venta" maxWidth="400px">
         {ticketData && (
-          <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div id="printable-ticket" style={{
-              width: '100%', maxWidth: '300px', backgroundColor: '#fff', padding: '1rem',
-              fontFamily: '"Courier New", Courier, monospace', color: '#000', border: '1px solid #e2e8f0',
-              borderRadius: '4px', margin: '0 auto', lineHeight: '1.2'
-            }}>
-              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, fontFamily: 'sans-serif', letterSpacing: '-1px', textTransform: 'uppercase' }}>
-                  ENTREGAS<span style={{ textTransform: 'lowercase', letterSpacing: 'normal' }}>.com.bo</span>
-                </h2>
-                <p style={{ margin: '0.2rem 0', fontSize: '0.8rem' }}>Santa Cruz, Bolivia</p>
-                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 'bold' }}>COMPROBANTE DE VENTA</p>
-              </div>
-              <div style={{ borderBottom: '1px dashed #000', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontSize: '0.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Ticket #:</span> <span>{String(ticketData.id).padStart(7, '0')}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Fecha:</span> <span>{new Date(ticketData.creado_en).toLocaleString('es-BO')}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Método:</span> <span>{ticketData.metodo_pago}</span></div>
-              </div>
-              <table style={{ width: '100%', fontSize: '0.75rem', marginBottom: '0.5rem', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px dashed #000' }}>
-                    <th style={{ textAlign: 'left', paddingBottom: '0.3rem', width: '15%' }}>Cant</th>
-                    <th style={{ textAlign: 'left', paddingBottom: '0.3rem', width: '55%' }}>Desc</th>
-                    <th style={{ textAlign: 'right', paddingBottom: '0.3rem', width: '30%' }}>Subt</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ticketData.detalles?.map((d: any, idx: number) => {
-                    const tieneRebaja = d.precio_unitario_catalogo && Number(d.precio_unitario_catalogo) > Number(d.precio_unitario) + 0.0001;
-                    return (
-                      <tr key={idx}>
-                        <td style={{ verticalAlign: 'top', paddingTop: '0.4rem' }}>{d.cantidad}</td>
-                        <td style={{ verticalAlign: 'top', paddingTop: '0.4rem' }}>
-                          <div>{d.producto?.nombre || `Prod ID: ${d.producto_id}`}</div>
-                          {tieneRebaja && (
-                            <div style={{ fontSize: '0.65rem', color: '#64748b' }}>
-                              Catálogo: <span style={{ textDecoration: 'line-through' }}>Bs. {parseFloat(d.precio_unitario_catalogo).toFixed(2)}</span>
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ verticalAlign: 'top', textAlign: 'right', paddingTop: '0.4rem' }}>{parseFloat(d.subtotal).toFixed(2)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <div style={{ borderTop: '1px dashed #000', paddingTop: '0.5rem', fontSize: '0.8rem' }}>
-                {ticketData.descuento_total > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem' }}>
-                    <span>DESC.:</span>
-                    <span>- Bs. {parseFloat(ticketData.descuento_total).toFixed(2)}</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1rem', marginBottom: '0.3rem' }}>
-                  <span>TOTAL:</span>
-                  <span>Bs. {parseFloat(ticketData.total).toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', width: '100%', justifyContent: 'center' }}>
-              <button className={styles.btnSecondary} onClick={() => setTicketData(null)}>Cerrar</button>
-              <button 
-                className={styles.btnPrimary} 
-                onClick={() => {
-                  const content = document.getElementById('printable-ticket')?.innerHTML;
-                  if (content) {
-                    const html = `<html><head><style>@page { margin: 0; size: 80mm auto; } body { font-family: "Courier New", Courier, monospace; margin: 0; padding: 10px; color: #000; width: 300px; }</style></head><body>${content}</body></html>`;
-                    imprimirBoletaSilenciosa(html);
-                  }
-                }}
-              >
-                Imprimir Boleta
-              </button>
-            </div>
-          </div>
+          <TicketImpresion 
+            ticketData={ticketData} 
+            configNegocio={{
+              nombre: 'ENTREGAS.com.bo',
+              direccion: 'Santa Cruz, Bolivia',
+              telefono: '+591 70000000',
+              nit: '1029384029',
+            }} 
+            onClose={() => setTicketData(null)} 
+          />
         )}
       </Modal>
     </div>

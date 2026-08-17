@@ -45,6 +45,11 @@ model Usuario {
   pedido_historiales    PedidoHistorialEstado[] @relation("PedidoHistorialCambiadoPorUsuario")
   devolucionesEvaluadas Devolucion[]            @relation("DevolucionEvaluadaPorUsuario")
   bitacoraEventos       Bitacora[]              @relation("BitacoraUsuario")
+  cajas                 Caja[]                  @relation("CajaUsuario")
+  movimientosCaja       MovimientoCaja[]        @relation("MovimientoCajaUsuario")
+  gastosOperativos      GastoOperativo[]        @relation("GastoOperativoUsuario")
+  pedidos_preparados    Pedido[]                @relation("PedidoPreparador")
+  pedidos_repartidos    Pedido[]                @relation("PedidoRepartidor")
 
   @@map("usuarios")
 }
@@ -134,8 +139,8 @@ model Categoria {
   creado_en           DateTime @default(now())
   actualizado_en      DateTime @updatedAt
 
-  categoria_padre Categoria?  @relation("JerarquiaCategorias", fields: [categoria_padre_id], references: [id])
-  subcategorias   Categoria[] @relation("JerarquiaCategorias")
+  categoria_padre Categoria?           @relation("JerarquiaCategorias", fields: [categoria_padre_id], references: [id])
+  subcategorias   Categoria[]          @relation("JerarquiaCategorias")
   productos       Producto[]
   descuentos      DescuentoCategoria[]
 
@@ -225,28 +230,29 @@ model ProductoImagen {
 }
 
 model Variante {
-  id                     BigInt   @id @default(autoincrement())
-  producto_id            BigInt
-  nombre                 String   @db.VarChar(255)
-  sku_base               String   @unique @db.VarChar(255)
-  codigo_barras          String?  @unique @db.VarChar(255)
-  precio_unitario        Decimal  @default(0) @db.Decimal(14, 2)
-  precio_promocional     Decimal? @db.Decimal(14, 2)
-  combinacion_opciones   Json     @default("{}") @db.JsonB
-  imagen_url             String?  @db.Text
-  activo                 Boolean  @default(true)
-  creado_en              DateTime @default(now())
-  actualizado_en         DateTime @updatedAt
+  id                   BigInt   @id @default(autoincrement())
+  producto_id          BigInt
+  nombre               String   @db.VarChar(255)
+  sku_base             String   @unique @db.VarChar(255)
+  codigo_barras        String?  @unique @db.VarChar(255)
+  precio_unitario      Decimal  @default(0) @db.Decimal(14, 2)
+  costo_promedio       Decimal  @default(0) @db.Decimal(14, 2)
+  precio_promocional   Decimal? @db.Decimal(14, 2)
+  combinacion_opciones Json     @default("{}") @db.JsonB
+  imagen_url           String?  @db.Text
+  activo               Boolean  @default(true)
+  creado_en            DateTime @default(now())
+  actualizado_en       DateTime @updatedAt
 
-  producto               Producto       @relation(fields: [producto_id], references: [id], onDelete: Cascade)
-  empaques               Empaque[]
-  Inventario             Inventario[]
-  MovimientosInventario  MovimientosInventario[]
-  CompraDetalle          CompraDetalle[]
-  VentaDetalle           VentaDetalle[]
-  descuentos             DescuentoVariante[]
-  usado_en_combos        ProductoComponente[]
-  pedidoDetalles         PedidoDetalle[]
+  producto              Producto                @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+  empaques              Empaque[]
+  Inventario            Inventario[]
+  MovimientosInventario MovimientosInventario[]
+  CompraDetalle         CompraDetalle[]
+  VentaDetalle          VentaDetalle[]
+  descuentos            DescuentoVariante[]
+  usado_en_combos       ProductoComponente[]
+  pedidoDetalles        PedidoDetalle[]
 
   @@unique([producto_id, nombre])
   @@map("variantes")
@@ -259,16 +265,17 @@ model Empaque {
   sku                    String   @unique @db.VarChar(255)
   codigo_barras          String?  @unique @db.VarChar(255)
   multiplicador_unidades Int      @default(1)
+  costo_promedio         Decimal  @default(0) @db.Decimal(14, 2)
   precio                 Decimal  @db.Decimal(14, 2)
   precio_promocional     Decimal? @db.Decimal(14, 2)
   activo                 Boolean  @default(true)
   creado_en              DateTime @default(now())
   actualizado_en         DateTime @updatedAt
 
-  variante      Variante        @relation(fields: [variante_id], references: [id], onDelete: Cascade)
-  CompraDetalle CompraDetalle[]
-  VentaDetalle  VentaDetalle[]
-  descuentos    DescuentoEmpaque[]
+  variante        Variante             @relation(fields: [variante_id], references: [id], onDelete: Cascade)
+  CompraDetalle   CompraDetalle[]
+  VentaDetalle    VentaDetalle[]
+  descuentos      DescuentoEmpaque[]
   usado_en_combos ProductoComponente[]
   pedidoDetalles  PedidoDetalle[]
 
@@ -277,13 +284,13 @@ model Empaque {
 }
 
 model ProductoComponente {
-  id                  BigInt   @id @default(autoincrement())
-  combo_producto_id   BigInt
-  componente_prod_id  BigInt
-  variante_id         BigInt?
-  empaque_id          BigInt?
-  cantidad            Int      @default(1)
-  creado_en           DateTime @default(now())
+  id                 BigInt   @id @default(autoincrement())
+  combo_producto_id  BigInt
+  componente_prod_id BigInt
+  variante_id        BigInt?
+  empaque_id         BigInt?
+  cantidad           Int      @default(1)
+  creado_en          DateTime @default(now())
 
   combo_producto      Producto  @relation("ComboPadre", fields: [combo_producto_id], references: [id], onDelete: Cascade)
   componente_producto Producto  @relation("ComponenteHijo", fields: [componente_prod_id], references: [id], onDelete: Restrict)
@@ -304,8 +311,8 @@ model Inventario {
   creado_en           DateTime @default(now())
   actualizado_en      DateTime @updatedAt
 
-  producto Producto @relation(fields: [producto_id], references: [id], onDelete: Cascade)
-  variante Variante? @relation(fields: [variante_id], references: [id], onDelete: Cascade)
+  producto Producto                   @relation(fields: [producto_id], references: [id], onDelete: Cascade)
+  variante Variante?                  @relation(fields: [variante_id], references: [id], onDelete: Cascade)
   reservas ReservaInventarioDetalle[]
 
   @@unique([producto_id, variante_id, ubicacion])
@@ -324,9 +331,9 @@ model MovimientosInventario {
   documento_origen_id   BigInt?
   creado_en             DateTime @default(now())
 
-  producto Producto @relation(fields: [producto_id], references: [id], onDelete: Restrict)
+  producto Producto  @relation(fields: [producto_id], references: [id], onDelete: Restrict)
   variante Variante? @relation(fields: [variante_id], references: [id], onDelete: Restrict)
-  usuario  Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
+  usuario  Usuario?  @relation(fields: [usuario_id], references: [id], onDelete: SetNull)
 
   @@index([producto_id])
   @@index([variante_id])
@@ -458,6 +465,7 @@ model Venta {
   id               BigInt   @id @default(autoincrement())
   cliente_id       BigInt?
   usuario_id       BigInt
+  caja_id          BigInt?
   numero_ticket    String   @unique @default(cuid()) @db.VarChar(100)
   estado           String   @default("COMPLETADA") @db.VarChar(50) // COMPLETADA, ANULADA
   motivo_anulacion String?  @db.Text
@@ -465,15 +473,17 @@ model Venta {
   descuento_total  Decimal  @default(0) @db.Decimal(14, 2)
   codigo_cupon     String?  @db.VarChar(100)
   metodo_pago      String   @default("EFECTIVO") @db.VarChar(50)
+  canal_venta      String   @default("PRESENCIAL") @db.VarChar(20) // PRESENCIAL, ONLINE
   monto_pagado     Decimal  @default(0) @db.Decimal(14, 2)
   vuelto           Decimal  @default(0) @db.Decimal(14, 2)
   creado_en        DateTime @default(now())
   actualizado_en   DateTime @updatedAt
 
-  cliente       Cliente?       @relation(fields: [cliente_id], references: [id], onDelete: Restrict)
-  usuario       Usuario        @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
-  detalles      VentaDetalle[]
-  usosDescuento DescuentoUso[]
+  cliente            Cliente?           @relation(fields: [cliente_id], references: [id], onDelete: Restrict)
+  usuario            Usuario            @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  caja               Caja?              @relation(fields: [caja_id], references: [id], onDelete: SetNull)
+  detalles           VentaDetalle[]
+  usosDescuento      DescuentoUso[]
   reserva_inventario ReservaInventario?
 
   @@index([estado, creado_en])
@@ -481,23 +491,23 @@ model Venta {
 }
 
 model VentaDetalle {
-  id                       BigInt   @id @default(autoincrement())
+  id                       BigInt  @id @default(autoincrement())
   venta_id                 BigInt
   producto_id              BigInt
   variante_id              BigInt?
   empaque_id               BigInt?
   cantidad                 Int
-  precio_unitario          Decimal  @db.Decimal(14, 2)
-  precio_unitario_catalogo Decimal  @default(0) @db.Decimal(14, 2)
+  precio_unitario          Decimal @db.Decimal(14, 2)
+  precio_unitario_catalogo Decimal @default(0) @db.Decimal(14, 2)
   aprobado_por_usuario_id  BigInt?
-  motivo_ajuste            String?  @db.Text
-  subtotal                 Decimal  @db.Decimal(14, 2)
+  motivo_ajuste            String? @db.Text
+  subtotal                 Decimal @db.Decimal(14, 2)
 
-  venta                Venta    @relation(fields: [venta_id], references: [id], onDelete: Cascade)
-  producto             Producto @relation(fields: [producto_id], references: [id], onDelete: Restrict)
+  venta                Venta     @relation(fields: [venta_id], references: [id], onDelete: Cascade)
+  producto             Producto  @relation(fields: [producto_id], references: [id], onDelete: Restrict)
   variante             Variante? @relation(fields: [variante_id], references: [id], onDelete: Restrict)
   empaque              Empaque?  @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
-  aprobado_por_usuario Usuario? @relation("VentaDetalleAprobadoPor", fields: [aprobado_por_usuario_id], references: [id], onDelete: Restrict)
+  aprobado_por_usuario Usuario?  @relation("VentaDetalleAprobadoPor", fields: [aprobado_por_usuario_id], references: [id], onDelete: Restrict)
 
   @@index([venta_id])
   @@index([producto_id])
@@ -514,8 +524,8 @@ model ReservaInventario {
   creado_en      DateTime @default(now())
   actualizado_en DateTime @updatedAt
 
-  usuario  Usuario                      @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
-  venta    Venta?                        @relation(fields: [venta_id], references: [id], onDelete: SetNull)
+  usuario  Usuario                    @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  venta    Venta?                     @relation(fields: [venta_id], references: [id], onDelete: SetNull)
   detalles ReservaInventarioDetalle[]
   pedido   Pedido?
   pagosQr  PagoQR[]
@@ -543,6 +553,8 @@ model Pedido {
   numero_pedido            String   @unique @default(cuid()) @db.VarChar(100)
   cliente_id               BigInt?
   reserva_id               BigInt?  @unique
+  preparador_id            BigInt?
+  repartidor_id            BigInt?
   estado                   String   @default("PENDIENTE_PAGO") @db.VarChar(50)
   direccion_envio_snapshot Json     @db.JsonB
   costo_envio              Decimal  @default(0) @db.Decimal(14, 2)
@@ -556,6 +568,8 @@ model Pedido {
 
   cliente         Cliente?                @relation(fields: [cliente_id], references: [id], onDelete: Restrict)
   reserva         ReservaInventario?      @relation(fields: [reserva_id], references: [id], onDelete: SetNull)
+  preparador      Usuario?                @relation("PedidoPreparador", fields: [preparador_id], references: [id], onDelete: SetNull)
+  repartidor      Usuario?                @relation("PedidoRepartidor", fields: [repartidor_id], references: [id], onDelete: SetNull)
   detalles        PedidoDetalle[]
   historialEstado PedidoHistorialEstado[]
   pagoQr          PagoQR?
@@ -567,22 +581,22 @@ model Pedido {
 }
 
 model PedidoDetalle {
-  id              BigInt   @id @default(autoincrement())
+  id              BigInt  @id @default(autoincrement())
   pedido_id       BigInt
   producto_id     BigInt
   variante_id     BigInt?
   empaque_id      BigInt?
-  nombre_producto String   @db.VarChar(255)
-  sku             String?  @db.VarChar(100)
-  precio_unitario Decimal  @db.Decimal(14, 2)
+  nombre_producto String  @db.VarChar(255)
+  sku             String? @db.VarChar(100)
+  precio_unitario Decimal @db.Decimal(14, 2)
   cantidad        Int
-  subtotal        Decimal  @db.Decimal(14, 2)
-  imagen_url      String?  @db.Text
+  subtotal        Decimal @db.Decimal(14, 2)
+  imagen_url      String? @db.Text
 
-  pedido   Pedido    @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
-  producto Producto  @relation(fields: [producto_id], references: [id], onDelete: Restrict)
-  variante Variante? @relation(fields: [variante_id], references: [id], onDelete: Restrict)
-  empaque  Empaque?  @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
+  pedido             Pedido              @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+  producto           Producto            @relation(fields: [producto_id], references: [id], onDelete: Restrict)
+  variante           Variante?           @relation(fields: [variante_id], references: [id], onDelete: Restrict)
+  empaque            Empaque?            @relation(fields: [empaque_id], references: [id], onDelete: Restrict)
   devolucionDetalles DevolucionDetalle[]
 
   @@index([pedido_id])
@@ -609,20 +623,20 @@ model PedidoHistorialEstado {
 }
 
 model PagoQR {
-  id               BigInt    @id @default(autoincrement())
-  public_id        String    @unique @default(uuid()) @db.Uuid
-  pedido_id        BigInt    @unique
-  reserva_id       BigInt?
-  idempotency_key  String    @unique @db.VarChar(100)
-  qr_contenido     String    @db.Text
-  monto            Decimal   @db.Decimal(14, 2)
-  moneda           String    @default("BOB") @db.VarChar(10)
-  estado           String    @default("PENDIENTE") @db.VarChar(30)
-  referencia_bisa  String?   @unique @db.VarChar(100)
-  expira_en        DateTime
-  confirmado_en    DateTime?
-  creado_en        DateTime  @default(now())
-  actualizado_en   DateTime  @updatedAt
+  id              BigInt    @id @default(autoincrement())
+  public_id       String    @unique @default(uuid()) @db.Uuid
+  pedido_id       BigInt    @unique
+  reserva_id      BigInt?
+  idempotency_key String    @unique @db.VarChar(100)
+  qr_contenido    String    @db.Text
+  monto           Decimal   @db.Decimal(14, 2)
+  moneda          String    @default("BOB") @db.VarChar(10)
+  estado          String    @default("PENDIENTE") @db.VarChar(30)
+  referencia_bisa String?   @unique @db.VarChar(100)
+  expira_en       DateTime
+  confirmado_en   DateTime?
+  creado_en       DateTime  @default(now())
+  actualizado_en  DateTime  @updatedAt
 
   pedido  Pedido             @relation(fields: [pedido_id], references: [id], onDelete: Restrict)
   reserva ReservaInventario? @relation(fields: [reserva_id], references: [id], onDelete: SetNull)
@@ -713,50 +727,50 @@ enum CanalDescuento {
 }
 
 model Descuento {
-  id                    BigInt           @id @default(autoincrement())
-  nombre                String           @db.VarChar(255)
-  descripcion           String?          @db.Text
-  codigo_cupon          String?          @unique @db.VarChar(100)
-  tipo                  TipoDescuento    @default(PORCENTAJE)
-  valor                 Decimal          @default(0) @db.Decimal(14, 2)
-  max_monto_descuento   Decimal?         @db.Decimal(14, 2)
-  alcance               AlcanceDescuento @default(GLOBAL)
-  canal                 CanalDescuento   @default(TODOS)
-  
+  id                  BigInt           @id @default(autoincrement())
+  nombre              String           @db.VarChar(255)
+  descripcion         String?          @db.Text
+  codigo_cupon        String?          @unique @db.VarChar(100)
+  tipo                TipoDescuento    @default(PORCENTAJE)
+  valor               Decimal          @default(0) @db.Decimal(14, 2)
+  max_monto_descuento Decimal?         @db.Decimal(14, 2)
+  alcance             AlcanceDescuento @default(GLOBAL)
+  canal               CanalDescuento   @default(TODOS)
+
   // Para Combos y NxF (ej: 2x1 -> lleva 2, paga 1)
-  cantidad_requerida    Int              @default(1)
-  cantidad_paga         Int              @default(1)
+  cantidad_requerida Int @default(1)
+  cantidad_paga      Int @default(1)
 
-  monto_minimo_compra   Decimal?         @db.Decimal(14, 2)
-  limite_usos           Int?
-  limite_usos_por_cliente Int?           @default(1)
-  usos_actuales         Int              @default(0)
+  monto_minimo_compra     Decimal? @db.Decimal(14, 2)
+  limite_usos             Int?
+  limite_usos_por_cliente Int?     @default(1)
+  usos_actuales           Int      @default(0)
 
-  prioridad             Int              @default(0)
+  prioridad Int @default(0)
 
-  fecha_inicio          DateTime
-  fecha_fin             DateTime
-  activo                Boolean          @default(true)
+  fecha_inicio DateTime
+  fecha_fin    DateTime
+  activo       Boolean  @default(true)
 
   // Programación semanal: días (0=Domingo..6=Sábado, [] = todos) y ventana horaria "HH:MM"
-  dias_semana           Int[]            @default([])
-  hora_inicio           String?          @db.VarChar(5)
-  hora_fin              String?          @db.VarChar(5)
+  dias_semana Int[]   @default([])
+  hora_inicio String? @db.VarChar(5)
+  hora_fin    String? @db.VarChar(5)
 
-  creado_en             DateTime         @default(now())
-  actualizado_en        DateTime         @updatedAt
+  creado_en      DateTime @default(now())
+  actualizado_en DateTime @updatedAt
 
-  productos             DescuentoProducto[]
-  variantes             DescuentoVariante[]
-  empaques              DescuentoEmpaque[]
-  categorias            DescuentoCategoria[]
-  usos                  DescuentoUso[]
+  productos  DescuentoProducto[]
+  variantes  DescuentoVariante[]
+  empaques   DescuentoEmpaque[]
+  categorias DescuentoCategoria[]
+  usos       DescuentoUso[]
 
   @@map("descuentos")
 }
 
 model DescuentoProducto {
-  id           BigInt    @id @default(autoincrement())
+  id           BigInt @id @default(autoincrement())
   descuento_id BigInt
   producto_id  BigInt
 
@@ -768,7 +782,7 @@ model DescuentoProducto {
 }
 
 model DescuentoVariante {
-  id           BigInt    @id @default(autoincrement())
+  id           BigInt @id @default(autoincrement())
   descuento_id BigInt
   variante_id  BigInt
 
@@ -780,7 +794,7 @@ model DescuentoVariante {
 }
 
 model DescuentoEmpaque {
-  id           BigInt    @id @default(autoincrement())
+  id           BigInt @id @default(autoincrement())
   descuento_id BigInt
   empaque_id   BigInt
 
@@ -792,7 +806,7 @@ model DescuentoEmpaque {
 }
 
 model DescuentoCategoria {
-  id           BigInt    @id @default(autoincrement())
+  id           BigInt @id @default(autoincrement())
   descuento_id BigInt
   categoria_id BigInt
 
@@ -804,12 +818,12 @@ model DescuentoCategoria {
 }
 
 model DescuentoUso {
-  id               BigInt    @id @default(autoincrement())
+  id               BigInt   @id @default(autoincrement())
   descuento_id     BigInt
   venta_id         BigInt
   cliente_id       BigInt?
-  monto_descontado Decimal   @db.Decimal(14, 2)
-  creado_en        DateTime  @default(now())
+  monto_descontado Decimal  @db.Decimal(14, 2)
+  creado_en        DateTime @default(now())
 
   descuento Descuento @relation(fields: [descuento_id], references: [id], onDelete: Cascade)
   venta     Venta     @relation(fields: [venta_id], references: [id], onDelete: Cascade)
@@ -817,4 +831,66 @@ model DescuentoUso {
 
   @@index([descuento_id, cliente_id])
   @@map("descuento_usos")
+}
+
+// ==========================================
+// MÓDULO FINANZAS Y ARQUEO DE CAJA
+// ==========================================
+
+model Caja {
+  id                BigInt    @id @default(autoincrement())
+  usuario_id        BigInt // Cajero responsable
+  fecha_apertura    DateTime  @default(now())
+  fecha_cierre      DateTime?
+  monto_apertura    Decimal   @default(0) @db.Decimal(14, 2)
+  monto_cierre_esp  Decimal?  @db.Decimal(14, 2) // Lo que debería haber (Esperado)
+  monto_cierre_real Decimal?  @db.Decimal(14, 2) // Lo que el cajero contó (Real)
+  diferencia        Decimal?  @db.Decimal(14, 2) // Sobrante (+) o Faltante (-)
+  estado            String    @default("ABIERTA") @db.VarChar(50) // ABIERTA, CERRADA
+  observaciones     String?   @db.Text
+  creado_en         DateTime  @default(now())
+  actualizado_en    DateTime  @updatedAt
+
+  usuario     Usuario          @relation("CajaUsuario", fields: [usuario_id], references: [id], onDelete: Restrict)
+  movimientos MovimientoCaja[]
+  ventas      Venta[] // Ventas realizadas en este turno de caja
+
+  @@index([estado, fecha_apertura])
+  @@map("cajas")
+}
+
+model MovimientoCaja {
+  id              BigInt   @id @default(autoincrement())
+  caja_id         BigInt
+  usuario_id      BigInt // Quien registra el movimiento
+  tipo_movimiento String   @db.VarChar(50) // INGRESO, EGRESO
+  concepto        String   @db.VarChar(255) // Ej: "Pago pasajes", "Compra agua", "Ingreso venta manual"
+  monto           Decimal  @db.Decimal(14, 2)
+  metodo_pago     String   @default("EFECTIVO") @db.VarChar(50) // EFECTIVO, QR, TARJETA, TRANSFERENCIA
+  comprobante_url String?  @db.Text // Foto del recibito si compraron algo
+  referencia_id   String?  @db.VarChar(100) // ID de Venta si es un ingreso automático por venta
+  creado_en       DateTime @default(now())
+
+  caja    Caja    @relation(fields: [caja_id], references: [id], onDelete: Cascade)
+  usuario Usuario @relation("MovimientoCajaUsuario", fields: [usuario_id], references: [id], onDelete: Restrict)
+
+  @@index([caja_id, tipo_movimiento])
+  @@map("movimientos_caja")
+}
+
+model GastoOperativo {
+  id              BigInt   @id @default(autoincrement())
+  usuario_id      BigInt
+  categoria       String   @db.VarChar(100) // ALQUILER, SERVICIOS, SUELDOS, MARKETING, OTROS
+  descripcion     String   @db.VarChar(255)
+  monto           Decimal  @db.Decimal(14, 2)
+  fecha_gasto     DateTime @default(now())
+  comprobante_url String?  @db.Text
+  creado_en       DateTime @default(now())
+  actualizado_en  DateTime @updatedAt
+
+  usuario Usuario @relation("GastoOperativoUsuario", fields: [usuario_id], references: [id], onDelete: Restrict)
+
+  @@index([categoria, fecha_gasto])
+  @@map("gastos_operativos")
 }

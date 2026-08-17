@@ -1,13 +1,24 @@
-import { IVentaRepository } from '../../domain/repositories/venta.repository.interface';
+import { Inject, Injectable } from '@nestjs/common';
+import { type IVentaRepository, VENTA_REPOSITORY } from '../../domain/repositories/venta.repository.interface';
+import { type ICajaRepository, CAJA_REPOSITORY } from '../../../caja/domain/repositories/caja.repository.interface';
 import { RegistrarVentaDto } from '../dtos/venta.dto';
 
+@Injectable()
 export class RegistrarVentaUseCase {
-  constructor(private readonly ventaRepo: IVentaRepository) {}
+  constructor(
+    @Inject(VENTA_REPOSITORY)
+    private readonly ventaRepo: IVentaRepository,
+    @Inject(CAJA_REPOSITORY)
+    private readonly cajaRepo: ICajaRepository,
+  ) {}
 
   async execute(dto: RegistrarVentaDto, usuario_id: string) {
+    const cajaActiva = await this.cajaRepo.obtenerCajaActiva();
+
     const data = {
       cliente_id: dto.cliente_id,
       usuario_id,
+      caja_id: cajaActiva ? cajaActiva.id : undefined,
       metodo_pago: dto.metodo_pago,
       monto_pagado: dto.monto_pagado,
       descuento_id: dto.descuento_id,

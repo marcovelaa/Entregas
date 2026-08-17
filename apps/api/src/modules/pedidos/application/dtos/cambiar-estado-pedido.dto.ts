@@ -9,4 +9,7 @@ export class CambiarEstadoPedidoDto {
   @IsOptional()
   @IsString()
   motivo?: string;
+
+  @IsOptional()
+  costo_envio?: number;
 }

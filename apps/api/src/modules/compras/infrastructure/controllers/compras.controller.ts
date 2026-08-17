@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Body, Query, Param } from '@nestjs/common
 import { RegistrarCompraUseCase } from '../../application/use-cases/registrar-compra.use-case';
 import { RecibirCompraUseCase } from '../../application/use-cases/recibir-compra.use-case';
 import { ActualizarEstadoCompraUseCase } from '../../application/use-cases/actualizar-estado-compra.use-case';
+import { AnularCompraUseCase } from '../../application/use-cases/anular-compra.use-case';
 import { ListarComprasUseCase } from '../../application/use-cases/listar-compras.use-case';
 import { ObtenerCompraUseCase } from '../../application/use-cases/obtener-compra.use-case';
 import {
@@ -24,6 +25,7 @@ export class ComprasController {
     private readonly registrarCompraUseCase: RegistrarCompraUseCase,
     private readonly recibirCompraUseCase: RecibirCompraUseCase,
     private readonly actualizarEstadoCompraUseCase: ActualizarEstadoCompraUseCase,
+    private readonly anularCompraUseCase: AnularCompraUseCase,
     private readonly listarComprasUseCase: ListarComprasUseCase,
     private readonly obtenerCompraUseCase: ObtenerCompraUseCase,
   ) {}
@@ -64,6 +66,20 @@ export class ComprasController {
     return this.actualizarEstadoCompraUseCase.execute(
       id,
       dto,
+      requireAuthenticatedUser(usuario).id,
+    );
+  }
+
+  @Patch(':id/anular')
+  @RequierePermiso('compras:crear')
+  async anular(
+    @Param('id') id: string,
+    @Body('motivo') motivo: string,
+    @CurrentUser() usuario: AuthenticatedUser | undefined,
+  ) {
+    return this.anularCompraUseCase.execute(
+      id,
+      motivo,
       requireAuthenticatedUser(usuario).id,
     );
   }

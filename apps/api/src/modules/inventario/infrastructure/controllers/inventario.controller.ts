@@ -25,7 +25,7 @@ export class InventarioController {
   ) {}
 
   @Get('alertas')
-  @Public()
+  @RequierePermiso('inventario:ver')
   @ApiOperation({
     summary: 'Listar productos con stock en o por debajo del mínimo',
   })
@@ -35,7 +35,7 @@ export class InventarioController {
   }
 
   @Get('stock')
-  @Public()
+  @RequierePermiso('inventario:ver')
   @ApiOperation({ summary: 'Listar el stock actual paginado' })
   @ApiResponse({ status: 200, description: 'Listado paginado de inventario' })
   async listarStock(@Query() dto: PaginationDto) {
@@ -43,7 +43,7 @@ export class InventarioController {
   }
 
   @Get('movimientos')
-  @Public()
+  @RequierePermiso('inventario:ver')
   @ApiOperation({
     summary: 'Listar el Kardex de movimientos de inventario, paginado',
   })
