@@ -57,11 +57,13 @@ export class PrismaVentaRepository implements IVentaRepository {
   ) {}
 
   async crear(data: VentaCreateData) {
-    const ventaExistente = await this.obtenerVentaPorIdempotencia(
-      data.usuario_id,
-      data.idempotency_key,
-    );
-    if (ventaExistente) return this.serializarVentaCheckout(ventaExistente);
+    if (data.idempotency_key) {
+      const ventaExistente = await this.obtenerVentaPorIdempotencia(
+        data.usuario_id,
+        data.idempotency_key,
+      );
+      if (ventaExistente) return this.serializarVentaCheckout(ventaExistente);
+    }
 
     // 0. Batch-fetch every producto/empaque/variante referenced by the cart in a
     // handful of queries (instead of one findUnique/findFirst per detalle) so the
