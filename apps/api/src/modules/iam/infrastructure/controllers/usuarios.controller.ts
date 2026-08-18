@@ -16,7 +16,11 @@ import { EditarUsuarioUseCase } from '../../application/use-cases/usuarios/edita
 import { EliminarUsuarioUseCase } from '../../application/use-cases/usuarios/eliminar-usuario.use-case';
 import { CrearUsuarioDto } from '../../application/dtos/crear-usuario.dto';
 import { UpdateUsuarioDto } from '../../application/dtos/update-usuario.dto';
+import { CambiarPasswordDto } from '../../application/dtos/cambiar-password.dto';
+import { CambiarPasswordUseCase } from '../../application/use-cases/usuarios/cambiar-password.use-case';
 import { RequierePermiso } from '../../auth/decorators/require-permiso.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -26,6 +30,7 @@ export class UsuariosController {
     private readonly verDetalleUsuarioUseCase: VerDetalleUsuarioUseCase,
     private readonly editarUsuarioUseCase: EditarUsuarioUseCase,
     private readonly eliminarUsuarioUseCase: EliminarUsuarioUseCase,
+    private readonly cambiarPasswordUseCase: CambiarPasswordUseCase,
   ) {}
 
   @Get()
@@ -63,6 +68,16 @@ export class UsuariosController {
       activo: usuario.activo,
       creadoEn: usuario.creadoEn,
     };
+  }
+
+  @Patch('me/password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changeMyPassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CambiarPasswordDto,
+  ) {
+    if (!user?.id) throw new Error('Usuario no autenticado');
+    await this.cambiarPasswordUseCase.execute(BigInt(user.id), dto);
   }
 
   @Get(':id')

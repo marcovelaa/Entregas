@@ -37,19 +37,19 @@ describe('RBAC base role matrix', () => {
   it('keeps catalog and supplier mutations outside the Vendedor role', () => {
     expect(BASE_ROLE_PERMISSIONS.Administrador).toEqual(
       expect.arrayContaining([
-        'catalogo:gestionar',
-        'clientes:gestionar',
-        'proveedores:gestionar',
+        'catalogo:crear',
+        'clientes:crear',
+        'proveedores:crear',
       ]),
     );
     expect(BASE_ROLE_PERMISSIONS['Encargado de Ventas']).toContain(
-      'clientes:gestionar',
+      'clientes:crear',
     );
     expect(BASE_ROLE_PERMISSIONS.Vendedor).not.toEqual(
       expect.arrayContaining([
-        'catalogo:gestionar',
-        'clientes:gestionar',
-        'proveedores:gestionar',
+        'catalogo:crear',
+        'clientes:crear',
+        'proveedores:crear',
       ]),
     );
   });

@@ -22,6 +22,11 @@ export function Modal({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
 
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -34,7 +39,7 @@ export function Modal({
     closeButtonRef.current?.focus();
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") onCloseRef.current();
     };
 
     document.addEventListener("keydown", handleEscape);
@@ -44,7 +49,7 @@ export function Modal({
       document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const trapFocus = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "Tab") return;

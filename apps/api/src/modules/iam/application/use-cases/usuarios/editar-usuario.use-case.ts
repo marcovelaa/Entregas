@@ -36,6 +36,7 @@ export class EditarUsuarioUseCase {
       dto.nombres || usuario.nombres,
       dto.apellidos || usuario.apellidos,
       dto.telefono !== undefined ? dto.telefono : usuario.telefono,
+      dto.codigoReferido !== undefined ? dto.codigoReferido : undefined,
     );
 
     if (dto.password) {

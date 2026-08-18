@@ -33,7 +33,7 @@ export class MarcasController {
   ) {}
 
   @Post()
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async crear(@Body() dto: CrearMarcaDto) {
     return this.crearMarcaUseCase.execute(dto);
   }
@@ -51,7 +51,7 @@ export class MarcasController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ActualizarMarcaDto,
@@ -60,7 +60,7 @@ export class MarcasController {
   }
 
   @Delete(':id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async eliminar(@Param('id', ParseBigIntPipe) id: bigint) {
     return this.eliminarMarcaUseCase.execute(id);
   }

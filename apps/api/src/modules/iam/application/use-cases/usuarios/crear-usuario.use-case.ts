@@ -5,6 +5,7 @@ import { CrearUsuarioDto } from '../../dtos/crear-usuario.dto';
 import {
   UsuarioDuplicadoException,
   RolNoEncontradoException,
+  CodigoReferidoDuplicadoException,
 } from '../../../domain/exceptions/iam.exceptions';
 import * as bcrypt from 'bcrypt';
 
@@ -27,6 +28,17 @@ export class CrearUsuarioUseCase {
       throw new UsuarioDuplicadoException(
         `El email ${dto.email} ya está registrado.`,
       );
+    }
+
+    if (dto.codigoReferido) {
+      const existeCodigo = await this.usuarioRepository.findByCodigoReferido(
+        dto.codigoReferido,
+      );
+      if (existeCodigo) {
+        throw new CodigoReferidoDuplicadoException(
+          `El código de referido ${dto.codigoReferido} ya está en uso.`,
+        );
+      }
     }
 
     const salt = await bcrypt.genSalt();

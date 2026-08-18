@@ -1,0 +1,235 @@
+.pageWrapper {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  color: var(--text-color, #111827);
+}
+
+.pageHeader {
+  margin-bottom: 3rem;
+}
+
+.pageTitle {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.025em;
+}
+
+.pageSubtitle {
+  font-size: 1rem;
+  color: var(--text-muted, #6b7280);
+  margin: 0;
+}
+
+.contentGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .section {
+    flex-direction: row;
+    gap: 4rem;
+  }
+}
+
+.sectionSidebar {
+  flex: 0 0 280px;
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-color, #111827);
+}
+
+.sectionDescription {
+  font-size: 0.875rem;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sectionContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.card {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.profileAvatarGroup {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.avatarCircle {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, var(--color-blue, #3b82f6) 0%, #6366f1 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.avatarInfo h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--bg-body, #f3f4f6);
+  color: var(--text-muted, #4b5563);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color, #e5e7eb);
+  width: 100%;
+}
+
+.dataRow {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dataRow label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted, #4b5563);
+}
+
+.dataRow p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-color, #111827);
+}
+
+.errorBanner {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #fee2e2;
+}
+
+.successBanner {
+  background: #f0fdf4;
+  color: #16a34a;
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #dcfce7;
+}
+
+.formGroup {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color, #374151);
+  margin-bottom: 0.5rem;
+}
+
+.passwordInputWrapper {
+  position: relative;
+  max-width: 400px;
+}
+
+.formInput {
+  width: 100%;
+  padding: 0.625rem 2.5rem 0.625rem 0.75rem;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: var(--bg-body, #ffffff);
+  color: var(--text-color, #111827);
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: var(--color-blue, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.eyeButton {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted, #9ca3af);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eyeButton:hover {
+  color: var(--text-color, #374151);
+}
+
+.formFooter {
+  padding: 1.25rem 1.5rem;
+  background: var(--bg-body, #f9fafb);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btnPrimary {
+  background: var(--text-color, #111827);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btnPrimary:hover {
+  background: #374151;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

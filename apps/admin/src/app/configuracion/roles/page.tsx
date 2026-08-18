@@ -144,7 +144,7 @@ export default function RolesConfigPage() {
   // Agrupar permisos por módulo para la matriz
   const groupedPermisos = allPermisos.reduce((acc: any, p: any) => {
     const parts = p.codigo.split(':');
-    const modulo = parts[1] || 'general';
+    const modulo = parts[0] || 'general';
     if (!acc[modulo]) acc[modulo] = [];
     acc[modulo].push(p);
     return acc;
@@ -342,7 +342,7 @@ export default function RolesConfigPage() {
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
                   {permisosArray.map((p: any) => {
-                    const accion = p.codigo.split(':')[2] || p.codigo;
+                    const accion = p.codigo.split(':').slice(1).join(' ');
                     return (
                       <label key={p.codigo} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
                         <input 
@@ -352,7 +352,7 @@ export default function RolesConfigPage() {
                           style={{ accentColor: 'var(--text-main)', width: '16px', height: '16px' }}
                         />
                         <span title={p.descripcion} style={{ textTransform: 'capitalize' }}>
-                          {accion.replace('_', ' ')}
+                          {accion.replace(/_/g, ' ')}
                         </span>
                       </label>
                     );

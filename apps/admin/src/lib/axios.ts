@@ -1,6 +1,6 @@
-import axios from "axios";
-
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+import axios, { type AxiosError } from "axios";
+import { apiBaseUrl } from "./api-base-url";
+import { clearSession, getAccessToken, redirectToLogin } from "./auth-session";
 
 export const api = axios.create({
   baseURL: apiBaseUrl,
@@ -9,6 +9,34 @@ export const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (error.response?.status === 401) {
+      clearSession();
+      redirectToLogin();
+    } else if (error.response?.status === 403) {
+      const config = error.config as any;
+      if (!config?.silentAuthError) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('global-error', { 
+              detail: 'Acceso denegado: No tienes permiso para realizar esta acción.' 
+            })
+          );
+        }
+      }
+    }
+    return Promise.reject(error);
+  },
+);
 
 /**
  * Builds a public asset URL from the configured API origin. API endpoints live

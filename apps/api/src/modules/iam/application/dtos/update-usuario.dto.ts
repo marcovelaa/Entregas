@@ -25,4 +25,8 @@ export class UpdateUsuarioDto {
   @IsBoolean()
   @IsOptional()
   activo?: boolean;
+
+  @IsString()
+  @IsOptional()
+  codigoReferido?: string;
 }

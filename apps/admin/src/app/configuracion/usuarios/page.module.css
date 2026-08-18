@@ -295,3 +295,13 @@
   background-color: var(--bg-color);
   color: var(--text-main);
 }
+
+.errorBanner {
+  padding: 0.75rem 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}

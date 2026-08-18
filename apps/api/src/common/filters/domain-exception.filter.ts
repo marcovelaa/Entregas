@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import {
+  CodigoReferidoDuplicadoException,
   DomainException,
   EmailDuplicadoException,
   OperacionNoPermitidaException,
@@ -17,6 +18,7 @@ const STATUS_MAP = new Map<Function, HttpStatus>([
   [UsuarioDuplicadoException, HttpStatus.CONFLICT],
   [RolDuplicadoException, HttpStatus.CONFLICT],
   [OperacionNoPermitidaException, HttpStatus.FORBIDDEN],
+  [CodigoReferidoDuplicadoException, HttpStatus.CONFLICT],
 ]);
 
 @Catch(DomainException)

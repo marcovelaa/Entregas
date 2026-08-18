@@ -21,6 +21,7 @@ import { ROL_REPOSITORY } from './domain/repositories/rol.repository.interface';
 import { PrismaRolRepository } from './infrastructure/repositories/prisma-rol.repository';
 import { USUARIO_REPOSITORY } from './domain/repositories/usuario.repository.interface';
 import { PrismaUsuarioRepository } from './infrastructure/repositories/prisma-usuario.repository';
+import { CambiarPasswordUseCase } from './application/use-cases/usuarios/cambiar-password.use-case';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 
 @Module({
@@ -105,6 +106,11 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
     {
       provide: EliminarUsuarioUseCase,
       useFactory: (userRepo) => new EliminarUsuarioUseCase(userRepo),
+      inject: [USUARIO_REPOSITORY],
+    },
+    {
+      provide: CambiarPasswordUseCase,
+      useFactory: (userRepo) => new CambiarPasswordUseCase(userRepo),
       inject: [USUARIO_REPOSITORY],
     },
   ],

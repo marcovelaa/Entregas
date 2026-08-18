@@ -6,6 +6,7 @@ import { api } from '../../lib/axios';
 import Link from 'next/link';
 import CompraDetalleModal from './components/CompraDetalleModal';
 import { Modal } from '../../components/molecules/Modal/Modal';
+import { RequirePermission } from '../../components/atoms/RequirePermission/RequirePermission';
 import styles from './page.module.css';
 
 export default function ComprasPage() {
@@ -60,9 +61,11 @@ export default function ComprasPage() {
           <p className={styles.subtitle}>Historial de compras e ingresos de inventario</p>
         </div>
         <div>
-          <Link href="/compras/nueva" className={styles.btnPrimary} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
-            <Plus size={16} strokeWidth={1.5} /> Nueva Compra
-          </Link>
+          <RequirePermission p="compras:crear">
+            <Link href="/compras/nueva" className={styles.btnPrimary} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
+              <Plus size={16} strokeWidth={1.5} /> Nueva Compra
+            </Link>
+          </RequirePermission>
         </div>
       </header>
       
@@ -117,17 +120,19 @@ export default function ComprasPage() {
                               <Eye size={18} strokeWidth={1.5} />
                             </button>
                             {compra.estado !== 'ANULADO' && compra.estado !== 'CANCELADA' && (
-                              <button 
-                                className={styles.btnGhost} 
-                                onClick={() => {
-                                  setCompraAnularId(compra.id);
-                                  setMotivoAnulacion('');
-                                }}
-                                title="Anular Compra"
-                                style={{ color: '#ef4444' }}
-                              >
-                                <Ban size={18} strokeWidth={1.5} />
-                              </button>
+                              <RequirePermission p="compras:anular" fallback="hide">
+                                <button 
+                                  className={styles.btnGhost} 
+                                  onClick={() => {
+                                    setCompraAnularId(compra.id);
+                                    setMotivoAnulacion('');
+                                  }}
+                                  title="Anular Compra"
+                                  style={{ color: '#ef4444' }}
+                                >
+                                  <Ban size={18} strokeWidth={1.5} />
+                                </button>
+                              </RequirePermission>
                             )}
                           </div>
                         </td>

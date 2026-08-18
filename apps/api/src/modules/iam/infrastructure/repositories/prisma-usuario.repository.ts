@@ -43,6 +43,13 @@ export class PrismaUsuarioRepository implements IUsuarioRepository {
     return user ? this.mapToDomain(user) : null;
   }
 
+  async findByCodigoReferido(codigoReferido: string): Promise<Usuario | null> {
+    const user = await this.prisma.usuario.findUnique({
+      where: { codigo_referido: codigoReferido },
+    });
+    return user ? this.mapToDomain(user) : null;
+  }
+
   async findAll(): Promise<Usuario[]> {
     const users = await this.prisma.usuario.findMany({
       orderBy: { id: 'desc' },
@@ -76,6 +83,8 @@ export class PrismaUsuarioRepository implements IUsuarioRepository {
         nombres: usuario.nombres,
         apellidos: usuario.apellidos,
         telefono: usuario.telefono,
+        password_hash: usuario.passwordHash,
+        codigo_referido: usuario.codigoReferido,
         activo: usuario.activo,
         ultimo_acceso_en: usuario.ultimoAccesoEn,
       },

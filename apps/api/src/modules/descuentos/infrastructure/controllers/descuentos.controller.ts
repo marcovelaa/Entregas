@@ -297,7 +297,7 @@ export class DescuentosController {
   }
 
   @Post()
-  @RequierePermiso('descuentos:gestionar')
+  @RequierePermiso('descuentos:crear')
   @ApiOperation({ summary: 'Crear un descuento o regla promocional' })
   @ApiResponse({ status: 201, description: 'Descuento creado' })
   async crear(@Body() dto: any) {
@@ -396,7 +396,7 @@ export class DescuentosController {
   }
 
   @Patch(':id')
-  @RequierePermiso('descuentos:gestionar')
+  @RequierePermiso('descuentos:crear')
   @ApiOperation({
     summary: 'Actualizar parcialmente un descuento (ej. activar/desactivar)',
   })
@@ -443,7 +443,7 @@ export class DescuentosController {
   }
 
   @Put(':id')
-  @RequierePermiso('descuentos:gestionar')
+  @RequierePermiso('descuentos:crear')
   @ApiOperation({ summary: 'Reemplazar un descuento completo' })
   @ApiParam({ name: 'id', description: 'ID del descuento' })
   @ApiResponse({ status: 200, description: 'Descuento actualizado' })
@@ -613,7 +613,7 @@ export class DescuentosController {
   }
 
   @Delete(':id')
-  @RequierePermiso('descuentos:gestionar')
+  @RequierePermiso('descuentos:crear')
   @ApiOperation({ summary: 'Eliminar un descuento' })
   @ApiParam({ name: 'id', description: 'ID del descuento' })
   @ApiResponse({ status: 200, description: 'Descuento eliminado' })

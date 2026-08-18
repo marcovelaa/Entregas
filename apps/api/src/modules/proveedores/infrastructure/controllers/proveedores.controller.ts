@@ -28,7 +28,7 @@ export class ProveedoresController {
   ) {}
 
   @Post()
-  @RequierePermiso('proveedores:gestionar')
+  @RequierePermiso('proveedores:crear')
   async crear(@Body() dto: CrearProveedorDto) {
     return this.crearProveedorUseCase.execute(dto);
   }
@@ -40,7 +40,7 @@ export class ProveedoresController {
   }
 
   @Patch(':id')
-  @RequierePermiso('proveedores:gestionar')
+  @RequierePermiso('proveedores:crear')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ActualizarProveedorDto,

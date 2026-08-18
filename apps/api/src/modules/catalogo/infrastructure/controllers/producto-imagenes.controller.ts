@@ -33,13 +33,13 @@ export class ProductoImagenesController {
   ) {}
 
   @Post()
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async crear(@Body() dto: CrearProductoImagenDto) {
     return this.crearProductoImagenUseCase.execute(dto);
   }
 
   @Post('upload/:producto_id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   @UseInterceptors(FileInterceptor('image', imageUploadOptions(uploadDir)))
   async uploadImagen(
     @Param('producto_id') producto_id: string,
@@ -57,7 +57,7 @@ export class ProductoImagenesController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() body: any,
@@ -70,7 +70,7 @@ export class ProductoImagenesController {
   }
 
   @Delete(':id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async eliminar(@Param('id', ParseBigIntPipe) id: bigint) {
     await this.repo.eliminar(id);
     return { success: true };

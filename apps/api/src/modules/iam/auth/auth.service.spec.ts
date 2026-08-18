@@ -34,6 +34,7 @@ function createHarness() {
     findById: jest.fn(),
     findByPublicId: jest.fn(),
     findByEmail: jest.fn(),
+    findByCodigoReferido: jest.fn(),
     findAll: jest.fn(),
     save: jest.fn(),
     update: jest.fn(),

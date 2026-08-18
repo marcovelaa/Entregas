@@ -47,14 +47,14 @@ export class VariantesController {
   ) {}
 
   @Post()
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async crear(@Body() dto: CrearVarianteDto) {
     const v = await this.crearVarianteUseCase.execute(dto);
     return serializeVariante(v);
   }
 
   @Post('bulk')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async crearBulk(@Body() dto: CrearVariantesBulkDto) {
     const results = [];
     for (const item of dto.variantes) {
@@ -76,7 +76,7 @@ export class VariantesController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ActualizarVarianteDto,
@@ -86,13 +86,13 @@ export class VariantesController {
   }
 
   @Delete(':id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async eliminar(@Param('id', ParseBigIntPipe) id: bigint) {
     return this.eliminarVarianteUseCase.execute(id);
   }
 
   @Post('upload-imagen/:id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   @UseInterceptors(FileInterceptor('image', imageUploadOptions(variantesDir)))
   async uploadImagen(
     @Param('id', ParseBigIntPipe) id: bigint,

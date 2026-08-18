@@ -87,6 +87,7 @@ export class AuthService {
         apellidos: usuario.apellidos,
         email: usuario.email,
         rol: rol?.nombre ?? null,
+        permisos,
       },
     };
   }

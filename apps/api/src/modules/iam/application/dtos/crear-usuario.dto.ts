@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   MinLength,
+  MaxLength,
 } from 'class-validator';
 
 export class CrearUsuarioDto {
@@ -34,5 +35,6 @@ export class CrearUsuarioDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   codigoReferido?: string;
 }

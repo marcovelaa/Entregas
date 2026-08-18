@@ -1,0 +1,27 @@
+change: crear-usuario-codigo-referido
+artifact_store: openspec
+preflight:
+  pace: auto
+  artifact_store: openspec
+  delivery_strategy: ask-on-risk
+  review_budget_lines: 400
+phases:
+  explore:
+    status: complete
+  proposal:
+    status: complete
+  spec:
+    status: complete
+  design:
+    status: complete
+  tasks:
+    status: complete
+  apply:
+    status: partial
+    note: "16/18 tasks complete (all code + automated verification). 5.2/5.3 are manual QA requiring a running API/browser, not executable by the automated apply phase."
+  verify:
+    status: complete
+    note: "Automated portion PASS WITH WARNINGS: 225/226 backend jest tests pass (1 pre-existing unrelated failure in pedidos module), 28/28 focused tests pass, apps/api and apps/admin tsc --noEmit both clean of change-related errors. Both trap fixes (STATUS_MAP CONFLICT entry, auth.service.spec.ts mock) confirmed present in working tree. Tasks 5.2/5.3 remain pending human QA (require live server/browser) — not a blocker for archive per instructions."
+  archive:
+    status: pending
+next_recommended: sdd-archive

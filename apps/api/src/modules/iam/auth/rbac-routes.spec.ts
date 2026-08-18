@@ -93,7 +93,7 @@ describe('RBAC route metadata', () => {
         DescuentosController.prototype as unknown as Record<string, unknown>,
         'crear',
       ),
-    ).toBe('descuentos:gestionar');
+    ).toBe('descuentos:crear');
     expect(
       requiredPermission(
         DescuentosController.prototype as unknown as Record<string, unknown>,
@@ -164,7 +164,7 @@ describe('RBAC route metadata', () => {
     for (const [controller, methods] of catalogMutationControllers) {
       for (const method of methods) {
         expect(requiredPermission(controller, method)).toBe(
-          'catalogo:gestionar',
+          'catalogo:crear',
         );
       }
     }
@@ -175,13 +175,13 @@ describe('RBAC route metadata', () => {
           ClientesController.prototype as unknown as Record<string, unknown>,
           method,
         ),
-      ).toBe('clientes:gestionar');
+      ).toBe('clientes:crear');
       expect(
         requiredPermission(
           ProveedoresController.prototype as unknown as Record<string, unknown>,
           method,
         ),
-      ).toBe('proveedores:gestionar');
+      ).toBe('proveedores:crear');
     }
   });
 });

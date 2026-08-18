@@ -1,0 +1,25 @@
+change: login-erp
+artifact_store: openspec
+preflight:
+  pace: auto
+  artifact_store: openspec
+  delivery_strategy: ask-on-risk
+  review_budget_lines: 400
+phases:
+  explore:
+    status: complete
+  proposal:
+    status: complete
+  spec:
+    status: complete
+  design:
+    status: complete
+  tasks:
+    status: complete
+  apply:
+    status: pending
+  verify:
+    status: pending
+  archive:
+    status: pending
+next_recommended: sdd-apply

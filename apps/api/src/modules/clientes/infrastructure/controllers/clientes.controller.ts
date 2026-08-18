@@ -19,7 +19,7 @@ export class ClientesController {
   ) {}
 
   @Post()
-  @RequierePermiso('clientes:gestionar')
+  @RequierePermiso('clientes:crear')
   async crear(@Body() dto: CrearClienteDto) {
     return this.crearClienteUseCase.execute(dto);
   }
@@ -31,7 +31,7 @@ export class ClientesController {
   }
 
   @Put(':id')
-  @RequierePermiso('clientes:gestionar')
+  @RequierePermiso('clientes:crear')
   async actualizar(@Param('id') id: string, @Body() dto: ActualizarClienteDto) {
     return this.actualizarClienteUseCase.execute(id, dto);
   }

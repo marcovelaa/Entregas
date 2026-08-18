@@ -31,8 +31,8 @@ export function GlobalNotifications() {
   const fetchData = async () => {
     try {
       const [resInv, resPed] = await Promise.all([
-        api.get('/inventario/alertas').catch(() => ({ data: [] })),
-        api.get('/pedidos?estado=PAGADO&limit=50').catch(() => ({ data: { data: [] } }))
+        api.get('/inventario/alertas', { silentAuthError: true } as any).catch(() => ({ data: [] })),
+        api.get('/pedidos?estado=PAGADO&limit=50', { silentAuthError: true } as any).catch(() => ({ data: { data: [] } }))
       ]);
 
       const inventarioData = resInv.data || [];

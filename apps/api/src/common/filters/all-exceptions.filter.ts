@@ -11,7 +11,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
-      const body = exception.getResponse();
+      let body = exception.getResponse();
+
+      if (status === HttpStatus.TOO_MANY_REQUESTS) {
+        body = {
+          statusCode: status,
+          message: 'Demasiadas peticiones. Por favor, intentá de nuevo más tarde.',
+          error: 'Too Many Requests'
+        };
+      }
+
       return response.status(status).json(typeof body === 'string' ? { statusCode: status, message: body } : body);
     }
 

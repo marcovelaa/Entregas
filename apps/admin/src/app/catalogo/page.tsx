@@ -8,6 +8,7 @@ import styles from './page.module.css';
 import { api, getApiAssetUrl } from '../../lib/axios';
 import { Producto, Categoria, ActiveTab } from './types';
 import MarcasPanel from './components/MarcasPanel';
+import { RequirePermission } from '../../components/atoms/RequirePermission/RequirePermission';
 
 function CatalogoContent() {
   const router = useRouter();
@@ -170,9 +171,11 @@ function CatalogoContent() {
               <Search size={16} className={styles.searchIcon} />
               <input type="text" className={styles.searchInput} placeholder="Buscar productos..." value={search} onChange={e => setSearch(e.target.value)} />
             </div>
-            <button className={styles.btnPrimary} onClick={openCrearProducto}>
-              <Plus size={16} strokeWidth={1.5} /> Nuevo Producto
-            </button>
+            <RequirePermission p="catalogo:crear">
+              <button className={styles.btnPrimary} onClick={openCrearProducto}>
+                <Plus size={16} strokeWidth={1.5} /> Nuevo Producto
+              </button>
+            </RequirePermission>
           </div>
           <div className={styles.tableWrapper}>
             {loading ? (
@@ -262,12 +265,16 @@ function CatalogoContent() {
                         <td><span className={`${styles.pill} ${p.activo ? styles.pillGreen : styles.pillRed}`}>{p.activo ? 'Activo' : 'Inactivo'}</span></td>
                         <td>
                           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                            <button className={styles.btnSecondary} style={{ padding: '0.5rem 0.8rem', gap: '0.4rem', fontSize: '0.85rem' }} title="Editar Producto" aria-label={`Editar producto ${p.nombre}`} onClick={() => openEditarProducto(p)}>
-                              <Pencil size={15} /> Editar
-                            </button>
-                            <button className={styles.btnSecondary} style={{ padding: '0.5rem' }} title={p.activo ? 'Desactivar' : 'Activar'} aria-label={p.activo ? `Desactivar producto ${p.nombre}` : `Activar producto ${p.nombre}`} onClick={() => handleToggleActivo(p.id, p.activo)}>
-                              {p.activo ? <ToggleRight size={18} color="var(--color-green)" /> : <ToggleLeft size={18} />}
-                            </button>
+                            <RequirePermission p="catalogo:editar">
+                              <button className={styles.btnSecondary} style={{ padding: '0.5rem 0.8rem', gap: '0.4rem', fontSize: '0.85rem' }} title="Editar Producto" aria-label={`Editar producto ${p.nombre}`} onClick={() => openEditarProducto(p)}>
+                                <Pencil size={15} /> Editar
+                              </button>
+                            </RequirePermission>
+                            <RequirePermission p="catalogo:editar">
+                              <button className={styles.btnSecondary} style={{ padding: '0.5rem' }} title={p.activo ? 'Desactivar' : 'Activar'} aria-label={p.activo ? `Desactivar producto ${p.nombre}` : `Activar producto ${p.nombre}`} onClick={() => handleToggleActivo(p.id, p.activo)}>
+                                {p.activo ? <ToggleRight size={18} color="var(--color-green)" /> : <ToggleLeft size={18} />}
+                              </button>
+                            </RequirePermission>
                           </div>
                         </td>
                       </tr>

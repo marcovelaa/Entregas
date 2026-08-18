@@ -31,7 +31,7 @@ export class CategoriasController {
   ) {}
 
   @Post()
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async crear(@Body() dto: CrearCategoriaDto) {
     return this.crearCategoriaUseCase.execute(dto);
   }
@@ -56,7 +56,7 @@ export class CategoriasController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ActualizarCategoriaDto,

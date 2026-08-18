@@ -35,7 +35,7 @@ export class ProductosController {
   ) {}
 
   @Post()
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async crear(@Body() dto: CrearProductoDto) {
     return this.crearProductoUseCase.execute(dto);
   }
@@ -60,7 +60,7 @@ export class ProductosController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ActualizarProductoDto,
@@ -69,7 +69,7 @@ export class ProductosController {
   }
 
   @Delete(':id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async eliminar(@Param('id', ParseBigIntPipe) id: bigint) {
     return this.eliminarProductoUseCase.execute(id);
   }

@@ -1,0 +1,18 @@
+.lockedWrapper {
+  position: relative;
+  display: inline-block;
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.lockIcon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  padding: 2px;
+}

@@ -1,9 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Sidebar } from '../components/organisms/Sidebar/Sidebar';
-import styles from './layout.module.css';
-
-import { TopBar } from '../components/organisms/TopBar/TopBar';
+import { AppShell } from '../components/organisms/AppShell/AppShell';
 
 export const metadata: Metadata = {
   title: 'Admin ERP - ENTREGAS',
@@ -18,15 +15,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <div className={styles.appContainer}>
-          <Sidebar />
-          <div className={styles.mainContent}>
-            <TopBar />
-            <div className={styles.pageContent}>
-              {children}
-            </div>
-          </div>
-        </div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

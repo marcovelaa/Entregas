@@ -36,7 +36,7 @@ export class EmpaquesController {
   }
 
   @Post('bulk')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async crearBulk(@Body() dto: CrearEmpaquesBulkDto) {
     const empaques = await this.crearBulkUc.execute(dto);
     return empaques.map((e) => ({
@@ -51,7 +51,7 @@ export class EmpaquesController {
   }
 
   @Post()
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async crear(@Body() dto: CrearEmpaqueDto) {
     const emp = await this.crearEmpaqueUc.execute(dto);
     return {
@@ -63,7 +63,7 @@ export class EmpaquesController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:gestionar')
+  @RequierePermiso('catalogo:crear')
   async actualizar(@Param('id') id: string, @Body() dto: ActualizarEmpaqueDto) {
     const emp = await this.actualizarEmpaqueUc.execute(BigInt(id), dto);
     return {

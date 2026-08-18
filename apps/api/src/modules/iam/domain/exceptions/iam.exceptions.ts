@@ -12,3 +12,5 @@ export class UsuarioDuplicadoException extends DomainException {}
 export class RolNoEncontradoException extends DomainException {}
 export class RolDuplicadoException extends DomainException {}
 export class OperacionNoPermitidaException extends DomainException {}
+export class CodigoReferidoDuplicadoException extends DomainException {}
+export class CredencialesInvalidasException extends DomainException {}

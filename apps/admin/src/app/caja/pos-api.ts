@@ -20,8 +20,8 @@ const listData = <T>(response: { data: PaginatedResponse<T> }): T[] =>
 
 export async function fetchPosData(signal: AbortSignal): Promise<PosData> {
   const approversRequest = Promise.all([
-    api.get<PosApprover[]>("/usuarios", { signal }),
-    api.get<PosRole[]>("/roles", { signal }),
+    api.get<PosApprover[]>("/usuarios", { signal, silentAuthError: true } as any),
+    api.get<PosRole[]>("/roles", { signal, silentAuthError: true } as any),
   ])
     .then(([usuariosResponse, rolesResponse]) => {
       const adminRoleIds = new Set(

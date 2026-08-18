@@ -73,7 +73,8 @@
   padding: 0 0.75rem;
 }
 
-.navLink {
+.navLink,
+.logoutBtn {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -85,9 +86,16 @@
   font-size: 0.95rem;
   white-space: nowrap;
   overflow: hidden;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
 }
 
-.collapsed .navLink {
+.collapsed .navLink,
+.collapsed .logoutBtn {
   padding: 0.75rem 0;
   gap: 0;
   justify-content: center;
@@ -102,7 +110,8 @@
   justify-content: center;
 }
 
-.navLink:hover {
+.navLink:hover,
+.logoutBtn:hover {
   background-color: #f1f5f9;
   color: var(--text-main);
 }

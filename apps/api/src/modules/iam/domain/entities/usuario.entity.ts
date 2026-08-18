@@ -61,10 +61,14 @@ export class Usuario {
     nombres: string,
     apellidos: string,
     telefono: string | null,
+    codigoReferido?: string | null,
   ): void {
     this.nombres = nombres;
     this.apellidos = apellidos;
     this.telefono = telefono;
+    if (codigoReferido !== undefined) {
+      this.codigoReferido = codigoReferido;
+    }
   }
 
   registrarAcceso(): void {
