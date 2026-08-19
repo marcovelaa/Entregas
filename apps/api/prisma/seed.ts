@@ -1,25 +1,52 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { ALL_PERMISSIONS, BASE_ROLE_PERMISSIONS } from '@repo/rbac-contract';
+import { diffCatalogoPermisos } from './reconcile-permisos';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Iniciando seed...');
 
-  // 1. Crear Permisos
-  const permisos = ALL_PERMISSIONS;
+  // 1. Sincronizar el catálogo de permisos (agrega y quita de verdad)
+  const codigosExistentes = (
+    await prisma.permiso.findMany({ select: { codigo: true } })
+  ).map((p) => p.codigo);
+  const codigosDeseados = ALL_PERMISSIONS.map((p) => p.codigo);
+  const { aAgregar, aQuitar } = diffCatalogoPermisos(
+    codigosExistentes,
+    codigosDeseados,
+  );
 
-  for (const p of permisos) {
-    await prisma.permiso.upsert({
-      where: { codigo: p.codigo },
-      update: { descripcion: p.descripcion },
-      create: { codigo: p.codigo, descripcion: p.descripcion },
+  for (const p of ALL_PERMISSIONS.filter((p) => aAgregar.includes(p.codigo))) {
+    await prisma.permiso.create({
+      data: { codigo: p.codigo, descripcion: p.descripcion },
     });
   }
-  console.log('✅ Permisos insertados/actualizados');
+  for (const p of ALL_PERMISSIONS) {
+    await prisma.permiso.update({
+      where: { codigo: p.codigo },
+      data: { descripcion: p.descripcion },
+    });
+  }
+  for (const codigo of aQuitar) {
+    const afectados = await prisma.rolPermiso.findMany({
+      where: { permiso_codigo: codigo },
+      include: { rol: true },
+    });
+    if (afectados.length) {
+      console.warn(
+        `⚠️  Revocando permiso retirado '${codigo}' de: ${afectados.map((a) => a.rol.nombre).join(', ')}`,
+      );
+    }
+    await prisma.permiso.delete({ where: { codigo } });
+  }
+  console.log(
+    `✅ Catálogo sincronizado (+${aAgregar.length} / -${aQuitar.length})`,
+  );
 
-  // 2. Crear Roles Base
+  // 2. Crear Roles Base — recordar cuáles YA existían antes de este upsert,
+  //    para no pisar sus grants en el paso 3.
   const roles = [
     {
       nombre: 'Super Usuario',
@@ -43,7 +70,12 @@ async function main() {
     },
   ];
 
+  const rolesPreexistentes = new Set<string>();
   for (const r of roles) {
+    const existia = await prisma.rol.findUnique({
+      where: { nombre: r.nombre },
+    });
+    if (existia) rolesPreexistentes.add(r.nombre);
     await prisma.rol.upsert({
       where: { nombre: r.nombre },
       update: { descripcion: r.descripcion, activo: r.activo },
@@ -52,34 +84,28 @@ async function main() {
   }
   console.log('✅ Roles base insertados/actualizados');
 
-  // 3. Asignar los permisos base a cada rol. Los upserts preservan permisos
-  // adicionales gestionados explícitamente desde IAM.
-  const superRol = await prisma.rol.findUnique({
-    where: { nombre: 'Super Usuario' },
-  });
+  // 3. Aplicar los permisos base SOLO a roles recién creados en esta corrida.
+  //    Si el rol ya existía, la DB manda — un admin pudo haberlo personalizado
+  //    desde /configuracion/roles y el seed no debe pisarlo.
   for (const [nombreRol, permisosRol] of Object.entries(
     BASE_ROLE_PERMISSIONS,
   )) {
+    if (rolesPreexistentes.has(nombreRol)) continue;
+
     const rol = await prisma.rol.findUnique({ where: { nombre: nombreRol } });
-    if (!rol) continue;
+    if (!rol) continue; // rol custom sin defaults en el contrato
 
     for (const permisoCodigo of permisosRol) {
-      await prisma.rolPermiso.upsert({
-        where: {
-          rol_id_permiso_codigo: {
-            rol_id: rol.id,
-            permiso_codigo: permisoCodigo,
-          },
-        },
-        update: {},
-        create: {
-          rol_id: rol.id,
-          permiso_codigo: permisoCodigo,
-        },
+      await prisma.rolPermiso.create({
+        data: { rol_id: rol.id, permiso_codigo: permisoCodigo },
       });
     }
   }
-  console.log('✅ Permisos base asignados a los roles');
+  console.log('✅ Permisos base asignados a los roles nuevos');
+
+  const superRol = await prisma.rol.findUnique({
+    where: { nombre: 'Super Usuario' },
+  });
 
   // 4. Crear el Super Usuario Inicial
   const emailAdmin = process.env.ADMIN_EMAIL || 'admin@entregas.com.bo';
