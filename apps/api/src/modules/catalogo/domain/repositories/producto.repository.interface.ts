@@ -32,10 +32,14 @@ export interface ProductoEntity {
 export interface ProductoFiltros {
   activo?: boolean;
   categoria_id?: bigint;
+  categoria_slug?: string;
   marca_id?: bigint;
   tipo_producto?: 'SIMPLE' | 'COMBO' | 'SERVICIO';
   visibilidad?: 'publica' | 'admin';
   search?: string;
+  atributo_nivel?: string;
+  atributo_grado?: string;
+  atributo_materia?: string;
 }
 
 export interface InventarioStockRow {

@@ -195,6 +195,22 @@ export class ListarProductosDto extends PaginationDto {
 
   @IsString()
   @IsOptional()
+  categoria_slug?: string;
+
+  @IsString()
+  @IsOptional()
+  atributo_nivel?: string;
+
+  @IsString()
+  @IsOptional()
+  atributo_grado?: string;
+
+  @IsString()
+  @IsOptional()
+  atributo_materia?: string;
+
+  @IsString()
+  @IsOptional()
   tipo_producto?: 'SIMPLE' | 'COMBO' | 'SERVICIO';
 
   @IsBoolean()

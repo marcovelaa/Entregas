@@ -145,6 +145,26 @@ export class PrismaProductoRepository implements IProductoRepository {
         ],
       });
     }
+    if (filtros?.categoria_slug) {
+      condiciones.push({
+        categoria: { slug: filtros.categoria_slug },
+      });
+    }
+    if (filtros?.atributo_nivel) {
+      condiciones.push({
+        atributos: { path: ['nivel'], equals: filtros.atributo_nivel },
+      });
+    }
+    if (filtros?.atributo_grado) {
+      condiciones.push({
+        atributos: { path: ['grado'], equals: filtros.atributo_grado },
+      });
+    }
+    if (filtros?.atributo_materia && filtros.atributo_materia !== 'all') {
+      condiciones.push({
+        atributos: { path: ['materia'], equals: filtros.atributo_materia },
+      });
+    }
     if (condiciones.length > 0) {
       where.AND = condiciones;
     }

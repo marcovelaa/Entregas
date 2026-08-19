@@ -128,60 +128,91 @@ describe('RBAC route metadata', () => {
       ),
     ).toBe('iam:roles:asignar_permisos');
   });
-  it('requires management permissions for every catalog, client, and supplier mutation', () => {
+  it('requires the matching crear/editar/eliminar permission for every catalog, client, and supplier mutation', () => {
     const catalogMutationControllers: Array<
-      [Record<string, unknown>, string[]]
+      [Record<string, unknown>, Record<string, string>]
     > = [
       [
         CategoriasController.prototype as unknown as Record<string, unknown>,
-        ['crear', 'actualizar'],
+        { crear: 'catalogo:crear', actualizar: 'catalogo:editar' },
       ],
       [
         EmpaquesController.prototype as unknown as Record<string, unknown>,
-        ['crearBulk', 'crear', 'actualizar'],
+        {
+          crearBulk: 'catalogo:crear',
+          crear: 'catalogo:crear',
+          actualizar: 'catalogo:editar',
+        },
       ],
       [
         MarcasController.prototype as unknown as Record<string, unknown>,
-        ['crear', 'actualizar', 'eliminar'],
+        {
+          crear: 'catalogo:crear',
+          actualizar: 'catalogo:editar',
+          eliminar: 'catalogo:eliminar',
+        },
       ],
       [
         ProductoImagenesController.prototype as unknown as Record<
           string,
           unknown
         >,
-        ['crear', 'uploadImagen', 'actualizar', 'eliminar'],
+        {
+          crear: 'catalogo:crear',
+          uploadImagen: 'catalogo:crear',
+          actualizar: 'catalogo:editar',
+          eliminar: 'catalogo:eliminar',
+        },
       ],
       [
         ProductosController.prototype as unknown as Record<string, unknown>,
-        ['crear', 'actualizar', 'eliminar'],
+        {
+          crear: 'catalogo:crear',
+          actualizar: 'catalogo:editar',
+          eliminar: 'catalogo:eliminar',
+        },
       ],
       [
         VariantesController.prototype as unknown as Record<string, unknown>,
-        ['crear', 'crearBulk', 'actualizar', 'eliminar', 'uploadImagen'],
+        {
+          crear: 'catalogo:crear',
+          crearBulk: 'catalogo:crear',
+          actualizar: 'catalogo:editar',
+          eliminar: 'catalogo:eliminar',
+          uploadImagen: 'catalogo:crear',
+        },
       ],
     ];
 
-    for (const [controller, methods] of catalogMutationControllers) {
-      for (const method of methods) {
-        expect(requiredPermission(controller, method)).toBe(
-          'catalogo:crear',
-        );
+    for (const [controller, expectedByMethod] of catalogMutationControllers) {
+      for (const [method, expected] of Object.entries(expectedByMethod)) {
+        expect(requiredPermission(controller, method)).toBe(expected);
       }
     }
 
-    for (const method of ['crear', 'actualizar']) {
-      expect(
-        requiredPermission(
-          ClientesController.prototype as unknown as Record<string, unknown>,
-          method,
-        ),
-      ).toBe('clientes:crear');
-      expect(
-        requiredPermission(
-          ProveedoresController.prototype as unknown as Record<string, unknown>,
-          method,
-        ),
-      ).toBe('proveedores:crear');
-    }
+    expect(
+      requiredPermission(
+        ClientesController.prototype as unknown as Record<string, unknown>,
+        'crear',
+      ),
+    ).toBe('clientes:crear');
+    expect(
+      requiredPermission(
+        ClientesController.prototype as unknown as Record<string, unknown>,
+        'actualizar',
+      ),
+    ).toBe('clientes:editar');
+    expect(
+      requiredPermission(
+        ProveedoresController.prototype as unknown as Record<string, unknown>,
+        'crear',
+      ),
+    ).toBe('proveedores:crear');
+    expect(
+      requiredPermission(
+        ProveedoresController.prototype as unknown as Record<string, unknown>,
+        'actualizar',
+      ),
+    ).toBe('proveedores:editar');
   });
 });

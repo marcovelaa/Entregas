@@ -146,10 +146,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <article 
-      ref={cardRef}
       className={`${styles.productCard} ${isBook ? styles.productCardBook : ''}`}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
     >
       {id && <Link href={`/producto/${id}`} className={styles.cardLink} aria-label={`Ver detalle de ${title}`} />}
       
@@ -184,30 +181,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             ))}
           </div>
         ) : (
-          <Image
-            src={finalImageUrl}
-            alt={title}
-            fill
-            sizes="(max-width: 768px) 100vw, 220px"
-            className={styles.productImg}
-          />
+          <div className={styles.bookCoverWrapper}>
+            <Image
+              src={finalImageUrl}
+              alt={title}
+              fill
+              sizes="(max-width: 768px) 100vw, 220px"
+              className={styles.productImg}
+            />
+            <div className={styles.glare}></div>
+          </div>
         )}
       </div>
 
       <div className={styles.productInfo}>
-        <div className={styles.metaRow}>
-          <span className={styles.category} style={categoryColor ? { color: categoryColor } : {}}>
-            {category}
-          </span>
-        </div>
-
-        <h3 className={styles.title} title={title}>{title}</h3>
-
-        {isBook && (
-          <div className={styles.hoverReveal}>
-            <p className={styles.descriptionText}>{descriptionStub}</p>
+        {!isBook && (
+          <div className={styles.metaRow}>
+            <span className={styles.category} style={categoryColor ? { color: categoryColor } : {}}>
+              {category}
+            </span>
           </div>
         )}
+
+        <h3 className={styles.title} title={title}>{title}</h3>
 
         <div className={styles.footerRow}>
           <div className={styles.priceCol}>
@@ -221,7 +217,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           <button className={styles.addToCartBtn} aria-label="Agregar al carrito" onClick={handleAddToCartClick}>
-            Añadir
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
           </button>
         </div>
       </div>

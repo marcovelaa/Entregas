@@ -51,7 +51,7 @@ export class MarcasController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:crear')
+  @RequierePermiso('catalogo:editar')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ActualizarMarcaDto,
@@ -60,7 +60,7 @@ export class MarcasController {
   }
 
   @Delete(':id')
-  @RequierePermiso('catalogo:crear')
+  @RequierePermiso('catalogo:eliminar')
   async eliminar(@Param('id', ParseBigIntPipe) id: bigint) {
     return this.eliminarMarcaUseCase.execute(id);
   }

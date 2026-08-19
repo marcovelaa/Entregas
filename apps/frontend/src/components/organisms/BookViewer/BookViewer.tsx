@@ -46,7 +46,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({ images, title, id }) => 
               </div>
               <div className={styles.pageBack}>
                 <div className={styles.pageBackContent}>
-                  <div className={styles.logoWatermark}>entregas.com.bo</div>
+                  {/* Watermark removed as requested */}
                 </div>
               </div>
             </div>

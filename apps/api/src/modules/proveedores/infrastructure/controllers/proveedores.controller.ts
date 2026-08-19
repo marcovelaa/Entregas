@@ -17,7 +17,6 @@ import {
 } from '../../application/dtos/proveedor.dto';
 import { ParseBigIntPipe } from '../../../../common/pipes';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
-import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @Controller('proveedores')
 export class ProveedoresController {
@@ -34,13 +33,13 @@ export class ProveedoresController {
   }
 
   @Get()
-  @Public()
+  @RequierePermiso('proveedores:ver')
   async listar(@Query() query: ListarProveedoresDto) {
     return this.listarProveedoresUseCase.execute(query);
   }
 
   @Patch(':id')
-  @RequierePermiso('proveedores:crear')
+  @RequierePermiso('proveedores:editar')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ActualizarProveedorDto,

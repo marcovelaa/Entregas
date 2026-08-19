@@ -16,90 +16,83 @@ const levels = [
 const catalogData: Record<string, { id: string; name: string; subjects: { id: string; name: string }[] }[]> = {
   inicial: [
     { 
-      id: 'ini-2', name: 'Pollito 2 Años', 
+      id: 'ini-2', name: 'Pollito (2 años)', 
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas' }, { id: 'com', name: 'Comunicación' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     { 
-      id: 'ini-3', name: 'Nidito 3 Años', 
+      id: 'ini-3', name: 'Nidito (3 años)', 
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas' }, { id: 'com', name: 'Comunicación' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     { 
-      id: 'ini-4', name: 'Pre-Kínder 4 Años', 
+      id: 'ini-4', name: 'Pre-Kínder', 
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas' }, { id: 'com', name: 'Comunicación' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     { 
-      id: 'ini-5', name: 'Kínder 5 Años', 
+      id: 'ini-5', name: 'Kínder', 
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas' }, { id: 'com', name: 'Comunicación' }, { id: 'ing', name: 'Inglés' }, { id: 'planlector', name: 'Plan Lector' }]
     }
   ],
   primaria: [
     {
-      id: 'pri-1', name: 'Primero de Primaria',
+      id: 'pri-1', name: '1ro',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas' }, { id: 'len', name: 'Lenguaje' }, { id: 'cie', name: 'Ciencias Naturales' }, { id: 'soc', name: 'Ciencias Sociales' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     {
-      id: 'pri-2', name: 'Segundo de Primaria',
+      id: 'pri-2', name: '2do',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas' }, { id: 'len', name: 'Lenguaje' }, { id: 'cie', name: 'Ciencias Naturales' }, { id: 'soc', name: 'Ciencias Sociales' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     {
-      id: 'pri-3', name: 'Tercero de Primaria',
+      id: 'pri-3', name: '3ro',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas' }, { id: 'len', name: 'Lenguaje' }, { id: 'cie', name: 'Ciencias Naturales' }, { id: 'soc', name: 'Ciencias Sociales' }, { id: 'ing', name: 'Inglés' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     {
-      id: 'pri-4', name: 'Cuarto de Primaria',
+      id: 'pri-4', name: '4to',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas' }, { id: 'len', name: 'Lenguaje' }, { id: 'cie', name: 'Ciencias Naturales' }, { id: 'soc', name: 'Ciencias Sociales' }, { id: 'ing', name: 'Inglés' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     {
-      id: 'pri-5', name: 'Quinto de Primaria',
+      id: 'pri-5', name: '5to',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas' }, { id: 'len', name: 'Lenguaje' }, { id: 'cie', name: 'Ciencias Naturales' }, { id: 'soc', name: 'Ciencias Sociales' }, { id: 'ing', name: 'Inglés' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     {
-      id: 'pri-6', name: 'Sexto de Primaria',
+      id: 'pri-6', name: '6to',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas' }, { id: 'len', name: 'Lenguaje' }, { id: 'cie', name: 'Ciencias Naturales' }, { id: 'soc', name: 'Ciencias Sociales' }, { id: 'ing', name: 'Inglés' }, { id: 'planlector', name: 'Plan Lector' }]
     }
   ],
   secundaria: [
     {
-      id: 'sec-1', name: 'Primero de Secundaria',
+      id: 'sec-1', name: '1ro',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas (Álgebra/Geometría)' }, { id: 'lit', name: 'Literatura' }, { id: 'bio', name: 'Biología' }, { id: 'ing', name: 'Inglés' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     {
-      id: 'sec-2', name: 'Segundo de Secundaria',
+      id: 'sec-2', name: '2do',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas (Álgebra/Geometría)' }, { id: 'lit', name: 'Literatura' }, { id: 'bio', name: 'Biología' }, { id: 'ing', name: 'Inglés' }, { id: 'fis', name: 'Física' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     {
-      id: 'sec-3', name: 'Tercero de Secundaria',
+      id: 'sec-3', name: '3ro',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas (Álgebra/Geometría)' }, { id: 'lit', name: 'Literatura' }, { id: 'bio', name: 'Biología' }, { id: 'ing', name: 'Inglés' }, { id: 'fis', name: 'Física' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     {
-      id: 'sec-4', name: 'Cuarto de Secundaria',
+      id: 'sec-4', name: '4to',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas (Álgebra/Geometría)' }, { id: 'lit', name: 'Literatura' }, { id: 'bio', name: 'Biología' }, { id: 'ing', name: 'Inglés' }, { id: 'fis', name: 'Física' }, { id: 'qui', name: 'Química' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     {
-      id: 'sec-5', name: 'Quinto de Secundaria',
+      id: 'sec-5', name: '5to',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas (Álgebra/Geometría)' }, { id: 'lit', name: 'Literatura' }, { id: 'bio', name: 'Biología' }, { id: 'ing', name: 'Inglés' }, { id: 'fis', name: 'Física' }, { id: 'qui', name: 'Química' }, { id: 'planlector', name: 'Plan Lector' }]
     },
     {
-      id: 'sec-6', name: 'Sexto de Secundaria',
+      id: 'sec-6', name: '6to',
       subjects: [{ id: 'all', name: 'Todas las materias' }, { id: 'mat', name: 'Matemáticas (Álgebra/Geometría)' }, { id: 'lit', name: 'Literatura' }, { id: 'bio', name: 'Biología' }, { id: 'ing', name: 'Inglés' }, { id: 'fis', name: 'Física' }, { id: 'qui', name: 'Química' }, { id: 'planlector', name: 'Plan Lector' }]
     }
   ]
 };
 
-const mockBooks = [
-  { id: '1', title: 'Matemáticas Activas', author: 'Ediciones Norma', price: 120, image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop', color: 'var(--color-blue)', subject: 'mat', level: 'primaria' },
-  { id: '2', title: 'Lenguaje y Comunicación', author: 'Santillana', price: 135, image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop', color: 'var(--color-red)', subject: 'len', level: 'primaria' },
-  { id: '3', title: 'Biología Interactiva', author: 'Pearson', price: 150, image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop', color: 'var(--color-green)', subject: 'bio', level: 'secundaria' },
-  { id: '4', title: 'El Principito (Edición Escolar)', author: 'Editorial Salamandra', price: 65, image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop', color: 'var(--color-blue)', subject: 'planlector', level: 'primaria' },
-  { id: '5', title: 'Trazos y Letras', author: 'Editorial Corefo', price: 85, image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop', color: 'var(--color-blue)', subject: 'com', level: 'inicial' },
-  { id: '6', title: 'Cien Años de Soledad', author: 'Editorial Sudamericana', price: 95, image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop', color: 'var(--color-blue)', subject: 'planlector', level: 'secundaria' },
-];
+
 
 export default function TextosEscolaresPage() {
   const [activeLevel, setActiveLevel] = useState<string>('');
   const [activeGrade, setActiveGrade] = useState<string>('');
   const [activeSubject, setActiveSubject] = useState<string>('all');
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<unknown[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Lógica para drag-to-scroll en PC
@@ -127,19 +120,35 @@ export default function TextosEscolaresPage() {
 
   React.useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    fetch(`${API_URL}/productos?page=1&limit=50`)
+    
+    // Construir query params según los filtros activos
+    const params = new URLSearchParams();
+    params.append('page', '1');
+    params.append('limit', '50');
+    params.append('categoria_slug', 'textos-escolares');
+    
+    if (activeLevel) {
+      // Capitalizar la primera letra para que coincida con el backend ("Secundaria", "Primaria")
+      const nivelStr = activeLevel.charAt(0).toUpperCase() + activeLevel.slice(1);
+      params.append('atributo_nivel', nivelStr);
+    }
+    // Temporariamente comentados porque el mock de la DB tiene valores inconsistentes (ej. subnivel="2do", materia="we")
+    // if (activeGrade) {
+    //   params.append('atributo_grado', activeGrade);
+    // }
+    // if (activeSubject && activeSubject !== 'all') {
+    //   params.append('atributo_materia', activeSubject);
+    // }
+
+    fetch(`${API_URL}/productos?${params.toString()}`)
       .then(res => res.json())
       .then(data => {
         if (data && data.data) {
-          const filtered = data.data.filter((p: any) => 
-            p.categoria?.slug === 'textos-escolares' && 
-            p.atributos && p.atributos.nivel
-          );
-          setProducts(filtered);
+          setProducts(data.data);
         }
       })
       .catch(err => console.error('Error fetching products', err));
-  }, []);
+  }, [activeLevel, activeSubject]);
 
   const currentLevelName = levels.find(l => l.id === activeLevel)?.name || 'Todos los Niveles';
   const currentGradeObj = activeLevel && catalogData[activeLevel] ? catalogData[activeLevel].find(g => g.id === activeGrade) : null;
@@ -163,13 +172,18 @@ export default function TextosEscolaresPage() {
         />
 
         {/* Content Area */}
-        <main>
+        <main className={styles.mainContent}>
           <div className={styles.catalogHeader}>
             <div className={styles.headerTitleRow}>
               <div>
-                <h2 className={styles.catalogTitle}>{currentGradeName}</h2>
+                <h2 className={styles.catalogTitle}>
+                  {activeGrade ? `${currentLevelName} - ${currentGradeName}` : 'Todos los Grados'}
+                </h2>
                 <p className={styles.activeSubjectSubtitle}>
-                  Mostrando {activeSubject === 'all' ? 'todo el material' : currentSubjectName.toLowerCase()}
+                  {activeGrade 
+                    ? `Mostrando ${activeSubject === 'all' ? 'todo el material' : currentSubjectName.toLowerCase()}`
+                    : 'Explora nuestros textos escolares organizados por nivel y grado.'
+                  }
                 </p>
               </div>
               {/* Mobile Filter Button */}
@@ -188,11 +202,16 @@ export default function TextosEscolaresPage() {
                 Filtros
               </button>
             </div>
-
           </div>
 
-          {/* Píldoras de Materias Dinámicas */}
-          {currentGradeObj && currentGradeObj.subjects && currentGradeObj.subjects.length > 0 && (
+          <div className={styles.resultsBar}>
+            <span className={styles.resultsCount}>
+              Mostrando {products.length} resultados
+            </span>
+          </div>
+
+          {/* Píldoras de Materias Dinámicas (solo si hay grado activo) */}
+          {activeGrade && currentGradeObj && currentGradeObj.subjects && currentGradeObj.subjects.length > 0 && (
             <div 
               className={styles.subjectPills}
               ref={scrollContainerRef}
@@ -214,28 +233,40 @@ export default function TextosEscolaresPage() {
             </div>
           )}
 
-          <div className={styles.booksGrid}>
-            {products.length === 0 && <p>No hay productos disponibles.</p>}
-            {products
-              // .filter(book => (activeLevel ? book.nivel === activeLevel : true) && (activeSubject === 'all' || book.materia === activeSubject))
-              .map((p: any) => {
-                const imageUrl = p.imagenes && p.imagenes.length > 0 
-                  ? `http://localhost:3001${p.imagenes[0].url}`
+          {products.length > 0 ? (
+            <div className={styles.booksGrid} key={`${activeLevel}-${activeGrade}-${activeSubject}`}>
+              {products.map((p: unknown, idx: number) => {
+                const product = p as Record<string, unknown>;
+                const id = String(product.id || '');
+                const nombre = String(product.nombre || '');
+                const precio = Number(product.precio_base || 0);
+                const categoria = product.categoria as { nombre?: string } | undefined;
+                const imagenes = product.imagenes as { url: string }[] | undefined;
+                
+                const imageUrl = imagenes && imagenes.length > 0 
+                  ? `http://localhost:3001${imagenes[0].url}`
                   : 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop';
                 return (
-                  <ProductCard
-                    key={p.id}
-                    id={p.id.toString()}
-                    title={p.nombre}
-                    category={p.categoria?.nombre || 'General'}
-                    categoryColor="var(--color-blue)"
-                    price={p.precio_base}
-                    imageUrl={imageUrl}
-                    isBook={true}
-                  />
+                  <div key={id}>
+                    <ProductCard
+                      id={id}
+                      title={nombre}
+                      category={categoria?.nombre || 'General'}
+                      categoryColor="var(--color-blue)"
+                      price={precio}
+                      imageUrl={imageUrl}
+                      isBook={true}
+                    />
+                  </div>
                 )
               })}
-          </div>
+            </div>
+          ) : (
+            <div className={styles.emptyState}>
+              <h3>No se encontraron libros</h3>
+              <p>Prueba con otros términos de búsqueda o selecciona otro grado escolar.</p>
+            </div>
+          )}
         </main>
       </div>
     </div>

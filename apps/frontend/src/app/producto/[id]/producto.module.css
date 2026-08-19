@@ -68,13 +68,6 @@
 }
 
 /* Thumbnails */
-.thumbnailsContainer {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-}
 .thumbnailBtn {
   position: relative;
   width: 80px;
@@ -85,7 +78,7 @@
   background: #f8fafc;
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
 }
 .thumbnailBtn:hover {
   border-color: #cbd5e1;
@@ -93,6 +86,139 @@
 .activeThumbnail {
   border-color: #0f172a;
 }
+
+/* --- Nuevos estilos para la galería unificada (como muestra.png) --- */
+.thumbnailsContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+.thumbnailsScroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  flex: 1;
+  padding: 0.5rem 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.thumbnailsScroll::-webkit-scrollbar {
+  display: none;
+}
+.thumbNavBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #475569;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.thumbNavBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.thumbNavBtn svg {
+  width: 16px;
+  height: 16px;
+}
+.thumbImg {
+  object-fit: cover; /* o contain dependiendo del diseño */
+}
+.bookThumbnail {
+  width: 60px;
+  height: 84px; /* proporción 1:1.4 */
+  border-radius: 2px 6px 6px 2px;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: none;
+}
+.bookThumbnail:hover, .bookThumbnail.activeThumbnail {
+  border: 2px solid #2563eb;
+  transform: translateY(-2px);
+}
+
+/* Estilos específicos para libros en el main image */
+.bookMainImageWrapper {
+  background: transparent;
+  perspective: 1000px;
+}
+.bookMainImageWrapper .mainImageInner {
+  width: 70%;
+  aspect-ratio: 1 / 1.4;
+  margin: 0 auto;
+  border-radius: 4px 12px 12px 4px;
+  box-shadow: 
+    -5px 0 3px rgba(0,0,0,0.03),
+    0 15px 25px rgba(0,0,0,0.15), 
+    0 5px 10px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+}
+/* Efecto de lomo izquierdo */
+.bookMainImageWrapper .mainImageInner::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 20px;
+  background: linear-gradient(
+    to right, 
+    rgba(255,255,255,0.4) 0%, 
+    rgba(255,255,255,0.1) 20%, 
+    rgba(0,0,0,0.05) 80%, 
+    rgba(0,0,0,0.2) 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+.bookMainImage {
+  object-fit: cover;
+}
+
+/* Animación de "ojear" (Page Turn) al cambiar imagen */
+@keyframes pageTurnEnter {
+  0% {
+    transform-origin: left center;
+    transform: rotateY(80deg) scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform-origin: left center;
+    transform: rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+}
+.pageTurn {
+  animation: pageTurnEnter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.glare {
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.4) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  transform: skewX(-20deg);
+  z-index: 3;
+  pointer-events: none;
+  transition: left 0.7s ease;
+}
+
+.bookMainImageWrapper:hover .glare {
+  left: 200%;
+}
+
 
 .productDescription {
   font-size: 0.95rem;

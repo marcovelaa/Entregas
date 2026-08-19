@@ -28,10 +28,17 @@ describe('RBAC base role matrix', () => {
     );
   });
 
-  it('limits Vendedor to POS checkout and discount validation', () => {
+  it('limits Vendedor to POS checkout, caja, clientes and discount validation', () => {
     expect(BASE_ROLE_PERMISSIONS.Vendedor).toEqual([
       'ventas:crear',
+      'caja:ver',
+      'caja:abrir',
+      'caja:cerrar',
+      'caja:movimientos',
+      'clientes:ver',
+      'clientes:crear',
       'descuentos:validar',
+      'catalogo:ver',
     ]);
   });
   it('keeps catalog and supplier mutations outside the Vendedor role', () => {

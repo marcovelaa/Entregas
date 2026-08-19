@@ -227,4 +227,57 @@ describe('Compras y Proveedores Operables (e2e)', () => {
     });
     expect(inv!.cantidad_disponible).toBe(10);
   });
+
+  describe('RBAC', () => {
+    const signToken = (permisos: string[]) =>
+      `Bearer ${app.get(JwtService).sign(
+        {
+          sub: usuarioId,
+          email: `compras-op-${suffix}@test.com`,
+          rolId,
+          rolNombre: 'ADMIN',
+          permisos,
+        },
+        { secret: getJwtSecret() },
+      )}`;
+
+    it('GET /api/compras - exige autenticación + compras:ver (no es público)', async () => {
+      await request(app.getHttpServer()).get('/api/compras').expect(401);
+
+      await request(app.getHttpServer())
+        .get('/api/compras')
+        .set('Authorization', signToken(['catalogo:ver']))
+        .expect(403);
+
+      await request(app.getHttpServer())
+        .get('/api/compras')
+        .set('Authorization', signToken(['compras:ver']))
+        .expect(200);
+    });
+
+    it('GET /api/compras/:id - exige autenticación + compras:ver (no es público)', async () => {
+      await request(app.getHttpServer())
+        .get(`/api/compras/${compraId}`)
+        .expect(401);
+
+      await request(app.getHttpServer())
+        .get(`/api/compras/${compraId}`)
+        .set('Authorization', signToken(['compras:ver']))
+        .expect(200);
+    });
+
+    it('PATCH /api/compras/:id/anular - exige compras:anular, no compras:crear', async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/compras/${compraId}/anular`)
+        .set('Authorization', signToken(['compras:crear']))
+        .send({ motivo: 'test rbac' })
+        .expect(403);
+
+      const res = await request(app.getHttpServer())
+        .patch(`/api/compras/${compraId}/anular`)
+        .set('Authorization', signToken(['compras:anular']))
+        .send({ motivo: 'test rbac' });
+      expect(res.status).not.toBe(403);
+    });
+  });
 });

@@ -198,47 +198,52 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         {/* MAIN PRODUCT AREA */}
         <div className={styles.productContainer}>
           
-          {/* Left: Main Image Only (Variants act as gallery) */}
+          {/* Left: Image Gallery */}
           <div className={styles.gallerySection}>
-            {isBook ? (
-              <BookViewer images={galleryImages} title={title} id={id} />
-            ) : (
-              <>
-                <div className={styles.mainImageWrapper}>
-                  {(hasPromo || comboAhorro > 0) && (
-                    <span className={styles.badge}>
-                      -{hasPromo ? discountPercent : comboAhorroPct}%
-                    </span>
-                  )}
-                  <div className={styles.mainImageInner}>
-                    <Image 
-                      src={currentMainImage} 
-                      alt={title} 
-                      fill
-                      priority
-                      className={styles.mainImage}
-                      sizes="(max-width: 768px) 100vw, 500px"
-                    />
-                  </div>
-                </div>
+            <div className={`${styles.mainImageWrapper} ${isBook ? styles.bookMainImageWrapper : ''}`}>
+              {(hasPromo || comboAhorro > 0) && (
+                <span className={styles.badge}>
+                  -{hasPromo ? discountPercent : comboAhorroPct}%
+                </span>
+              )}
+              <div key={currentMainImage} className={`${styles.mainImageInner} ${isBook ? styles.pageTurn : ''}`}>
+                <Image 
+                  src={currentMainImage} 
+                  alt={title} 
+                  fill
+                  priority
+                  className={`${styles.mainImage} ${isBook ? styles.bookMainImage : ''}`}
+                  sizes="(max-width: 768px) 100vw, 500px"
+                />
+                {isBook && <div className={styles.glare}></div>}
+              </div>
+            </div>
+            
+            {galleryImages.length > 1 && (
+              <div className={styles.thumbnailsContainer}>
+                <button className={styles.thumbNavBtn} onClick={() => handleThumbnailClick(activeImageIndex > 0 ? activeImageIndex - 1 : galleryImages.length - 1)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
                 
-                {galleryImages.length > 1 && (
-                  <div className={styles.thumbnailsContainer}>
-                    {galleryImages.map((img, index) => {
-                      const isActive = !previewImageUrl && index === activeImageIndex;
-                      return (
-                        <button 
-                          key={index}
-                          className={`${styles.thumbnailBtn} ${isActive ? styles.activeThumbnail : ''}`}
-                          onClick={() => handleThumbnailClick(index)}
-                        >
-                          <Image src={img} alt={`Thumbnail ${index}`} fill sizes="80px" style={{ objectFit: 'contain' }} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
+                <div className={styles.thumbnailsScroll}>
+                  {galleryImages.map((img, index) => {
+                    const isActive = !previewImageUrl && index === activeImageIndex;
+                    return (
+                      <button 
+                        key={index}
+                        className={`${styles.thumbnailBtn} ${isActive ? styles.activeThumbnail : ''} ${isBook ? styles.bookThumbnail : ''}`}
+                        onClick={() => handleThumbnailClick(index)}
+                      >
+                        <Image src={img} alt={`Thumbnail ${index}`} fill sizes="80px" className={styles.thumbImg} />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button className={styles.thumbNavBtn} onClick={() => handleThumbnailClick(activeImageIndex < galleryImages.length - 1 ? activeImageIndex + 1 : 0)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
             )}
           </div>
 

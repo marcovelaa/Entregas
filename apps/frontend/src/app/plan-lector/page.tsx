@@ -13,26 +13,26 @@ const levels = [
 
 const catalogData: Record<string, { id: string; name: string; subjects: { id: string; name: string }[] }[]> = {
   inicial: [
-    { id: 'ini-pollito', name: 'Pollito', subjects: [] },
-    { id: 'ini-nidito', name: 'Nidito', subjects: [] },
+    { id: 'ini-pollito', name: 'Pollito (2 años)', subjects: [] },
+    { id: 'ini-nidito', name: 'Nidito (3 años)', subjects: [] },
     { id: 'ini-prekinder', name: 'Prekínder', subjects: [] },
     { id: 'ini-kinder', name: 'Kínder', subjects: [] },
   ],
   primaria: [
-    { id: 'pri-1', name: 'Primero', subjects: [] },
-    { id: 'pri-2', name: 'Segundo', subjects: [] },
-    { id: 'pri-3', name: 'Tercero', subjects: [] },
-    { id: 'pri-4', name: 'Cuarto', subjects: [] },
-    { id: 'pri-5', name: 'Quinto', subjects: [] },
-    { id: 'pri-6', name: 'Sexto', subjects: [] },
+    { id: 'pri-1', name: '1ro', subjects: [] },
+    { id: 'pri-2', name: '2do', subjects: [] },
+    { id: 'pri-3', name: '3ro', subjects: [] },
+    { id: 'pri-4', name: '4to', subjects: [] },
+    { id: 'pri-5', name: '5to', subjects: [] },
+    { id: 'pri-6', name: '6to', subjects: [] },
   ],
   secundaria: [
-    { id: 'sec-1', name: 'Primero', subjects: [] },
-    { id: 'sec-2', name: 'Segundo', subjects: [] },
-    { id: 'sec-3', name: 'Tercero', subjects: [] },
-    { id: 'sec-4', name: 'Cuarto', subjects: [] },
-    { id: 'sec-5', name: 'Quinto', subjects: [] },
-    { id: 'sec-6', name: 'Sexto', subjects: [] },
+    { id: 'sec-1', name: '1ro', subjects: [] },
+    { id: 'sec-2', name: '2do', subjects: [] },
+    { id: 'sec-3', name: '3ro', subjects: [] },
+    { id: 'sec-4', name: '4to', subjects: [] },
+    { id: 'sec-5', name: '5to', subjects: [] },
+    { id: 'sec-6', name: '6to', subjects: [] },
   ],
   otros: [
     { id: 'otros-all', name: 'Todas las obras', subjects: [] }
@@ -43,7 +43,7 @@ export default function PlanLectorPage() {
   const [activeLevel, setActiveLevel] = useState<string>('');
   const [activeGrade, setActiveGrade] = useState<string>('');
   const [activeSubject, setActiveSubject] = useState<string>('all');
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<unknown[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   React.useEffect(() => {
@@ -52,10 +52,12 @@ export default function PlanLectorPage() {
       .then(res => res.json())
       .then(data => {
         if (data && data.data) {
-          const filtered = data.data.filter((p: any) => 
-            p.categoria?.slug === 'textos-escolares' && 
-            (!p.atributos || !p.atributos.nivel)
-          );
+          const filtered = data.data.filter((p: unknown) => {
+            const prod = p as Record<string, unknown>;
+            const cat = prod.categoria as { slug?: string } | undefined;
+            const attrs = prod.atributos as { nivel?: string } | undefined;
+            return cat?.slug === 'textos-escolares' && (!attrs || !attrs.nivel);
+          });
           setProducts(filtered);
         }
       })
@@ -65,11 +67,11 @@ export default function PlanLectorPage() {
   const filteredBooks = products;
 
   const getActiveGradeName = () => {
-    if (!activeGrade) return 'Todas las lecturas';
+    if (!activeGrade) return 'Todos los Grados';
     const levelFound = Object.keys(catalogData).find(lvl => 
       catalogData[lvl].some(g => g.id === activeGrade)
     );
-    if (!levelFound) return 'Todas las lecturas';
+    if (!levelFound) return 'Todos los Grados';
     const gradeFound = catalogData[levelFound].find(g => g.id === activeGrade);
     const levelName = levels.find(l => l.id === levelFound)?.name;
     return `${levelName} - ${gradeFound?.name}`;
@@ -91,11 +93,17 @@ export default function PlanLectorPage() {
           styles={styles}
         />
 
-        <main>
+        <main className={styles.mainContent}>
           <div className={styles.catalogHeader}>
             <div className={styles.headerTitleRow}>
               <div>
                 <h2 className={styles.catalogTitle}>{getActiveGradeName()}</h2>
+                <p className={styles.activeSubjectSubtitle}>
+                  {activeGrade 
+                    ? `Mostrando todo el material`
+                    : 'Explora nuestro plan lector organizado por nivel y grado.'
+                  }
+                </p>
               </div>
               <button className={styles.mobileFilterBtn} onClick={() => setIsMobileMenuOpen(true)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
@@ -114,33 +122,43 @@ export default function PlanLectorPage() {
             </div>
           </div>
 
+          <div className={styles.resultsBar}>
+            <span className={styles.resultsCount}>
+              Mostrando {filteredBooks.length} resultados
+            </span>
+          </div>
+
           {filteredBooks.length > 0 ? (
             <div className={styles.booksGrid}>
-              {filteredBooks.map(book => {
-                const imageUrl = book.imagenes && book.imagenes.length > 0 
-                  ? `http://localhost:3001${book.imagenes[0].url}`
+              {filteredBooks.map((book: unknown, idx) => {
+                const b = book as Record<string, unknown>;
+                const id = String(b.id || '');
+                const nombre = String(b.nombre || '');
+                const precio = Number(b.precio_base || 0);
+                const categoria = b.categoria as { nombre?: string } | undefined;
+                const imagenes = b.imagenes as { url: string }[] | undefined;
+
+                const imageUrl = imagenes && imagenes.length > 0 
+                  ? `http://localhost:3001${imagenes[0].url}`
                   : 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop';
 
                 return (
-                  <ProductCard
-                    key={book.id}
-                    id={book.id.toString()}
-                    title={book.nombre}
-                    category={book.categoria?.nombre || 'General'}
-                    categoryColor="var(--color-blue)"
-                    price={book.precio_base}
-                    imageUrl={imageUrl}
-                    isBook={true}
-                  />
+                  <div key={id}>
+                    <ProductCard
+                      id={id}
+                      title={nombre}
+                      category={categoria?.nombre || 'General'}
+                      categoryColor="var(--color-blue)"
+                      price={precio}
+                      imageUrl={imageUrl}
+                      isBook={true}
+                    />
+                  </div>
                 );
               })}
             </div>
           ) : (
             <div className={styles.emptyState}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={styles.emptyIcon}>
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              </svg>
               <h3>No se encontraron libros</h3>
               <p>Prueba con otros términos de búsqueda o selecciona otro grado escolar.</p>
             </div>

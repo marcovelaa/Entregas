@@ -1,3 +1,5 @@
+
+
 .pageWrapper {
   background-color: var(--bg-subtle, #f8fafc);
   min-height: 100vh;
@@ -58,6 +60,10 @@
   height: 100%;
 }
 
+.mainContent {
+  min-width: 0; /* Prevents CSS Grid blowout from flex children like subjectPills */
+}
+
 .sidebarSticky {
   position: sticky;
   top: 110px;
@@ -102,64 +108,46 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1rem;
-  background: #f8fafc;
-  border: 1px solid transparent;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
 }
 
 .levelBtn:hover {
-  background: #f1f5f9;
+  background: #f8fafc;
 }
 
 .levelExpanded {
-  background: #0f172a;
-  color: white;
+  border-color: #cbd5e1;
+  background: #f8fafc;
 }
 
-.levelExpanded:hover {
-  background: #1e293b;
+.levelNameWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.levelDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #cbd5e1;
+  transition: background-color 0.2s ease;
+}
+
+.levelDotActive {
+  background-color: #0f172a; /* Match checkbox */
 }
 
 .levelName {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.categoryGroup {
-  margin-bottom: 0.25rem;
-}
-
-.categoryBtn {
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  color: #334155;
-}
-
-.categoryBtn:hover {
-  background: #f1f5f9;
-}
-
-.categoryExpanded {
-  background: #f1f5f9;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #0f172a;
-}
-
-.categoryName {
-  font-size: 0.95rem;
-  text-align: left;
 }
 
 .chevron {
@@ -167,11 +155,7 @@
   height: 16px;
   transition: transform 0.3s ease;
   opacity: 0.5;
-}
-
-.levelExpanded .chevron,
-.categoryExpanded .chevron {
-  opacity: 1;
+  color: #64748b;
 }
 
 .chevronOpen {
@@ -182,8 +166,6 @@
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.3s ease;
-  padding-left: 0.5rem;
-  margin-top: 0.5rem;
 }
 
 .gradesOpen {
@@ -191,10 +173,106 @@
 }
 
 .gradesInner {
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  gap: 0.1rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.5rem;
+  margin-left: 0.5rem;
+  margin-bottom: 0.2rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.checkboxLabel:hover {
+  background: #f1f5f9;
+}
+
+.checkboxInput {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  accent-color: #0f172a;
+}
+
+.checkboxText {
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+/* --- Nuevas secciones del Sidebar --- */
+.sidebarSection {
+  margin-bottom: 2rem;
+}
+
+.sidebarSubtitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 1rem;
+}
+
+.filtersHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1rem;
+}
+
+.filtersHeader .sidebarSubtitle {
+  margin-bottom: 0;
+}
+
+.clearFiltersBtn {
+  display: flex;
+  align-items: center;
   gap: 0.25rem;
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clearFiltersBtn:hover {
+  text-decoration: underline;
+}
+
+.additionalFilterGroup {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.additionalFilterGroup:last-child {
+  border-bottom: none;
+}
+
+.additionalFilterBtn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+}
+
+.additionalFilterBtn:hover {
+  color: #0f172a;
 }
 
 /* --- Píldoras Dinámicas --- */
@@ -202,80 +280,48 @@
   display: flex;
   overflow-x: auto;
   gap: 0.75rem;
-  margin-bottom: 2rem;
-  padding-bottom: 0.5rem; /* Espacio para que el scroll (si aparece) no corte la sombra */
-  scrollbar-width: none; /* Oculta scroll en Firefox */
-  -ms-overflow-style: none; /* Oculta scroll en IE/Edge */
+  margin-bottom: 2.5rem;
+  padding: 0.2rem 0.2rem 1rem 0.2rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  max-width: 100%;
 }
 
 .subjectPills::-webkit-scrollbar {
-  display: none; /* Oculta scroll en Chrome/Safari */
+  display: none;
 }
 
 .pillBtn {
-  flex-shrink: 0; /* Evita que las píldoras se aplasten si hay muchas */
+  flex-shrink: 0;
   background: white;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  padding: 0.6rem 1.2rem;
-  border-radius: 999px;
-  font-size: 0.9rem;
+  border: 1px solid transparent;
+  color: #64748b;
+  padding: 0.6rem 1.5rem;
+  border-radius: 12px; /* Más moderno, ligeramente redondeado */
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .pillBtn:hover {
-  border-color: #94a3b8;
-  background: #f8fafc;
+  color: #0f172a;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
 }
 
 .pillActive {
   background: #0f172a;
-  border-color: #0f172a;
   color: white;
+  box-shadow: 0 6px 15px rgba(15, 23, 42, 0.2);
 }
 
 .pillActive:hover {
   background: #1e293b;
-  border-color: #1e293b;
-}
-
-/* -------------------------- */
-
-.gradesList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.5rem 0 0.5rem 1rem;
-  border-left: 2px solid #e2e8f0;
-  margin-left: 1rem;
-}
-
-.gradeBtn {
-  text-align: left;
-  width: 100%;
-  box-sizing: border-box;
-  background: none;
-  border: none;
-  padding: 0.4rem 1rem;
-  font-size: 0.9rem;
-  color: #64748b;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 500;
-}
-
-.gradeBtn:hover {
-  color: #047857;
-  background-color: rgba(4, 120, 87, 0.05);
-}
-
-.gradeActive {
-  color: #047857;
-  font-weight: 700;
-  background-color: rgba(4, 120, 87, 0.08);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.3);
 }
 
 .catalogHeader {
@@ -347,17 +393,42 @@
 }
 
 @media (max-width: 900px) {
+  .heroBanner {
+    padding: 2.5rem 5%;
+  }
+
+  .heroTitle {
+    font-size: 2.2rem;
+  }
+
+  .heroSubtitle {
+    font-size: 1rem;
+  }
+  
+  .catalogTitle {
+    font-size: 1.4rem;
+  }
+
   .layoutContainer {
     grid-template-columns: 1fr;
-    padding: 1rem 5%;
+    padding: 1.5rem 5%;
+    gap: 1.5rem;
+  }
+
+  .sidebarWrapper {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: visible;
+    pointer-events: none;
   }
 
   .mobileFilterBtn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background-color: transparent;
+    padding: 0.6rem 1.2rem;
+    background-color: white;
     border: 1px solid #cbd5e1;
     border-radius: 999px;
     font-weight: 600;
@@ -367,10 +438,11 @@
     margin-bottom: 1rem;
     transition: all 0.2s ease;
     box-sizing: border-box;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   }
 
   .mobileFilterBtn:hover {
-    background-color: #f1f5f9;
+    background-color: #f8fafc;
     border-color: #94a3b8;
   }
 
@@ -382,7 +454,8 @@
     display: block;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
     z-index: 99;
     opacity: 0;
     pointer-events: none;
@@ -411,6 +484,7 @@
     border-radius: 0;
     height: 100%;
     max-height: 100%;
+    pointer-events: auto;
   }
 
   .sidebarOpen {
@@ -441,15 +515,118 @@
     line-height: 1;
   }
   
-  .catalogHeader {
+  .headerTitleRow {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1.5rem;
+    gap: 1rem;
   }
   
   .searchWrapper {
     width: 100%;
   }
+}
+
+/* --- New layout styles based on muestra-2.png --- */
+.resultsBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.sortDropdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #334155;
+}
+
+.categoryIndex {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.levelSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.levelSectionLine {
+  width: 4px;
+  height: 20px;
+  background-color: #2563eb;
+  border-radius: 2px;
+}
+
+.levelSectionTitle h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.categoryCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.categoryCard {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100px;
+}
+
+.categoryCard:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.categoryCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.categoryCardTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.2rem 0;
+}
+
+.categoryCardSubtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.categoryCardFooter svg {
+  color: #94a3b8;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.categoryCard:hover .categoryCardFooter svg {
+  transform: translateX(4px);
+  color: #2563eb;
 }
 
 @media (max-width: 600px) {
@@ -459,25 +636,8 @@
   }
 }
 
-.emptyState {
-  text-align: center;
-  padding: 5rem 2rem;
-  background: white;
-  border-radius: 12px;
-  border: 1px dashed #cbd5e1;
-  color: #64748b;
-}
 
-.emptyIcon {
-  width: 48px;
-  height: 48px;
-  margin-bottom: 1rem;
-  color: #94a3b8;
-  opacity: 0.6;
-}
 
-.emptyState h3 {
-  font-size: 1.25rem;
-  color: #334155;
-  margin-bottom: 0.5rem;
-}
+.emptyState { text-align: center; padding: 5rem 2rem; background: white; border-radius: 12px; border: 1px dashed #cbd5e1; color: #64748b; }
+.emptyIcon { width: 48px; height: 48px; margin-bottom: 1rem; color: #94a3b8; opacity: 0.6; }
+.emptyState h3 { font-size: 1.25rem; color: #334155; margin-bottom: 0.5rem; }

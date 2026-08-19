@@ -63,7 +63,7 @@ export class EmpaquesController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:crear')
+  @RequierePermiso('catalogo:editar')
   async actualizar(@Param('id') id: string, @Body() dto: ActualizarEmpaqueDto) {
     const emp = await this.actualizarEmpaqueUc.execute(BigInt(id), dto);
     return {

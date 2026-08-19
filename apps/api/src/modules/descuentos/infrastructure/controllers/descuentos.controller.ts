@@ -44,7 +44,7 @@ export class DescuentosController {
   ) {}
 
   @Get()
-  @Public()
+  @RequierePermiso('descuentos:ver')
   @ApiOperation({
     summary:
       'Listar todos los descuentos con sus alcances (productos/variantes/empaques/categorías)',
@@ -110,7 +110,7 @@ export class DescuentosController {
   }
 
   @Get(':id/analitica')
-  @Public()
+  @RequierePermiso('descuentos:ver')
   @ApiOperation({
     summary:
       'Obtener analítica de uso de un descuento (canjes, ahorro, productos top)',
@@ -229,7 +229,7 @@ export class DescuentosController {
   }
 
   @Get(':id')
-  @Public()
+  @RequierePermiso('descuentos:ver')
   @ApiOperation({ summary: 'Obtener un descuento por ID' })
   @ApiParam({ name: 'id', description: 'ID del descuento' })
   @ApiResponse({ status: 200, description: 'Descuento encontrado' })
@@ -396,7 +396,7 @@ export class DescuentosController {
   }
 
   @Patch(':id')
-  @RequierePermiso('descuentos:crear')
+  @RequierePermiso('descuentos:editar')
   @ApiOperation({
     summary: 'Actualizar parcialmente un descuento (ej. activar/desactivar)',
   })
@@ -443,7 +443,7 @@ export class DescuentosController {
   }
 
   @Put(':id')
-  @RequierePermiso('descuentos:crear')
+  @RequierePermiso('descuentos:editar')
   @ApiOperation({ summary: 'Reemplazar un descuento completo' })
   @ApiParam({ name: 'id', description: 'ID del descuento' })
   @ApiResponse({ status: 200, description: 'Descuento actualizado' })
@@ -613,7 +613,7 @@ export class DescuentosController {
   }
 
   @Delete(':id')
-  @RequierePermiso('descuentos:crear')
+  @RequierePermiso('descuentos:eliminar')
   @ApiOperation({ summary: 'Eliminar un descuento' })
   @ApiParam({ name: 'id', description: 'ID del descuento' })
   @ApiResponse({ status: 200, description: 'Descuento eliminado' })

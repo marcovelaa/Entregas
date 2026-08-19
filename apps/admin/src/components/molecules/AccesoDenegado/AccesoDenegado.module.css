@@ -1,0 +1,38 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 1.5rem;
+  text-align: center;
+  min-height: 60vh;
+}
+
+.icon {
+  color: var(--color-red);
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.message {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  max-width: 32ch;
+}
+
+.button {
+  margin-top: 0.5rem;
+  padding: 0.6rem 1.5rem;
+  background: var(--text-main);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
