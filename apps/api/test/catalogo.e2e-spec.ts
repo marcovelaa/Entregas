@@ -59,7 +59,7 @@ describe('Catalogo (e2e)', () => {
         email: usuario.email,
         rolId: rol.id.toString(),
         rolNombre: rol.nombre,
-        permisos: ['catalogo:gestionar'],
+        permisos: ['catalogo:crear', 'catalogo:editar', 'catalogo:eliminar'],
       },
       { secret: getJwtSecret(), expiresIn: '8h' },
     );
@@ -204,6 +204,146 @@ describe('Catalogo (e2e)', () => {
         .set('Authorization', authHeader)
         .send(varianteDto)
         .expect(400);
+    });
+  });
+
+  describe('RBAC granular (crear/editar/eliminar)', () => {
+    const signToken = (permisos: string[]) =>
+      `Bearer ${app.get(JwtService).sign(
+        {
+          sub: testUsuarioId.toString(),
+          email: `catalogo-e2e-${suffix}@example.test`,
+          rolId: testRolId.toString(),
+          rolNombre: `Catalogo E2E ${suffix}`,
+          permisos,
+        },
+        { secret: getJwtSecret(), expiresIn: '8h' },
+      )}`;
+
+    it('/api/marcas/:id (PATCH) - 403 con solo catalogo:crear (no editar)', async () => {
+      const createRes = await request(app.getHttpServer())
+        .post('/api/marcas')
+        .set('Authorization', authHeader)
+        .send({ nombre: 'Marca RBAC', slug: `marca-rbac-${suffix}` })
+        .expect(201);
+      createdMarcaIds.push(createRes.body.id);
+
+      await request(app.getHttpServer())
+        .patch(`/api/marcas/${createRes.body.id}`)
+        .set('Authorization', signToken(['catalogo:crear']))
+        .send({ nombre: 'Marca RBAC editada' })
+        .expect(403);
+    });
+
+    it('/api/marcas/:id (PATCH) - 200 con catalogo:editar (sin catalogo:crear)', async () => {
+      const createRes = await request(app.getHttpServer())
+        .post('/api/marcas')
+        .set('Authorization', authHeader)
+        .send({ nombre: 'Marca RBAC 2', slug: `marca-rbac-2-${suffix}` })
+        .expect(201);
+      createdMarcaIds.push(createRes.body.id);
+
+      await request(app.getHttpServer())
+        .patch(`/api/marcas/${createRes.body.id}`)
+        .set('Authorization', signToken(['catalogo:editar']))
+        .send({ nombre: 'Marca RBAC 2 editada' })
+        .expect(200);
+    });
+
+    it('/api/marcas/:id (DELETE) - 403 con solo catalogo:crear (no eliminar)', async () => {
+      const createRes = await request(app.getHttpServer())
+        .post('/api/marcas')
+        .set('Authorization', authHeader)
+        .send({ nombre: 'Marca RBAC 3', slug: `marca-rbac-3-${suffix}` })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .delete(`/api/marcas/${createRes.body.id}`)
+        .set('Authorization', signToken(['catalogo:crear']))
+        .expect(403);
+
+      createdMarcaIds.push(createRes.body.id);
+    });
+
+    it('/api/marcas/:id (DELETE) - 200 con catalogo:eliminar (sin catalogo:crear)', async () => {
+      const createRes = await request(app.getHttpServer())
+        .post('/api/marcas')
+        .set('Authorization', authHeader)
+        .send({ nombre: `Marca RBAC 4 ${suffix}`, slug: `marca-rbac-4-${suffix}` })
+        .expect(201);
+      createdMarcaIds.push(createRes.body.id);
+
+      await request(app.getHttpServer())
+        .delete(`/api/marcas/${createRes.body.id}`)
+        .set('Authorization', signToken(['catalogo:eliminar']))
+        .expect(200);
+    });
+
+    it('/api/categorias/:id (PATCH) - 403 con solo catalogo:crear, 200 con catalogo:editar', async () => {
+      const createRes = await request(app.getHttpServer())
+        .post('/api/categorias')
+        .set('Authorization', authHeader)
+        .send({ nombre: `Cat RBAC ${suffix}`, slug: `cat-rbac-${suffix}` })
+        .expect(201);
+      createdCategoriaIds.push(createRes.body.id);
+
+      await request(app.getHttpServer())
+        .patch(`/api/categorias/${createRes.body.id}`)
+        .set('Authorization', signToken(['catalogo:crear']))
+        .send({ nombre: 'Cat RBAC bloqueada' })
+        .expect(403);
+
+      await request(app.getHttpServer())
+        .patch(`/api/categorias/${createRes.body.id}`)
+        .set('Authorization', signToken(['catalogo:editar']))
+        .send({ nombre: 'Cat RBAC editada' })
+        .expect(200);
+    });
+
+    it('/api/productos/:id (PATCH/DELETE) - exige catalogo:editar/eliminar, no catalogo:crear', async () => {
+      const catRes = await request(app.getHttpServer())
+        .post('/api/categorias')
+        .set('Authorization', authHeader)
+        .send({ nombre: `Cat Prod RBAC ${suffix}`, slug: `cat-prod-rbac-${suffix}` })
+        .expect(201);
+      createdCategoriaIds.push(catRes.body.id);
+
+      const prodRes = await request(app.getHttpServer())
+        .post('/api/productos')
+        .set('Authorization', authHeader)
+        .send({
+          categoria_id: catRes.body.id,
+          sku: `SKU-RBAC-${suffix}`,
+          nombre: 'Producto RBAC',
+          unidad_medida: 'UNIDAD',
+          precio_base: 100,
+        })
+        .expect(201);
+      createdProductoIds.push(prodRes.body.id);
+
+      await request(app.getHttpServer())
+        .patch(`/api/productos/${prodRes.body.id}`)
+        .set('Authorization', signToken(['catalogo:crear']))
+        .send({ nombre: 'Producto RBAC bloqueado' })
+        .expect(403);
+
+      await request(app.getHttpServer())
+        .patch(`/api/productos/${prodRes.body.id}`)
+        .set('Authorization', signToken(['catalogo:editar']))
+        .send({ nombre: 'Producto RBAC editado' })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .delete(`/api/productos/${prodRes.body.id}`)
+        .set('Authorization', signToken(['catalogo:crear']))
+        .expect(403);
+
+      // catalogo:eliminar debe pasar el guard de permisos; el 409 posterior es
+      // una regla de negocio propia de EliminarProductoUseCase, no de RBAC.
+      const eliminarRes = await request(app.getHttpServer())
+        .delete(`/api/productos/${prodRes.body.id}`)
+        .set('Authorization', signToken(['catalogo:eliminar']));
+      expect(eliminarRes.status).not.toBe(403);
     });
   });
 });

@@ -57,7 +57,7 @@ export class ProductoImagenesController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:crear')
+  @RequierePermiso('catalogo:editar')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() body: any,
@@ -70,7 +70,7 @@ export class ProductoImagenesController {
   }
 
   @Delete(':id')
-  @RequierePermiso('catalogo:crear')
+  @RequierePermiso('catalogo:eliminar')
   async eliminar(@Param('id', ParseBigIntPipe) id: bigint) {
     await this.repo.eliminar(id);
     return { success: true };

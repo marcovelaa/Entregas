@@ -56,7 +56,7 @@ export class CategoriasController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:crear')
+  @RequierePermiso('catalogo:editar')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ActualizarCategoriaDto,

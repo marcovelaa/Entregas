@@ -76,7 +76,7 @@ export class VariantesController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:crear')
+  @RequierePermiso('catalogo:editar')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ActualizarVarianteDto,
@@ -86,7 +86,7 @@ export class VariantesController {
   }
 
   @Delete(':id')
-  @RequierePermiso('catalogo:crear')
+  @RequierePermiso('catalogo:eliminar')
   async eliminar(@Param('id', ParseBigIntPipe) id: bigint) {
     return this.eliminarVarianteUseCase.execute(id);
   }

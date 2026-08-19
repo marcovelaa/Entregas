@@ -8,7 +8,6 @@ import {
   ListarClientesDto,
 } from '../../application/dtos/cliente.dto';
 import { RequierePermiso } from '../../../iam/auth/decorators/require-permiso.decorator';
-import { Public } from '../../../iam/auth/decorators/public.decorator';
 
 @Controller('clientes')
 export class ClientesController {
@@ -25,13 +24,13 @@ export class ClientesController {
   }
 
   @Get()
-  @Public()
+  @RequierePermiso('clientes:ver')
   async listar(@Query() dto: ListarClientesDto) {
     return this.listarClientesUseCase.execute(dto);
   }
 
   @Put(':id')
-  @RequierePermiso('clientes:crear')
+  @RequierePermiso('clientes:editar')
   async actualizar(@Param('id') id: string, @Body() dto: ActualizarClienteDto) {
     return this.actualizarClienteUseCase.execute(id, dto);
   }

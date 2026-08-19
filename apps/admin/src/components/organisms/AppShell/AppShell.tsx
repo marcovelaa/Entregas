@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { refreshSession } from '../../../lib/auth-session';
+import { requiredPermissionForPath } from '../../../lib/route-permissions';
+import { usePermissions } from '../../../hooks/usePermissions';
 import { Sidebar } from '../Sidebar/Sidebar';
 import { TopBar } from '../TopBar/TopBar';
 import { Modal } from '../../molecules/Modal/Modal';
+import { AccesoDenegado } from '../../molecules/AccesoDenegado/AccesoDenegado';
 import { AlertCircle } from 'lucide-react';
 import styles from './AppShell.module.css';
 
@@ -14,6 +17,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const pathname = usePathname();
   const router = useRouter();
+  const { can, user: permsUser } = usePermissions();
 
   useEffect(() => {
     refreshSession().then((hasSession) => {
@@ -63,12 +67,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const requiredPermiso = pathname ? requiredPermissionForPath(pathname) : null;
+  const permissionsLoaded = permsUser !== null;
+
+  let pageContent: React.ReactNode = children;
+  if (requiredPermiso) {
+    if (!permissionsLoaded) {
+      pageContent = (
+        <div className={styles.loaderContainer}>
+          <div className={styles.loader}></div>
+        </div>
+      );
+    } else if (!can(requiredPermiso)) {
+      pageContent = <AccesoDenegado />;
+    }
+  }
+
   return (
     <div className={styles.appContainer}>
       <Sidebar />
       <div className={styles.mainContent}>
         <TopBar />
-        <div className={styles.pageContent}>{children}</div>
+        <div className={styles.pageContent}>{pageContent}</div>
       </div>
 
       <Modal

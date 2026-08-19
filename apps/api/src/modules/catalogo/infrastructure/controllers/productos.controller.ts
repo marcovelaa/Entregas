@@ -60,7 +60,7 @@ export class ProductosController {
   }
 
   @Patch(':id')
-  @RequierePermiso('catalogo:crear')
+  @RequierePermiso('catalogo:editar')
   async actualizar(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ActualizarProductoDto,
@@ -69,7 +69,7 @@ export class ProductosController {
   }
 
   @Delete(':id')
-  @RequierePermiso('catalogo:crear')
+  @RequierePermiso('catalogo:eliminar')
   async eliminar(@Param('id', ParseBigIntPipe) id: bigint) {
     return this.eliminarProductoUseCase.execute(id);
   }
