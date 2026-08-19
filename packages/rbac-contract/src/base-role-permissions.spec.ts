@@ -1,4 +1,4 @@
-import { ALL_PERMISSIONS, BASE_ROLE_PERMISSIONS } from './rbac-policy';
+import { ALL_PERMISSIONS, BASE_ROLE_PERMISSIONS } from './index';
 
 describe('RBAC base role matrix', () => {
   const allCodes = ALL_PERMISSIONS.map((permission) => permission.codigo);
@@ -41,6 +41,7 @@ describe('RBAC base role matrix', () => {
       'catalogo:ver',
     ]);
   });
+
   it('keeps catalog and supplier mutations outside the Vendedor role', () => {
     expect(BASE_ROLE_PERMISSIONS.Administrador).toEqual(
       expect.arrayContaining([

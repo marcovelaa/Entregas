@@ -1,0 +1,35 @@
+{
+  "name": "@repo/rbac-contract",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed catalog of RBAC permission codes shared by apps/api and apps/admin",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "jest",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.0",
+    "jest": "^30.0.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.9.2"
+  },
+  "jest": {
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "testEnvironment": "node"
+  }
+}

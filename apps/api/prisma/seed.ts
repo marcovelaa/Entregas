@@ -1,9 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import {
-  ALL_PERMISSIONS,
-  BASE_ROLE_PERMISSIONS,
-} from '../src/modules/iam/auth/rbac-policy';
+import { ALL_PERMISSIONS, BASE_ROLE_PERMISSIONS } from '@repo/rbac-contract';
 
 const prisma = new PrismaClient();
 
@@ -17,7 +14,7 @@ async function main() {
     await prisma.permiso.upsert({
       where: { codigo: p.codigo },
       update: { descripcion: p.descripcion },
-      create: p,
+      create: { codigo: p.codigo, descripcion: p.descripcion },
     });
   }
   console.log('✅ Permisos insertados/actualizados');

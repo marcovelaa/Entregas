@@ -5,5 +5,8 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@repo/rbac-contract$": "<rootDir>/../../../packages/rbac-contract/src/index.ts"
   }
 }

@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@repo/combo-rules": ["../../packages/combo-rules/src/index.ts"]
+      "@repo/combo-rules": ["../../packages/combo-rules/src/index.ts"],
+      "@repo/rbac-contract": ["../../packages/rbac-contract/src/index.ts"]
     }
   },
   "include": [

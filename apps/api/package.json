@@ -36,6 +36,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "^5.22.0",
     "@repo/combo-rules": "workspace:*",
+    "@repo/rbac-contract": "workspace:*",
     "@types/multer": "^2.2.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
@@ -91,7 +92,8 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "moduleNameMapper": {
-      "^@repo/combo-rules$": "<rootDir>/../../../packages/combo-rules/src/index.ts"
+      "^@repo/combo-rules$": "<rootDir>/../../../packages/combo-rules/src/index.ts",
+      "^@repo/rbac-contract$": "<rootDir>/../../../packages/rbac-contract/src/index.ts"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
