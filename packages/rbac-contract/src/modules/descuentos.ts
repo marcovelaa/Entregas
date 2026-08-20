@@ -9,9 +9,5 @@ export const DESCUENTOS_PERMISSIONS = [
     codigo: 'descuentos:validar',
     modulo: 'descuentos',
     descripcion: 'Evaluar descuentos aplicables',
-    excepcion: {
-      tipo: 'publico',
-      motivo: 'el checkout de la tienda online valida códigos de descuento sin sesión de staff',
-    },
   },
 ] as const satisfies readonly PermissionDef[];

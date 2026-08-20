@@ -178,10 +178,22 @@ describe('Descuentos RBAC (e2e)', () => {
     expect(res.status).not.toBe(403);
   });
 
-  it('POST /api/descuentos/validar sigue público (lo usa el checkout de la tienda)', async () => {
+  it('POST /api/descuentos/validar - exige autenticación y descuentos:validar, no es público', async () => {
+    await request(app.getHttpServer())
+      .post('/api/descuentos/validar')
+      .send({ items: [] })
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .post('/api/descuentos/validar')
+      .set('Authorization', signToken(['descuentos:crear']))
+      .send({ items: [] })
+      .expect(403);
+
     const res = await request(app.getHttpServer())
       .post('/api/descuentos/validar')
-      .send({ codigo: 'NOEXISTE' });
-    expect(res.status).not.toBe(401);
+      .set('Authorization', signToken(['descuentos:validar']))
+      .send({ items: [] });
+    expect(res.status).not.toBe(403);
   });
 });

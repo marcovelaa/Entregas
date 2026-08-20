@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
-import { ALL_PERMISSIONS } from '@repo/rbac-contract';
+import { ALL_PERMISSIONS, PermissionDef } from '@repo/rbac-contract';
 
 function collectControllerFiles(dir: string): string[] {
   const entries = readdirSync(dir);
@@ -34,7 +34,7 @@ describe('RBAC enforcement audit', () => {
 
   it('every declared permission is either enforced or has a documented exception', () => {
     const gaps = ALL_PERMISSIONS.filter(
-      (permission) =>
+      (permission: PermissionDef) =>
         !enforcedCodes.has(permission.codigo) && !permission.excepcion,
     ).map((permission) => permission.codigo);
 

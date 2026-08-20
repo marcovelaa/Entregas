@@ -70,37 +70,45 @@ async function main() {
     },
   ];
 
+  // Los pasos 2-3 corren en una sola transacción: si el proceso se cae entre
+  // el upsert de roles y la aplicación de grants, un re-run vería los roles
+  // como "ya existentes" (el upsert ya corrió) y saltaría TODOS los grants
+  // — incluyendo los del Super Usuario recién creado, dejándolo sin permisos
+  // y sin forma de auto-repararse desde /configuracion/roles. Atómico evita
+  // ese estado inconsistente: o completan ambos pasos, o ninguno.
   const rolesPreexistentes = new Set<string>();
-  for (const r of roles) {
-    const existia = await prisma.rol.findUnique({
-      where: { nombre: r.nombre },
-    });
-    if (existia) rolesPreexistentes.add(r.nombre);
-    await prisma.rol.upsert({
-      where: { nombre: r.nombre },
-      update: { descripcion: r.descripcion, activo: r.activo },
-      create: r,
-    });
-  }
-  console.log('✅ Roles base insertados/actualizados');
-
-  // 3. Aplicar los permisos base SOLO a roles recién creados en esta corrida.
-  //    Si el rol ya existía, la DB manda — un admin pudo haberlo personalizado
-  //    desde /configuracion/roles y el seed no debe pisarlo.
-  for (const [nombreRol, permisosRol] of Object.entries(
-    BASE_ROLE_PERMISSIONS,
-  )) {
-    if (rolesPreexistentes.has(nombreRol)) continue;
-
-    const rol = await prisma.rol.findUnique({ where: { nombre: nombreRol } });
-    if (!rol) continue; // rol custom sin defaults en el contrato
-
-    for (const permisoCodigo of permisosRol) {
-      await prisma.rolPermiso.create({
-        data: { rol_id: rol.id, permiso_codigo: permisoCodigo },
+  await prisma.$transaction(async (tx) => {
+    for (const r of roles) {
+      const existia = await tx.rol.findUnique({
+        where: { nombre: r.nombre },
+      });
+      if (existia) rolesPreexistentes.add(r.nombre);
+      await tx.rol.upsert({
+        where: { nombre: r.nombre },
+        update: { descripcion: r.descripcion, activo: r.activo },
+        create: r,
       });
     }
-  }
+
+    // 3. Aplicar los permisos base SOLO a roles recién creados en esta corrida.
+    //    Si el rol ya existía, la DB manda — un admin pudo haberlo personalizado
+    //    desde /configuracion/roles y el seed no debe pisarlo.
+    for (const [nombreRol, permisosRol] of Object.entries(
+      BASE_ROLE_PERMISSIONS,
+    )) {
+      if (rolesPreexistentes.has(nombreRol)) continue;
+
+      const rol = await tx.rol.findUnique({ where: { nombre: nombreRol } });
+      if (!rol) continue; // rol custom sin defaults en el contrato
+
+      for (const permisoCodigo of permisosRol) {
+        await tx.rolPermiso.create({
+          data: { rol_id: rol.id, permiso_codigo: permisoCodigo },
+        });
+      }
+    }
+  });
+  console.log('✅ Roles base insertados/actualizados');
   console.log('✅ Permisos base asignados a los roles nuevos');
 
   const superRol = await prisma.rol.findUnique({
