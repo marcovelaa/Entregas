@@ -25,9 +25,9 @@
 
 .imageContainer {
   position: relative;
-  width: 100%;
+  width: 100%; height: 100%;
   aspect-ratio: 4/5;
-  background-color: #f8fafc;
+  background-color: transparent;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
@@ -37,8 +37,8 @@
 }
 
 .productImg {
-  object-fit: cover;
-  width: 100%;
+  object-fit: contain;
+  width: 100%; height: 100%;
   height: 100%;
   transition: transform 0.4s ease;
 }
@@ -50,7 +50,7 @@
 /* Dynamic Grids for Combos */
 .imageGridContainer {
   display: grid;
-  width: 100%;
+  width: 100%; height: 100%;
   height: 100%;
   gap: 2px;
   background-color: #f1f5f9;
@@ -84,7 +84,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 100%; height: 100%;
   height: 100%;
 }
 
@@ -94,7 +94,7 @@
 
 .gridImg {
   object-fit: contain;
-  width: 100%;
+  width: 100%; height: 100%;
   height: 100%;
   padding: 4px;
   transition: transform 0.3s ease;
@@ -255,19 +255,32 @@
 
 .addToCartBtn {
   background-color: white;
-  border: 1px solid var(--color-blue, #2563eb);
-  color: var(--color-blue, #2563eb);
-  padding: 0.45rem 1rem;
-  border-radius: 6px;
-  font-weight: 700;
-  font-size: 0.85rem;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.addToCartBtn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
 }
 
+
 .addToCartBtn:hover {
-  background-color: var(--color-blue, #2563eb);
+  background-color: #2563eb;
+  border-color: #2563eb;
   color: white;
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
 }
 
 .favoriteBtn {
@@ -340,8 +353,6 @@
 .productCardBook .imageContainer {
   background-color: transparent;
   border: none;
-  padding: 1rem 1.5rem;
-  aspect-ratio: auto;
   min-height: 200px;
   overflow: visible;
   perspective: 1000px; /* Para el efecto 3D sutil en hover */
@@ -350,10 +361,8 @@
 
 .bookCoverWrapper {
   position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1.4;
+  width: 100%; height: 100%;
   margin: 0 auto;
-  max-width: 160px;
   border-radius: 2px 6px 6px 2px;
   box-shadow: 
     -3px 0 2px rgba(0,0,0,0.02),
@@ -365,22 +374,6 @@
   overflow: hidden;
 }
 
-/* Lomo del libro */
-.bookCoverWrapper::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 12px;
-  background: linear-gradient(
-    to right, 
-    rgba(255,255,255,0.4) 0%, 
-    rgba(255,255,255,0.1) 20%, 
-    rgba(0,0,0,0.05) 80%, 
-    rgba(0,0,0,0.2) 100%
-  );
-  z-index: 2;
-  pointer-events: none;
-}
 
 /* Glare (Brillo sutil) */
 .glare {
@@ -400,7 +393,7 @@
 
 /* Animaciones combinadas en hover (Inclinado sutil + Zoom + Brillo) */
 .productCardBook:hover .bookCoverWrapper {
-  transform: scale(1.1) rotateY(-18deg) rotateX(8deg);
+  transform: scale(1.1) rotateY(var(--rotateY, -18deg)) rotateX(var(--rotateX, 8deg));
   box-shadow: 
     -15px 25px 35px rgba(0,0,0,0.25),
     -8px 12px 20px rgba(0,0,0,0.15);
@@ -411,9 +404,10 @@
 }
 
 .productCardBook .productImg {
-  object-fit: cover;
+  object-fit: contain;
+  background-color: transparent;
   border-radius: 2px 6px 6px 2px;
-  width: 100%;
+  width: 100%; height: 100%;
   height: 100%;
   position: absolute;
   top: 0; left: 0;
@@ -447,41 +441,12 @@
   color: #0f172a;
 }
 
-/* Botón Añadir con icono (estilo limpio) */
-.productCardBook .addToCartBtn {
-  background-color: white;
-  border: 1px solid #e2e8f0;
-  color: #475569;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.productCardBook .addToCartBtn svg {
-  width: 18px;
-  height: 18px;
-  stroke-width: 2.5;
-}
-
-.productCardBook .addToCartBtn:hover {
-  background-color: #2563eb;
-  border-color: #2563eb;
-  color: white;
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
 @keyframes cartTilt {
   0%, 100% { transform: rotate(0deg); }
   25% { transform: rotate(-15deg); }
   75% { transform: rotate(10deg); }
 }
-
-.productCardBook .addToCartBtn:hover svg {
+.addToCartBtn:hover svg {
   animation: cartTilt 0.4s ease-in-out;
 }
 
@@ -498,9 +463,7 @@
       0 8px 12px rgba(0,0,0,0.1), 
       0 1px 3px rgba(0,0,0,0.1);
   }
-  .productCardBook .addToCartBtn:hover {
-    transform: none;
-  }
+  
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -508,8 +471,7 @@
   .productCardBook:hover,
   .bookCoverWrapper,
   .productCardBook:hover .bookCoverWrapper,
-  .glare,
-  .productCardBook .addToCartBtn {
+  .glare {
     transition: none !important;
     transform: none !important;
   }

@@ -8,6 +8,9 @@ export interface FavoriteItem {
   category: string;
   price: number;
   imageUrl: string;
+  precioOriginal?: number;
+  tipo_producto?: string;
+  isBook?: boolean;
 }
 
 interface FavoritesContextType {
@@ -23,7 +26,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
     const saved = localStorage.getItem('entregas_favorites');
     if (saved) {
       try {

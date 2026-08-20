@@ -14,7 +14,7 @@ export default async function RecommendedProducts() {
     // Safety net: skip combos the backend marked as sold out or expired
     const allProducts = (data.data || []).filter((p: { estado_venta?: string }) => p.estado_venta !== 'VENCIDO' && p.estado_venta !== 'AGOTADO');
     // Prioritize products marked as destacado_portada or combos, then newest
-    allProducts.sort((a: any, b: any) => {
+    allProducts.sort((a: unknown, b: unknown) => {
       const aDest = a.atributos?.presentacion_visual?.destacado_portada ? 1 : 0;
       const bDest = b.atributos?.presentacion_visual?.destacado_portada ? 1 : 0;
       if (bDest !== aDest) return bDest - aDest;
@@ -41,15 +41,15 @@ export default async function RecommendedProducts() {
         {products.length === 0 ? (
           <p style={{ color: '#64748b', fontStyle: 'italic' }}>No hay productos registrados en el sistema todavía.</p>
         ) : (
-          products.map((p: any) => {
+          products.map((p: unknown) => {
             const isCombo = p.tipo_producto === 'COMBO';
             const pv = p.atributos?.presentacion_visual;
             let compsSubtotal = 0;
             const componentImages: string[] = [];
-            const mappedComponents: any[] = [];
+            const mappedComponents: unknown[] = [];
 
             if (isCombo && p.componentes_combo && p.componentes_combo.length > 0) {
-              p.componentes_combo.forEach((c: any) => {
+              p.componentes_combo.forEach((c: unknown) => {
                 const comp = c.componente_producto;
                 if (comp) {
                   compsSubtotal += (Number(comp.precio_base) || 0) * (c.cantidad || 1);
@@ -75,7 +75,9 @@ export default async function RecommendedProducts() {
 
             const hasCustomImage = Boolean(p.imagenes && p.imagenes.length > 0);
             const imageUrl = hasCustomImage
-              ? (p.imagenes[0].url.startsWith('http') ? p.imagenes[0].url : `http://localhost:3001${p.imagenes[0].url}`)
+              ? (p.imagenes[0].url.startsWith('http') 
+                  ? p.imagenes[0].url 
+                  : `http://localhost:3001${p.imagenes[0].url.startsWith('/') ? '' : '/'}${p.imagenes[0].url}`)
               : undefined;
 
             let urgencyLabel: string | undefined;
@@ -85,13 +87,25 @@ export default async function RecommendedProducts() {
                 urgencyLabel = dias === 1 ? 'Termina en 1 día' : `Termina en ${dias} días`;
               }
             }
+            
+            const categoryName = p.categoria?.nombre || 'General';
+            const isBook = Boolean(
+              !p.nombre.toLowerCase().match(/(bol[ií]grafo|cuaderno|l[aá]piz|borrador|marcador|mochila)/) &&
+              (
+                p.naturaleza === 'TEXTO' || 
+                p.naturaleza === 'PLAN_LECTOR' || 
+                p.tipo_producto === 'LIBRO' || 
+                categoryName.toLowerCase().includes('texto') || 
+                categoryName.toLowerCase().includes('lector')
+              )
+            );
 
             return (
               <ProductCard 
                 key={p.id}
                 id={p.id.toString()}
                 title={p.nombre}
-                category={p.categoria?.nombre || 'General'}
+                category={categoryName}
                 categoryColor="var(--color-blue)"
                 price={p.precio_base}
                 imageUrl={imageUrl}
@@ -103,6 +117,7 @@ export default async function RecommendedProducts() {
                 componentes={mappedComponents}
                 componentesImagenes={componentImages}
                 modoImagen={pv?.modo_imagen || 'GRID_AUTO'}
+                isBook={isBook}
               />
             );
           })

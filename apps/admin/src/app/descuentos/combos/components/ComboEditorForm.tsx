@@ -35,6 +35,7 @@ import {
   OFFSET_MINUTES,
 } from '@/lib/combo-rules';
 import type { ModoVenta } from '@/lib/combo-rules';
+import styles from './ComboEditorForm.module.css';
 
 interface ComponenteItem {
   componente_prod_id: string;
@@ -521,127 +522,61 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
 
   if (loadingData) {
     return (
-      <div style={{ padding: '4rem', textAlign: 'center', color: '#64748b' }}>
-        <Loader2 size={32} className="spin" style={{ margin: '0 auto 1rem', color: '#2563eb' }} />
-        <p style={{ fontWeight: 600 }}>Cargando estructura del combo...</p>
+      <div className={styles.loadingWrap}>
+        <Loader2 size={32} className={`spin ${styles.loadingSpin}`} />
+        <p className={styles.loadingText}>Cargando estructura del combo...</p>
       </div>
     );
   }
 
   return (
-    <main style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto' }}>
+    <main className={styles.main}>
       {/* Top Header */}
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '1.5rem',
-          paddingBottom: '1rem',
-          borderBottom: '1px solid #e2e8f0',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button
-            onClick={() => router.push('/descuentos')}
-            style={{
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '0.5rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              color: '#475569',
-            }}
-          >
+      <header className={styles.header}>
+        <div className={styles.headerLeft}>
+          <button onClick={() => router.push('/descuentos')} className={styles.backBtn}>
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1
-              style={{
-                fontSize: '1.35rem',
-                fontWeight: 800,
-                margin: 0,
-                color: '#0f172a',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-            >
+            <h1 className={styles.title}>
               <Package size={22} color="#0f172a" />
               {isEditing ? `Editar Combo: ${nombre}` : 'Nuevo Combo / Paquete Promocional'}
             </h1>
-            <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+            <p className={styles.subtitle}>
               Configura los componentes del paquete, precio promocional y apariencia de las cards en POS y E-commerce.
             </p>
           </div>
         </div>
       </header>
 
-      {errorMsg && (
-        <div
-          style={{
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            color: '#991b1b',
-            padding: '1rem',
-            borderRadius: '8px',
-            marginBottom: '1.5rem',
-            fontSize: '0.9rem',
-          }}
-        >
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <div className={styles.errorBanner}>{errorMsg}</div>}
 
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '1.5rem', alignItems: 'start' }}
-      >
+      <form onSubmit={handleSubmit} className={styles.formGrid}>
         {/* Left Column: Form Sections */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className={styles.leftColumn}>
           {/* Card 1: Informacion Comercial */}
-          <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-              1. Información del Combo
-            </h3>
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>1. Información del Combo</h3>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-                  Nombre del Combo / Paquete *
-                </label>
+            <div className={styles.grid2Mb}>
+              <div className={styles.field}>
+                <label className={styles.label}>Nombre del Combo / Paquete *</label>
                 <input
                   type="text"
                   placeholder="Ej: Pack Escolar Completo 2026"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem 0.8rem',
-                    borderRadius: '6px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.9rem',
-                  }}
+                  className={styles.input}
                   required
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-                  Categoría en Catálogo *
-                </label>
+              <div className={styles.field}>
+                <label className={styles.label}>Categoría en Catálogo *</label>
                 <select
                   value={categoriaId}
                   onChange={(e) => setCategoriaId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem 0.8rem',
-                    borderRadius: '6px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.9rem',
-                  }}
+                  className={styles.select}
                   required
                 >
                   <option value="">Selecciona categoría</option>
@@ -654,77 +589,52 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-                  Código SKU (Opcional)
-                </label>
+            <div className={styles.grid2}>
+              <div className={styles.field}>
+                <label className={styles.label}>Código SKU (Opcional)</label>
                 <input
                   type="text"
                   placeholder="Ej: COMBO-ESC-01"
                   value={sku}
                   onChange={(e) => setSku(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem 0.8rem',
-                    borderRadius: '6px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.9rem',
-                  }}
+                  className={styles.input}
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-                  Descripción Comercial (Opcional)
-                </label>
+              <div className={styles.field}>
+                <label className={styles.label}>Descripción Comercial (Opcional)</label>
                 <input
                   type="text"
                   placeholder="Ej: Incluye 2 cuadernos + 1 estuche de bolígrafos"
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem 0.8rem',
-                    borderRadius: '6px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.9rem',
-                  }}
+                  className={styles.input}
                 />
               </div>
             </div>
           </div>
 
           {/* Card 2: Receta BOM */}
-          <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div className={styles.card}>
+            <div className={styles.cardHeaderRow}>
+              <h3 className={styles.cardTitleIcon}>
                 <Layers size={18} color="#0f172a" /> 2. Componentes del Paquete (Receta BOM)
               </h3>
               {componentes.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem' }}>
-                  <span style={{ color: '#64748b' }}>Stock Virtual del Combo:</span>
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      padding: '0.2rem 0.6rem',
-                      borderRadius: '999px',
-                      backgroundColor: virtualStock > 0 ? '#ecfdf5' : '#fef2f2',
-                      color: virtualStock > 0 ? '#065f46' : '#991b1b',
-                      border: `1px solid ${virtualStock > 0 ? '#a7f3d0' : '#fecaca'}`,
-                    }}
-                  >
+                <div className={styles.stockVirtualRow}>
+                  <span className={styles.stockVirtualLabel}>Stock Virtual del Combo:</span>
+                  <span className={virtualStock > 0 ? styles.stockBadgePositive : styles.stockBadgeNegative}>
                     {virtualStock > 0 ? `${virtualStock} unidades armables` : '0 combos (Sin stock)'}
                   </span>
                 </div>
               )}
             </div>
-            <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.8rem' }}>
+            <p className={styles.cardDescription}>
               Selecciona qué productos del catálogo componen este combo y cuántas unidades incluye cada uno.
             </p>
 
             {/* Omnibox & Batch catalog search */}
-            <div style={{ marginBottom: '1rem' }}>
+            <div className={styles.omniboxWrap}>
               <ComboProductOmnibox
                 onAddProduct={handleAddProduct}
                 onOpenBrowseModal={() => setIsBrowseModalOpen(true)}
@@ -744,45 +654,24 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
 
             {/* Component list */}
             {componentes.length === 0 ? (
-              <div
-                style={{
-                  padding: '2.5rem 1.5rem',
-                  textAlign: 'center',
-                  border: '1.5px dashed #cbd5e1',
-                  borderRadius: '10px',
-                  backgroundColor: '#f8fafc',
-                  color: '#64748b',
-                }}
-              >
-                <Package size={36} style={{ margin: '0 auto 0.5rem', color: '#94a3b8' }} />
-                <p style={{ margin: '0 0 0.35rem 0', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
-                  No has agregado componentes a este combo todavía
-                </p>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+              <div className={styles.emptyState}>
+                <Package size={36} className={styles.emptyStateIcon} />
+                <p className={styles.emptyStateTitle}>No has agregado componentes a este combo todavía</p>
+                <p className={styles.emptyStateText}>
                   Usa el buscador rápido de arriba (con soporte para lector de código de barras) o el botón "Explorar Catálogo".
                 </p>
               </div>
             ) : (
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <div className={styles.tableWrapper}>
+                <table className={styles.table}>
+                  <thead className={styles.theadRow}>
                     <tr>
-                      <th style={{ padding: '0.65rem 0.85rem', textAlign: 'left', fontWeight: 600, color: '#475569' }}>
-                        Producto Componente
-                      </th>
-                      <th style={{ padding: '0.65rem 0.85rem', textAlign: 'center', fontWeight: 600, color: '#475569', width: '130px' }}>
-                        Cantidad
-                      </th>
-                      <th style={{ padding: '0.65rem 0.85rem', textAlign: 'right', fontWeight: 600, color: '#475569', width: '110px' }}>
-                        P. Unitario
-                      </th>
-                      <th style={{ padding: '0.65rem 0.85rem', textAlign: 'right', fontWeight: 600, color: '#475569', width: '110px' }}>
-                        Subtotal
-                      </th>
-                      <th style={{ padding: '0.65rem 0.85rem', textAlign: 'center', fontWeight: 600, color: '#475569', width: '160px' }}>
-                        Stock Físico
-                      </th>
-                      <th style={{ padding: '0.65rem 0.85rem', width: '40px' }}></th>
+                      <th className={styles.th}>Producto Componente</th>
+                      <th className={styles.thCenter}>Cantidad</th>
+                      <th className={styles.thRight}>P. Unitario</th>
+                      <th className={styles.thRight}>Subtotal</th>
+                      <th className={styles.thStock}>Stock Físico</th>
+                      <th className={styles.thAction}></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -790,65 +679,36 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                       const isBottleneck = c.componente_prod_id === bottleneckId && componentes.length > 1;
                       const stockAvailable = c.stock_disponible !== undefined ? c.stock_disponible : 0;
                       const maxCombosFromThis = Math.floor(stockAvailable / (c.cantidad || 1));
+                      const isLast = i === componentes.length - 1;
+
+                      let rowClass = styles.tr;
+                      if (isBottleneck) rowClass = isLast ? styles.trBottleneckLast : styles.trBottleneck;
+                      else if (isLast) rowClass = styles.trLast;
 
                       return (
-                        <tr
-                          key={c.componente_prod_id}
-                          style={{
-                            borderBottom: i < componentes.length - 1 ? '1px solid #f1f5f9' : 'none',
-                            backgroundColor: isBottleneck ? '#fffbeb' : '#ffffff',
-                          }}
-                        >
-                          <td style={{ padding: '0.65rem 0.85rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                              <div style={{ fontWeight: 600, color: '#0f172a' }}>{c.nombre}</div>
+                        <tr key={c.componente_prod_id} className={rowClass}>
+                          <td className={styles.td}>
+                            <div className={styles.productNameRow}>
+                              <div className={styles.productName}>{c.nombre}</div>
                               {isBottleneck && (
                                 <span
                                   title="Este producto tiene el stock más bajo y determina cuántos combos se pueden vender"
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.25rem',
-                                    fontSize: '0.7rem',
-                                    padding: '0.15rem 0.45rem',
-                                    borderRadius: '4px',
-                                    backgroundColor: '#fef3c7',
-                                    color: '#92400e',
-                                    fontWeight: 600,
-                                    border: '1px solid #fde68a',
-                                  }}
+                                  className={styles.bottleneckBadge}
                                 >
                                   <AlertTriangle size={12} /> Limita el stock del combo
                                 </span>
                               )}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.1rem' }}>
-                              SKU: <span style={{ fontFamily: 'monospace' }}>{c.sku || 'N/A'}</span>
+                            <div className={styles.skuText}>
+                              SKU: <span className={styles.mono}>{c.sku || 'N/A'}</span>
                             </div>
                           </td>
-                          <td style={{ padding: '0.65rem 0.85rem', textAlign: 'center' }}>
-                            <div
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '6px',
-                                overflow: 'hidden',
-                                backgroundColor: '#ffffff',
-                              }}
-                            >
+                          <td className={styles.tdCenter}>
+                            <div className={styles.qtyControl}>
                               <button
                                 type="button"
                                 onClick={() => handleUpdateCantidad(i, c.cantidad - 1)}
-                                style={{
-                                  border: 'none',
-                                  background: '#f8fafc',
-                                  padding: '0.35rem 0.5rem',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  color: '#475569',
-                                }}
+                                className={styles.qtyBtn}
                               >
                                 <Minus size={13} />
                               </button>
@@ -857,79 +717,34 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                                 min="1"
                                 value={c.cantidad}
                                 onChange={(e) => handleUpdateCantidad(i, parseInt(e.target.value) || 1)}
-                                style={{
-                                  width: '42px',
-                                  border: 'none',
-                                  textAlign: 'center',
-                                  fontSize: '0.85rem',
-                                  fontWeight: 600,
-                                  padding: '0.25rem 0',
-                                  outline: 'none',
-                                }}
+                                className={styles.qtyInput}
                               />
                               <button
                                 type="button"
                                 onClick={() => handleUpdateCantidad(i, c.cantidad + 1)}
-                                style={{
-                                  border: 'none',
-                                  background: '#f8fafc',
-                                  padding: '0.35rem 0.5rem',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  color: '#475569',
-                                }}
+                                className={styles.qtyBtn}
                               >
                                 <Plus size={13} />
                               </button>
                             </div>
                           </td>
-                          <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right', color: '#64748b' }}>
+                          <td className={styles.tdRight}>
                             Bs. {(c.precio_unitario || 0).toFixed(2)}
                           </td>
-                          <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
+                          <td className={styles.tdRightStrong}>
                             Bs. {((c.precio_unitario || 0) * c.cantidad).toFixed(2)}
                           </td>
-                          <td style={{ padding: '0.65rem 0.85rem', textAlign: 'center' }}>
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                padding: '0.2rem 0.55rem',
-                                borderRadius: '999px',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                backgroundColor: stockAvailable >= c.cantidad ? '#ecfdf5' : '#fef2f2',
-                                color: stockAvailable >= c.cantidad ? '#065f46' : '#991b1b',
-                                border: `1px solid ${stockAvailable >= c.cantidad ? '#a7f3d0' : '#fecaca'}`,
-                              }}
-                            >
+                          <td className={styles.tdCenter}>
+                            <span className={stockAvailable >= c.cantidad ? styles.stockCellPositive : styles.stockCellNegative}>
                               {stockAvailable} un. ({maxCombosFromThis} combos)
                             </span>
                           </td>
-                          <td style={{ padding: '0.65rem 0.85rem', textAlign: 'center' }}>
+                          <td className={styles.tdCenter}>
                             <button
                               type="button"
                               onClick={() => handleRemoveComponent(i)}
                               title="Quitar de la receta"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#94a3b8',
-                                cursor: 'pointer',
-                                padding: '0.3rem',
-                                borderRadius: '4px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                transition: 'color 0.15s, background-color 0.15s',
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.color = '#ef4444';
-                                e.currentTarget.style.backgroundColor = '#fee2e2';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.color = '#94a3b8';
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                              }}
+                              className={styles.removeBtn}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -944,65 +759,46 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
           </div>
 
           {/* Card 3: Presentación Visual & Configuración de Cards */}
-          <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-            <h3 style={{ margin: '0 0 0.3rem 0', fontSize: '1rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div className={styles.card}>
+            <h3 className={styles.cardTitleIconMb}>
               <Palette size={18} color="#0f172a" /> 3. Presentación Comercial & Cards (POS & E-commerce)
             </h3>
-            <p style={{ margin: '0 0 1.25rem 0', color: '#64748b', fontSize: '0.8rem' }}>
+            <p className={styles.cardDescription}>
               Controla cómo se presenta el combo visualmente ante los clientes en la tienda y en la pantalla de caja.
             </p>
 
             {/* Badge Config */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-                  Badge / Tagline Promocional
-                </label>
+            <div className={styles.grid2Mb}>
+              <div className={styles.field}>
+                <label className={styles.label}>Badge / Tagline Promocional</label>
                 <input
                   type="text"
                   placeholder={`Ej: ${ahorroPorcentaje > 0 ? `Ahorrá ${ahorroPorcentaje}%` : 'Pack Escolar 2026'}`}
                   value={badgeTexto}
                   onChange={(e) => setBadgeTexto(e.target.value)}
                   disabled={badgeEstilo === 'none'}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem 0.8rem',
-                    borderRadius: '6px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.9rem',
-                    opacity: badgeEstilo === 'none' ? 0.5 : 1,
-                  }}
+                  className={badgeEstilo === 'none' ? styles.badgeInputDisabled : styles.badgeInput}
                 />
-                <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>
+                <span className={styles.badgeHelpText}>
                   {badgeEstilo === 'none'
                     ? 'El badge está desactivado para este combo.'
                     : 'Si se deja vacío, muestra automáticamente el % de ahorro o "KIT / COMBO".'}
                 </span>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>
-                  Estilo Visual del Badge
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              <div className={styles.field}>
+                <label className={styles.label}>Estilo Visual del Badge</label>
+                <div className={styles.badgeStyleRow}>
                   {BADGE_STYLES.map((style) => (
                     <button
                       key={style.key}
                       type="button"
                       onClick={() => setBadgeEstilo(style.key)}
+                      className={styles.badgeStyleBtn}
                       style={{
-                        padding: '0.4rem 0.75rem',
-                        borderRadius: '6px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
                         backgroundColor: style.bg,
                         color: style.text,
                         border: badgeEstilo === style.key ? `2px solid ${style.text}` : `1px solid ${style.border}`,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.3rem',
-                        transition: 'all 0.15s ease',
                       }}
                     >
                       {badgeEstilo === style.key && <Check size={13} />}
@@ -1014,28 +810,19 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
             </div>
 
             {/* Image Mode */}
-            <div style={{ marginBottom: '1.25rem', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>
-                Modo de Imagen de la Card
-              </label>
+            <div className={styles.imageModeBox}>
+              <label className={styles.imageModeLabel}>Modo de Imagen de la Card</label>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <div className={styles.imageModeGrid}>
                 <button
                   type="button"
                   onClick={() => setModoImagen('GRID_AUTO')}
-                  style={{
-                    padding: '0.75rem',
-                    borderRadius: '8px',
-                    textAlign: 'left',
-                    backgroundColor: modoImagen === 'GRID_AUTO' ? '#ffffff' : '#f1f5f9',
-                    border: modoImagen === 'GRID_AUTO' ? '2px solid #0f172a' : '1px solid #cbd5e1',
-                    cursor: 'pointer',
-                  }}
+                  className={modoImagen === 'GRID_AUTO' ? styles.imageModeOptionActive : styles.imageModeOption}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div className={styles.imageModeOptionTitle}>
                     <LayoutGrid size={16} /> Cuadrícula Automática (BOM)
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>
+                  <div className={styles.imageModeOptionDesc}>
                     Compone automáticamente las fotos de los componentes ocupando el 100% del área disponible.
                   </div>
                 </button>
@@ -1043,19 +830,12 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                 <button
                   type="button"
                   onClick={() => setModoImagen('PROPIA')}
-                  style={{
-                    padding: '0.75rem',
-                    borderRadius: '8px',
-                    textAlign: 'left',
-                    backgroundColor: modoImagen === 'PROPIA' ? '#ffffff' : '#f1f5f9',
-                    border: modoImagen === 'PROPIA' ? '2px solid #0f172a' : '1px solid #cbd5e1',
-                    cursor: 'pointer',
-                  }}
+                  className={modoImagen === 'PROPIA' ? styles.imageModeOptionActive : styles.imageModeOption}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div className={styles.imageModeOptionTitle}>
                     <ImageIcon size={16} /> Imagen Propia del Pack
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>
+                  <div className={styles.imageModeOptionDesc}>
                     Sube una foto exclusiva del kit armado o diseño promocional.
                   </div>
                 </button>
@@ -1063,30 +843,14 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
 
               {/* Upload input when PROPIA is selected */}
               {modoImagen === 'PROPIA' && (
-                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px dashed #cbd5e1' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.4rem' }}>
-                    Subir Foto del Pack / Combo:
-                  </label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <label
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #cbd5e1',
-                        padding: '0.5rem 0.8rem',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        color: '#334155',
-                      }}
-                    >
+                <div className={styles.uploadBox}>
+                  <label className={styles.uploadLabel}>Subir Foto del Pack / Combo:</label>
+                  <div className={styles.uploadRow}>
+                    <label className={styles.uploadFileLabel}>
                       <Upload size={14} /> Seleccionar archivo
-                      <input type="file" accept="image/*" onChange={handleImageFileChange} style={{ display: 'none' }} />
+                      <input type="file" accept="image/*" onChange={handleImageFileChange} className={styles.hiddenFileInput} />
                     </label>
-                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    <span className={styles.uploadFileName}>
                       {selectedImageFile ? selectedImageFile.name : existingImageUrl ? 'Imagen actual cargada' : 'Sin imagen seleccionada'}
                     </span>
                   </div>
@@ -1095,20 +859,19 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
             </div>
 
             {/* Destacado en portada */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
+            <div className={styles.checkboxColumn}>
+              <label className={styles.checkboxRow}>
                 <input
                   type="checkbox"
                   checked={destacadoPortada}
                   onChange={(e) => setDestacadoPortada(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: '#0f172a' }}
+                  className={styles.checkboxInput}
                 />
                 <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>
+                  <div className={styles.checkboxTitle}>
                     Destacar en la sección de Combos & Ofertas del E-commerce
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  <div className={styles.checkboxDesc}>
                     Le da prioridad al pack en la página principal y la sección de promociones.
                   </div>
                 </div>
@@ -1117,37 +880,25 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
           </div>
 
           {/* Card 4: Disponibilidad */}
-          <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-
+          <div className={styles.card}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <div className={styles.availabilityHeaderRow}>
+              <h3 className={styles.cardTitleIcon}>
                 <CalendarClock size={18} color="#0f172a" /> 4. Disponibilidad
               </h3>
               {[vigenciaEnabled, diasEnabled, cupoEnabled].filter(Boolean).length > 0 && (
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '999px', backgroundColor: '#0f172a', color: '#ffffff' }}>
+                <span className={styles.availabilityCount}>
                   {[vigenciaEnabled, diasEnabled, cupoEnabled].filter(Boolean).length} activa{[vigenciaEnabled, diasEnabled, cupoEnabled].filter(Boolean).length > 1 ? 's' : ''}
                 </span>
               )}
             </div>
 
             {/* Mode badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-              <p style={{ margin: 0, color: '#64748b', fontSize: '0.8rem' }}>
+            <div className={styles.availabilityModeRow}>
+              <p className={styles.availabilityModeText}>
                 Cada restricción es independiente y se combina automáticamente.
               </p>
-              <span style={{
-                flexShrink: 0,
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                padding: '0.18rem 0.55rem',
-                borderRadius: '999px',
-                border: '1.5px solid',
-                borderColor: modoVenta === 'PERMANENTE' ? '#cbd5e1' : '#0f172a',
-                backgroundColor: modoVenta === 'PERMANENTE' ? '#f8fafc' : '#f1f5f9',
-                color: modoVenta === 'PERMANENTE' ? '#94a3b8' : '#0f172a',
-                whiteSpace: 'nowrap',
-              }}>
+              <span className={modoVenta === 'PERMANENTE' ? styles.availabilityModeBadgeNeutral : styles.availabilityModeBadgeActive}>
                 {modoVenta === 'PERMANENTE' && 'Permanente'}
                 {modoVenta === 'RANGO_FECHAS' && 'Temporal'}
                 {modoVenta === 'CUPO_FIJO' && 'Con cupo'}
@@ -1156,57 +907,57 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
             </div>
 
             {/* Toggle 1 — Período de vigencia */}
-            <div style={{ borderRadius: '10px', border: `1.5px solid ${vigenciaEnabled ? '#0f172a' : '#e2e8f0'}`, overflow: 'hidden', marginBottom: '0.65rem' }}>
+            <div className={vigenciaEnabled ? styles.toggleSectionActive : styles.toggleSection}>
               <button
                 type="button"
                 onClick={() => setVigenciaEnabled(!vigenciaEnabled)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1rem', backgroundColor: vigenciaEnabled ? '#0f172a' : '#f8fafc', border: 'none', cursor: 'pointer' }}
+                className={vigenciaEnabled ? styles.toggleBtnActive : styles.toggleBtn}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                  <div style={{ width: 17, height: 17, borderRadius: '50%', border: `2px solid ${vigenciaEnabled ? '#fff' : '#94a3b8'}`, backgroundColor: vigenciaEnabled ? '#fff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {vigenciaEnabled && <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#0f172a' }} />}
+                <div className={styles.toggleBtnLeft}>
+                  <div className={vigenciaEnabled ? styles.toggleDotActive : styles.toggleDot}>
+                    {vigenciaEnabled && <div className={styles.toggleDotInner} />}
                   </div>
-                  <span style={{ fontSize: '0.87rem', fontWeight: 600, color: vigenciaEnabled ? '#ffffff' : '#0f172a' }}>Período de vigencia</span>
+                  <span className={vigenciaEnabled ? styles.toggleLabelActive : styles.toggleLabel}>Período de vigencia</span>
                 </div>
-                <span style={{ fontSize: '0.74rem', color: vigenciaEnabled ? '#94a3b8' : '#64748b' }}>
+                <span className={vigenciaEnabled ? styles.toggleStatusActive : styles.toggleStatus}>
                   {vigenciaEnabled ? 'Activo' : 'Siempre disponible'}
                 </span>
               </button>
               {vigenciaEnabled && (
-                <div style={{ padding: '1rem', backgroundColor: '#ffffff', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className={styles.toggleBodyGrid}>
                   {/* Desde */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Disponible desde</label>
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <label className={styles.dateTimeLabel}>Disponible desde</label>
+                    <div className={styles.dateTimeRow}>
                       <input
                         type="date"
                         value={vigenciaInicio}
                         onChange={(e) => setVigenciaInicio(e.target.value)}
-                        style={{ flex: '1 1 60%', padding: '0.5rem 0.6rem', borderRadius: '7px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', color: '#0f172a', minWidth: 0 }}
+                        className={styles.dateInput}
                       />
                       <input
                         type="time"
                         value={vigenciaInicioHora}
                         onChange={(e) => setVigenciaInicioHora(e.target.value)}
-                        style={{ flex: '1 1 40%', padding: '0.5rem 0.4rem', borderRadius: '7px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', color: '#0f172a', minWidth: 0 }}
+                        className={styles.timeInput}
                       />
                     </div>
                   </div>
                   {/* Hasta */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Disponible hasta</label>
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <label className={styles.dateTimeLabel}>Disponible hasta</label>
+                    <div className={styles.dateTimeRow}>
                       <input
                         type="date"
                         value={vigenciaFin}
                         onChange={(e) => setVigenciaFin(e.target.value)}
-                        style={{ flex: '1 1 60%', padding: '0.5rem 0.6rem', borderRadius: '7px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', color: '#0f172a', minWidth: 0 }}
+                        className={styles.dateInput}
                       />
                       <input
                         type="time"
                         value={vigenciaFinHora}
                         onChange={(e) => setVigenciaFinHora(e.target.value)}
-                        style={{ flex: '1 1 40%', padding: '0.5rem 0.4rem', borderRadius: '7px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', color: '#0f172a', minWidth: 0 }}
+                        className={styles.timeInput}
                       />
                     </div>
                   </div>
@@ -1215,19 +966,19 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
             </div>
 
             {/* Toggle 2 — Días específicos */}
-            <div style={{ borderRadius: '10px', border: `1.5px solid ${diasEnabled ? '#0f172a' : '#e2e8f0'}`, overflow: 'hidden', marginBottom: '0.65rem' }}>
+            <div className={diasEnabled ? styles.toggleSectionActive : styles.toggleSection}>
               <button
                 type="button"
                 onClick={() => setDiasEnabled(!diasEnabled)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1rem', backgroundColor: diasEnabled ? '#0f172a' : '#f8fafc', border: 'none', cursor: 'pointer' }}
+                className={diasEnabled ? styles.toggleBtnActive : styles.toggleBtn}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                  <div style={{ width: 17, height: 17, borderRadius: '50%', border: `2px solid ${diasEnabled ? '#fff' : '#94a3b8'}`, backgroundColor: diasEnabled ? '#fff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {diasEnabled && <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#0f172a' }} />}
+                <div className={styles.toggleBtnLeft}>
+                  <div className={diasEnabled ? styles.toggleDotActive : styles.toggleDot}>
+                    {diasEnabled && <div className={styles.toggleDotInner} />}
                   </div>
-                  <span style={{ fontSize: '0.87rem', fontWeight: 600, color: diasEnabled ? '#ffffff' : '#0f172a' }}>Solo en días específicos</span>
+                  <span className={diasEnabled ? styles.toggleLabelActive : styles.toggleLabel}>Solo en días específicos</span>
                 </div>
-                <span style={{ fontSize: '0.74rem', color: diasEnabled ? '#94a3b8' : '#64748b' }}>
+                <span className={diasEnabled ? styles.toggleStatusActive : styles.toggleStatus}>
                   {diasEnabled
                     ? diasSemana.length > 0
                       ? (['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'] as string[]).filter((_, i) => diasSemana.includes(i)).join(', ')
@@ -1236,8 +987,8 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                 </span>
               </button>
               {diasEnabled && (
-                <div style={{ padding: '0.85rem 1rem', backgroundColor: '#ffffff' }}>
-                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <div className={styles.toggleBody}>
+                  <div className={styles.dayChipsRow}>
                     {([1,2,3,4,5,6,0] as number[]).map((day) => {
                       const labels: Record<number,string> = { 0:'Dom', 1:'Lun', 2:'Mar', 3:'Mié', 4:'Jue', 5:'Vie', 6:'Sáb' };
                       const isOn = diasSemana.includes(day);
@@ -1246,7 +997,7 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                           key={day}
                           type="button"
                           onClick={() => setDiasSemana(isOn ? diasSemana.filter(d => d !== day) : [...diasSemana, day])}
-                          style={{ padding: '0.4rem 0.8rem', borderRadius: '999px', fontSize: '0.82rem', fontWeight: isOn ? 700 : 500, cursor: 'pointer', border: `2px solid ${isOn ? '#0f172a' : '#e2e8f0'}`, backgroundColor: isOn ? '#0f172a' : '#f8fafc', color: isOn ? '#ffffff' : '#64748b', transition: 'all 0.12s' }}
+                          className={isOn ? styles.dayChipActive : styles.dayChip}
                         >
                           {labels[day]}
                         </button>
@@ -1254,34 +1005,34 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                     })}
                   </div>
                   {diasSemana.length === 0 && (
-                    <p style={{ margin: '0.55rem 0 0 0', fontSize: '0.74rem', color: '#f59e0b' }}>Seleccioná al menos un día o desactivá esta restricción.</p>
+                    <p className={styles.warnText}>Seleccioná al menos un día o desactivá esta restricción.</p>
                   )}
                 </div>
               )}
             </div>
 
             {/* Toggle 3 — Cupo máximo */}
-            <div style={{ borderRadius: '10px', border: `1.5px solid ${cupoEnabled ? '#0f172a' : '#e2e8f0'}`, overflow: 'hidden' }}>
+            <div className={cupoEnabled ? styles.toggleSectionActiveLast : styles.toggleSectionLast}>
               <button
                 type="button"
                 onClick={() => setCupoEnabled(!cupoEnabled)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1rem', backgroundColor: cupoEnabled ? '#0f172a' : '#f8fafc', border: 'none', cursor: 'pointer' }}
+                className={cupoEnabled ? styles.toggleBtnActive : styles.toggleBtn}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                  <div style={{ width: 17, height: 17, borderRadius: '50%', border: `2px solid ${cupoEnabled ? '#fff' : '#94a3b8'}`, backgroundColor: cupoEnabled ? '#fff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {cupoEnabled && <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#0f172a' }} />}
+                <div className={styles.toggleBtnLeft}>
+                  <div className={cupoEnabled ? styles.toggleDotActive : styles.toggleDot}>
+                    {cupoEnabled && <div className={styles.toggleDotInner} />}
                   </div>
-                  <span style={{ fontSize: '0.87rem', fontWeight: 600, color: cupoEnabled ? '#ffffff' : '#0f172a' }}>Limitar cupo de ventas</span>
+                  <span className={cupoEnabled ? styles.toggleLabelActive : styles.toggleLabel}>Limitar cupo de ventas</span>
                 </div>
-                <span style={{ fontSize: '0.74rem', color: cupoEnabled ? '#94a3b8' : '#64748b' }}>
+                <span className={cupoEnabled ? styles.toggleStatusActive : styles.toggleStatus}>
                   {cupoEnabled ? (cupoMaximo ? `${cupoMaximo} kits máx.` : 'Sin definir') : 'Sin límite'}
                 </span>
               </button>
               {cupoEnabled && (
-                <div style={{ padding: '0.85rem 1rem', backgroundColor: '#ffffff' }}>
-                  <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Cupo máximo</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ position: 'relative', flex: 1 }}>
+                <div className={styles.toggleBody}>
+                  <label className={styles.dateTimeLabel}>Cupo máximo</label>
+                  <div className={styles.cupoRow}>
+                    <div className={styles.cupoInputWrap}>
                       <input
                         type="number"
                         min="1"
@@ -1289,19 +1040,19 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                         value={cupoMaximo}
                         onChange={(e) => setCupoMaximo(e.target.value)}
                         placeholder="0"
-                        style={{ width: '100%', padding: '0.5rem 3rem 0.5rem 0.7rem', borderRadius: '7px', border: `1.5px solid ${cupoInvalido ? '#ef4444' : '#cbd5e1'}`, fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', backgroundColor: cupoInvalido ? '#fef2f2' : '#ffffff', boxSizing: 'border-box' as const }}
+                        className={cupoInvalido ? styles.cupoInputInvalid : styles.cupoInput}
                       />
-                      <span style={{ position: 'absolute', right: '0.7rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.73rem', color: '#94a3b8', fontWeight: 600, pointerEvents: 'none' }}>kits</span>
+                      <span className={styles.cupoSuffix}>kits</span>
                     </div>
-                    {cupoUsado > 0 && <span style={{ fontSize: '0.77rem', color: '#64748b', whiteSpace: 'nowrap' }}>{cupoUsado} vendido{cupoUsado !== 1 ? 's' : ''}</span>}
+                    {cupoUsado > 0 && <span className={styles.cupoUsedText}>{cupoUsado} vendido{cupoUsado !== 1 ? 's' : ''}</span>}
                   </div>
                   {cupoExcedeStock && (
-                    <div style={{ marginTop: '0.7rem', padding: '0.65rem 0.9rem', backgroundColor: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
+                    <div className={styles.cupoWarnBox}>
+                      <div className={styles.cupoWarnLeft}>
                         <AlertTriangle size={14} color="#dc2626" style={{ flexShrink: 0, marginTop: 2 }} />
-                        <span style={{ fontSize: '0.77rem', color: '#991b1b' }}>El cupo supera el stock virtual (<strong>{virtualStock}</strong> kits armables)</span>
+                        <span className={styles.cupoWarnText}>El cupo supera el stock virtual (<strong>{virtualStock}</strong> kits armables)</span>
                       </div>
-                      <button type="button" onClick={() => setCupoMaximo(String(virtualStock))} style={{ flexShrink: 0, padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1.5px solid #fca5a5', backgroundColor: '#ffffff', color: '#991b1b', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>Ajustar a {virtualStock}</button>
+                      <button type="button" onClick={() => setCupoMaximo(String(virtualStock))} className={styles.cupoAdjustBtn}>Ajustar a {virtualStock}</button>
                     </div>
                   )}
                 </div>
@@ -1309,11 +1060,9 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
             </div>
 
             {/* Canal de Publicación */}
-            <div style={{ marginTop: '0.75rem', padding: '0.85rem 1rem', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-              <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: '#475569', marginBottom: '0.45rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Canal de Publicación
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+            <div className={styles.channelBox}>
+              <label className={styles.channelLabel}>Canal de Publicación</label>
+              <div className={styles.grid3}>
                 {[
                   { value: 'AMBOS', label: 'Todos los Canales', desc: 'Web + Caja POS' },
                   { value: 'ECOMMERCE', label: 'Solo E-commerce', desc: 'Tienda Online' },
@@ -1325,19 +1074,10 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                       key={c.value}
                       type="button"
                       onClick={() => setCanalVenta(c.value as any)}
-                      style={{
-                        padding: '0.55rem 0.4rem',
-                        borderRadius: '8px',
-                        border: isSel ? '2px solid #0f172a' : '1px solid #cbd5e1',
-                        backgroundColor: isSel ? '#0f172a' : '#ffffff',
-                        color: isSel ? '#ffffff' : '#0f172a',
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        transition: 'all 0.15s',
-                      }}
+                      className={isSel ? styles.channelBtnActive : styles.channelBtn}
                     >
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700 }}>{c.label}</div>
-                      <div style={{ fontSize: '0.68rem', color: isSel ? '#94a3b8' : '#64748b', marginTop: '2px' }}>{c.desc}</div>
+                      <div className={styles.channelBtnTitle}>{c.label}</div>
+                      <div className={isSel ? styles.channelBtnDescInverted : styles.channelBtnDescMuted}>{c.desc}</div>
                     </button>
                   );
                 })}
@@ -1345,9 +1085,9 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
             </div>
 
             {!vigenciaEnabled && !diasEnabled && !cupoEnabled && (
-              <div style={{ marginTop: '0.85rem', padding: '0.65rem 1rem', backgroundColor: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <CheckCircle size={14} color="#94a3b8" style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              <div className={styles.noRestrictionsBox}>
+                <CheckCircle size={14} color="#94a3b8" className={styles.noRestrictionsIcon} />
+                <span className={styles.noRestrictionsText}>
                   Sin restricciones de fecha/cupo — se vende siempre que haya stock disponible.
                 </span>
               </div>
@@ -1357,36 +1097,20 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
 
 
         {/* Right Column: Pricing, Availability & Live Card Preview */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', position: 'sticky', top: '1rem' }}>
+        <div className={styles.rightColumn}>
           {/* Card Pricing */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
-            }}
-          >
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-              Precio & Ahorro
-            </h3>
+          <div className={styles.cardElevated}>
+            <h3 className={styles.cardTitle}>Precio & Ahorro</h3>
 
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', fontWeight: 500, marginBottom: '0.3rem' }}>
-                Suma Individual de Componentes:
-              </label>
-              <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#475569' }}>
-                Bs. {subtotalComponentes.toFixed(2)}
-              </div>
+            <div className={styles.subtotalRow}>
+              <label className={styles.subtotalLabel}>Suma Individual de Componentes:</label>
+              <div className={styles.subtotalValue}>Bs. {subtotalComponentes.toFixed(2)}</div>
             </div>
 
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.3rem' }}>
-                Precio Promocional del Combo *
-              </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '1rem' }}>Bs.</span>
+            <div className={styles.priceFieldRow}>
+              <label className={styles.priceFieldLabel}>Precio Promocional del Combo *</label>
+              <div className={styles.priceInputRow}>
+                <span className={styles.priceCurrency}>Bs.</span>
                 <input
                   type="number"
                   step="0.10"
@@ -1394,163 +1118,65 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                   placeholder="0.00"
                   value={precioBase}
                   onChange={(e) => setPrecioBase(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem 0.8rem',
-                    borderRadius: '6px',
-                    border: '1.5px solid #0f172a',
-                    fontSize: '1.1rem',
-                    fontWeight: 700,
-                    color: '#0f172a',
-                  }}
+                  className={styles.priceInput}
                   required
                 />
               </div>
             </div>
 
             {/* Savings Box */}
-            <div
-              style={{
-                backgroundColor: ahorroMonto > 0 ? '#ecfdf5' : '#f8fafc',
-                border: ahorroMonto > 0 ? '1px solid #a7f3d0' : '1px solid #e2e8f0',
-                borderRadius: '8px',
-                padding: '0.75rem',
-                marginBottom: '1rem',
-              }}
-            >
-              <div style={{ fontSize: '0.75rem', color: ahorroMonto > 0 ? '#065f46' : '#64748b', fontWeight: 600 }}>
+            <div className={ahorroMonto > 0 ? styles.savingsBoxActive : styles.savingsBox}>
+              <div className={ahorroMonto > 0 ? styles.savingsLabelActive : styles.savingsLabel}>
                 Ahorro para el Cliente:
               </div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: ahorroMonto > 0 ? '#059669' : '#94a3b8', marginTop: '0.2rem' }}>
+              <div className={ahorroMonto > 0 ? styles.savingsValueActive : styles.savingsValue}>
                 {ahorroMonto > 0 ? `Bs. ${ahorroMonto.toFixed(2)} (${ahorroPorcentaje}%)` : 'Sin Ahorro'}
               </div>
             </div>
 
             {/* Virtual Availability Box */}
-            <div
-              style={{
-                backgroundColor: sellableInfo.sellable > 0 ? '#f0fdf4' : '#fef2f2',
-                border: sellableInfo.sellable > 0 ? '1px solid #bbf7d0' : '1px solid #fecaca',
-                borderRadius: '8px',
-                padding: '0.75rem',
-                marginBottom: '1.25rem',
-              }}
-            >
-              <div style={{ fontSize: '0.75rem', color: sellableInfo.sellable > 0 ? '#166534' : '#991b1b', fontWeight: 600 }}>
+            <div className={sellableInfo.sellable > 0 ? styles.availabilityBoxPositive : styles.availabilityBoxNegative}>
+              <div className={sellableInfo.sellable > 0 ? styles.availabilityBoxLabelPositive : styles.availabilityBoxLabelNegative}>
                 Disponibilidad Inmediata:
               </div>
-              <div
-                style={{
-                  fontSize: '1.05rem',
-                  fontWeight: 800,
-                  color: sellableInfo.sellable > 0 ? '#16a34a' : '#ef4444',
-                  marginTop: '0.2rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                }}
-              >
+              <div className={sellableInfo.sellable > 0 ? styles.availabilityBoxValuePositive : styles.availabilityBoxValueNegative}>
                 {sellableInfo.sellable > 0 ? <CheckCircle size={17} /> : <AlertCircle size={17} />}
                 {sellableInfo.sellable} kit{sellableInfo.sellable !== 1 ? 's' : ''} disponibles
               </div>
               {estadoLabel && (
-                <span
-                  style={{
-                    display: 'inline-block',
-                    marginTop: '0.4rem',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    padding: '0.2rem 0.55rem',
-                    borderRadius: '999px',
-                    backgroundColor: sellableInfo.estado === 'ACTIVO' ? '#dcfce7' : '#fee2e2',
-                    color: sellableInfo.estado === 'ACTIVO' ? '#166534' : '#991b1b',
-                    border: `1px solid ${sellableInfo.estado === 'ACTIVO' ? '#bbf7d0' : '#fecaca'}`,
-                  }}
-                >
+                <span className={sellableInfo.estado === 'ACTIVO' ? styles.estadoBadgeActive : styles.estadoBadgeInactive}>
                   {estadoLabel}
                 </span>
               )}
-              <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.7rem', color: '#64748b' }}>
+              <p className={styles.availabilityHint}>
                 Stock dinámico según el producto con menor disponibilidad, vigencia y cupo configurados.
               </p>
             </div>
 
-            <button
-              type="submit"
-              disabled={saving || cupoInvalido}
-              style={{
-                width: '100%',
-                backgroundColor: '#0f172a',
-                color: '#ffffff',
-                border: 'none',
-                padding: '0.8rem',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '0.9rem',
-                cursor: saving ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-              }}
-            >
+            <button type="submit" disabled={saving || cupoInvalido} className={styles.submitBtn}>
               {saving ? <Loader2 size={18} className="spin" /> : <Save size={18} />}
               {isEditing ? 'Guardar Cambios del Combo' : 'Publicar Combo Promocional'}
             </button>
           </div>
 
           {/* Interactive Live Card Preview */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div className={styles.cardElevated}>
+            <div className={styles.previewHeaderRow}>
+              <div className={styles.previewTitle}>
                 <Eye size={16} /> Vista Previa en Vivo
               </div>
-              <div style={{ display: 'flex', backgroundColor: '#f1f5f9', borderRadius: '6px', padding: '2px' }}>
+              <div className={styles.previewTabs}>
                 <button
                   type="button"
                   onClick={() => setPreviewTab('ecommerce')}
-                  style={{
-                    padding: '0.25rem 0.55rem',
-                    borderRadius: '4px',
-                    border: 'none',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    backgroundColor: previewTab === 'ecommerce' ? '#ffffff' : 'transparent',
-                    color: previewTab === 'ecommerce' ? '#0f172a' : '#64748b',
-                    boxShadow: previewTab === 'ecommerce' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                  }}
+                  className={previewTab === 'ecommerce' ? styles.previewTabActive : styles.previewTab}
                 >
                   <ShoppingBag size={13} /> E-com
                 </button>
                 <button
                   type="button"
                   onClick={() => setPreviewTab('pos')}
-                  style={{
-                    padding: '0.25rem 0.55rem',
-                    borderRadius: '4px',
-                    border: 'none',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    backgroundColor: previewTab === 'pos' ? '#ffffff' : 'transparent',
-                    color: previewTab === 'pos' ? '#0f172a' : '#64748b',
-                    boxShadow: previewTab === 'pos' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                  }}
+                  className={previewTab === 'pos' ? styles.previewTabActive : styles.previewTab}
                 >
                   <Monitor size={13} /> POS
                 </button>
@@ -1558,46 +1184,20 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
             </div>
 
             {/* PREVIEW CONTAINER */}
-            <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+            <div className={styles.previewContainer}>
               {previewTab === 'ecommerce' ? (
                 /* E-COMMERCE CARD MOCKUP */
-                <div
-                  style={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    overflow: 'hidden',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-                  }}
-                >
+                <div className={styles.ecomCard}>
                   {/* Image container */}
-                  <div
-                    style={{
-                      position: 'relative',
-                      height: '160px',
-                      backgroundColor: '#f8fafc',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden',
-                    }}
-                  >
+                  <div className={styles.ecomImageWrap}>
                     {/* Badge */}
                     {showBadge && (
                       <span
+                        className={styles.ecomBadge}
                         style={{
-                          position: 'absolute',
-                          top: '8px',
-                          left: '8px',
-                          fontSize: '0.65rem',
-                          fontWeight: 800,
-                          textTransform: 'uppercase',
-                          padding: '0.25rem 0.55rem',
-                          borderRadius: '4px',
                           backgroundColor: selectedBadgeStyleObj.bg,
                           color: selectedBadgeStyleObj.text,
                           border: `1px solid ${selectedBadgeStyleObj.border}`,
-                          zIndex: 2,
                         }}
                       >
                         {resolvedBadgeText}
@@ -1609,34 +1209,26 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                       <img
                         src={imagePreviewUrl || (existingImageUrl?.startsWith('http') ? existingImageUrl : `http://localhost:3001${existingImageUrl}`)}
                         alt="Pack"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        className={styles.ecomFullImage}
                       />
                     ) : componentImages.length > 0 ? (
                       <div
+                        className={styles.ecomImageGrid}
                         style={{
                           display: 'grid',
                           gridTemplateColumns: componentImages.length <= 2 ? '1fr' : '1fr 1fr',
                           gridTemplateRows: componentImages.length === 1 ? '1fr' : '1fr 1fr',
-                          width: '100%',
-                          height: '100%',
-                          gap: '2px',
-                          backgroundColor: '#f1f5f9',
-                          padding: '2px',
                         }}
                       >
                         {componentImages.slice(0, 4).map((img, idx) => (
                           <div
                             key={idx}
+                            className={styles.ecomImageCell}
                             style={{
-                              backgroundColor: '#ffffff',
-                              overflow: 'hidden',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
                               gridRow: componentImages.length === 3 && idx === 0 ? 'span 2' : undefined,
                             }}
                           >
-                            <img src={img} alt="comp" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }} />
+                            <img src={img} alt="comp" className={styles.ecomImageCellImg} />
                           </div>
                         ))}
                       </div>
@@ -1646,53 +1238,22 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                   </div>
 
                   {/* Card Content */}
-                  <div style={{ padding: '0.85rem' }}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', marginBottom: '0.2rem' }}>
+                  <div className={styles.ecomContent}>
+                    <div className={styles.ecomCategory}>
                       {categorias.find((c) => c.id?.toString() === categoriaId)?.nombre || 'COMBO / PACK'}
                     </div>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: '0.9rem',
-                        color: '#0f172a',
-                        lineHeight: 1.25,
-                        marginBottom: '0.35rem',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {nombre || 'Nombre del Combo'}
-                    </div>
-
-
+                    <div className={styles.ecomName}>{nombre || 'Nombre del Combo'}</div>
 
                     {/* Price and Action */}
-                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+                    <div className={styles.ecomPriceRow}>
                       <div>
                         {ahorroMonto > 0 && (
-                          <div style={{ fontSize: '0.75rem', color: '#94a3b8', textDecoration: 'line-through', fontWeight: 500 }}>
-                            Bs. {subtotalComponentes.toFixed(2)}
-                          </div>
+                          <div className={styles.ecomOldPrice}>Bs. {subtotalComponentes.toFixed(2)}</div>
                         )}
-                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
-                          Bs. {Number(precioBase || 0).toFixed(2)}
-                        </div>
+                        <div className={styles.ecomPrice}>Bs. {Number(precioBase || 0).toFixed(2)}</div>
                       </div>
 
-                      <button
-                        type="button"
-                        style={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #2563eb',
-                          color: '#2563eb',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          padding: '0.35rem 0.75rem',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                        }}
-                      >
+                      <button type="button" className={styles.ecomAddBtn}>
                         Añadir
                       </button>
                     </div>
@@ -1700,23 +1261,12 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                 </div>
               ) : (
                 /* POS CARD MOCKUP */
-                <div
-                  style={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0',
-                    padding: '0.75rem',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                <div className={styles.posCard}>
+                  <div className={styles.posTopRow}>
                     {showBadge ? (
                       <span
+                        className={styles.posBadge}
                         style={{
-                          fontSize: '0.65rem',
-                          fontWeight: 700,
-                          padding: '0.15rem 0.4rem',
-                          borderRadius: '4px',
                           backgroundColor: selectedBadgeStyleObj.bg,
                           color: selectedBadgeStyleObj.text,
                           border: `1px solid ${selectedBadgeStyleObj.border}`,
@@ -1726,64 +1276,36 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                       </span>
                     ) : <span />}
 
-                    <span
-                      style={{
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                        color: virtualStock > 0 ? '#16a34a' : '#ef4444',
-                        backgroundColor: virtualStock > 0 ? '#dcfce7' : '#fee2e2',
-                        padding: '0.15rem 0.45rem',
-                        borderRadius: '4px',
-                      }}
-                    >
+                    <span className={virtualStock > 0 ? styles.posStockPositive : styles.posStockNegative}>
                       Stock: {virtualStock}
                     </span>
                   </div>
 
-                  <div
-                    style={{
-                      height: '80px',
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '6px',
-                      marginBottom: '0.5rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden',
-                      border: '1px solid #f1f5f9',
-                    }}
-                  >
+                  <div className={styles.posImageWrap}>
                     {modoImagen === 'PROPIA' && (imagePreviewUrl || existingImageUrl) ? (
                       <img
                         src={imagePreviewUrl || (existingImageUrl?.startsWith('http') ? existingImageUrl : `http://localhost:3001${existingImageUrl}`)}
                         alt="Pack"
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        className={styles.posFullImage}
                       />
                     ) : componentImages.length > 0 ? (
                       <div
+                        className={styles.posImageGrid}
                         style={{
                           display: 'grid',
                           gridTemplateColumns: componentImages.length === 1 ? '1fr' : '1fr 1fr',
                           gridTemplateRows: componentImages.length <= 2 ? '1fr' : '1fr 1fr',
-                          width: '100%',
-                          height: '100%',
-                          gap: '2px',
-                          backgroundColor: '#f1f5f9',
                         }}
                       >
                         {componentImages.slice(0, 4).map((img, idx) => (
                           <div
                             key={idx}
+                            className={styles.ecomImageCell}
                             style={{
-                              backgroundColor: '#ffffff',
-                              overflow: 'hidden',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
                               gridRow: componentImages.length === 3 && idx === 0 ? 'span 2' : undefined,
                             }}
                           >
-                            <img src={img} alt="comp" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }} />
+                            <img src={img} alt="comp" className={styles.ecomImageCellImg} />
                           </div>
                         ))}
                       </div>
@@ -1792,23 +1314,13 @@ export function ComboEditorForm({ initialId, isEditing = false }: ComboEditorFor
                     )}
                   </div>
 
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a', marginBottom: '0.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {nombre || 'Nombre del Combo'}
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '0.4rem' }}>
-                    SKU: {sku || 'COMBO-AUTO'}
-                  </div>
+                  <div className={styles.posName}>{nombre || 'Nombre del Combo'}</div>
+                  <div className={styles.posSku}>SKU: {sku || 'COMBO-AUTO'}</div>
 
-
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.3rem' }}>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
-                      Bs. {Number(precioBase || 0).toFixed(2)}
-                    </div>
+                  <div className={styles.posBottomRow}>
+                    <div className={styles.posPrice}>Bs. {Number(precioBase || 0).toFixed(2)}</div>
                     {ahorroMonto > 0 && (
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#059669', backgroundColor: '#ecfdf5', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>
-                        -{ahorroPorcentaje}%
-                      </span>
+                      <span className={styles.posDiscountPill}>-{ahorroPorcentaje}%</span>
                     )}
                   </div>
                 </div>

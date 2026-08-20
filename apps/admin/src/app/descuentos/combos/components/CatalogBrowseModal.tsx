@@ -16,6 +16,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { api } from '@/lib/axios';
+import styles from './CatalogBrowseModal.module.css';
 
 export interface CatalogProduct {
   id: string | number;
@@ -219,144 +220,42 @@ export function CatalogBrowseModal({
   if (!isOpen) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(4px)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem',
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '16px',
-          width: '100%',
-          maxWidth: '960px',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          border: '1px solid #e2e8f0',
-          overflow: 'hidden',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div
-          style={{
-            padding: '1.25rem 1.5rem',
-            borderBottom: '1px solid #e2e8f0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: '#ffffff',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                backgroundColor: '#f1f5f9',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#0f172a',
-              }}
-            >
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <div className={styles.headerIcon}>
               <Package size={22} />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#0f172a' }}>
-                Explorar y Agregar Productos al Combo
-              </h2>
-              <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.825rem', color: '#64748b' }}>
+              <h2 className={styles.headerTitle}>Explorar y Agregar Productos al Combo</h2>
+              <p className={styles.headerSubtitle}>
                 Busca, filtra y selecciona múltiples componentes en lote para armar la receta BOM.
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '0.5rem',
-              cursor: 'pointer',
-              color: '#64748b',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+          <button onClick={onClose} className={styles.closeBtn}>
             <X size={20} />
           </button>
         </div>
 
         {/* Filter Controls Bar */}
-        <div
-          style={{
-            padding: '1rem 1.5rem',
-            backgroundColor: '#f8fafc',
-            borderBottom: '1px solid #e2e8f0',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
-          }}
-        >
+        <div className={styles.filterBar}>
           {/* Search Row */}
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <div
-              style={{
-                position: 'relative',
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <Search
-                size={18}
-                color="#94a3b8"
-                style={{ position: 'absolute', left: '0.75rem', pointerEvents: 'none' }}
-              />
+          <div className={styles.searchRow}>
+            <div className={styles.searchInputWrap}>
+              <Search size={18} color="#94a3b8" className={styles.searchIcon} />
               <input
                 type="text"
                 placeholder="Buscar por título, SKU, código de barras o autor..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 autoFocus
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 0.75rem 0.65rem 2.4rem',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9rem',
-                  backgroundColor: '#ffffff',
-                  outline: 'none',
-                }}
+                className={styles.searchInput}
               />
               {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm('')}
-                  style={{
-                    position: 'absolute',
-                    right: '0.75rem',
-                    background: 'none',
-                    border: 'none',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
-                >
+                <button type="button" onClick={() => setSearchTerm('')} className={styles.clearSearchBtn}>
                   <X size={16} />
                 </button>
               )}
@@ -366,21 +265,7 @@ export function CatalogBrowseModal({
             <button
               type="button"
               onClick={() => setOnlyInStock(!onlyInStock)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.65rem 1rem',
-                borderRadius: '8px',
-                border: `1px solid ${onlyInStock ? '#0f172a' : '#cbd5e1'}`,
-                backgroundColor: onlyInStock ? '#0f172a' : '#ffffff',
-                color: onlyInStock ? '#ffffff' : '#475569',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.15s ease',
-              }}
+              className={onlyInStock ? styles.stockToggleActive : styles.stockToggle}
             >
               <CheckCircle2 size={16} color={onlyInStock ? '#ffffff' : '#94a3b8'} />
               Solo con Stock
@@ -388,20 +273,11 @@ export function CatalogBrowseModal({
           </div>
 
           {/* Secondary Filters: Categoría & Marca */}
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div className={styles.secondaryFilters}>
             <select
               value={selectedCategoria}
               onChange={(e) => setSelectedCategoria(e.target.value)}
-              style={{
-                flex: 1,
-                minWidth: '180px',
-                padding: '0.55rem 0.75rem',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                fontSize: '0.85rem',
-                backgroundColor: '#ffffff',
-                color: '#334155',
-              }}
+              className={styles.filterSelect}
             >
               <option value="">Todas las Categorías</option>
               {categorias.map((c) => (
@@ -414,16 +290,7 @@ export function CatalogBrowseModal({
             <select
               value={selectedMarca}
               onChange={(e) => setSelectedMarca(e.target.value)}
-              style={{
-                flex: 1,
-                minWidth: '180px',
-                padding: '0.55rem 0.75rem',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                fontSize: '0.85rem',
-                backgroundColor: '#ffffff',
-                color: '#334155',
-              }}
+              className={styles.filterSelect}
             >
               <option value="">Todas las Marcas / Editoriales</option>
               {marcas.map((m) => (
@@ -442,16 +309,7 @@ export function CatalogBrowseModal({
                   setSearchTerm('');
                   setOnlyInStock(false);
                 }}
-                style={{
-                  background: 'none',
-                  border: '1px dashed #cbd5e1',
-                  borderRadius: '8px',
-                  padding: '0.55rem 0.85rem',
-                  fontSize: '0.825rem',
-                  color: '#64748b',
-                  cursor: 'pointer',
-                  fontWeight: 500,
-                }}
+                className={styles.clearFiltersBtn}
               >
                 Limpiar Filtros
               </button>
@@ -460,255 +318,145 @@ export function CatalogBrowseModal({
         </div>
 
         {/* Product List Table / Grid */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '0',
-            backgroundColor: '#ffffff',
-            position: 'relative',
-          }}
-        >
+        <div className={styles.listArea}>
           {loading ? (
-            <div style={{ padding: '4rem 2rem', textAlign: 'center', color: '#64748b' }}>
-              <Loader2 size={32} className="spin" style={{ margin: '0 auto 0.75rem', color: '#0f172a' }} />
-              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>Buscando productos en catálogo...</p>
+            <div className={styles.listState}>
+              <Loader2 size={32} className={`spin ${styles.listStateSpin}`} />
+              <p className={styles.listStateTitle}>Buscando productos en catálogo...</p>
             </div>
           ) : displayedProducts.length === 0 ? (
-            <div style={{ padding: '4rem 2rem', textAlign: 'center', color: '#64748b' }}>
-              <Package size={40} style={{ margin: '0 auto 0.75rem', color: '#cbd5e1' }} />
-              <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 600, color: '#334155' }}>
-                No se encontraron productos coincidentes
-              </p>
-              <p style={{ margin: 0, fontSize: '0.825rem', color: '#94a3b8' }}>
+            <div className={styles.listState}>
+              <Package size={40} className={styles.listStateSpin} />
+              <p className={styles.listStateTitle}>No se encontraron productos coincidentes</p>
+              <p className={styles.listStateText}>
                 Intenta con otro término de búsqueda o ajustando los filtros de categoría.
               </p>
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-              <thead>
-                <tr
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    borderBottom: '1px solid #e2e8f0',
-                    color: '#475569',
-                    textAlign: 'left',
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 10,
-                  }}
-                >
-                  <th style={{ padding: '0.65rem 1rem', width: '40px' }}>
-                    <input
-                      type="checkbox"
-                      checked={
-                        displayedProducts.length > 0 &&
-                        displayedProducts.every((p) => selectedMap[p.id.toString()] !== undefined)
-                      }
-                      onChange={handleSelectAllOnPage}
-                      style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#0f172a' }}
-                    />
-                  </th>
-                  <th style={{ padding: '0.65rem 0.5rem', width: '56px' }}>Img</th>
-                  <th style={{ padding: '0.65rem 1rem' }}>Producto / SKU</th>
-                  <th style={{ padding: '0.65rem 1rem' }}>Categoría / Marca</th>
-                  <th style={{ padding: '0.65rem 1rem', textAlign: 'center', width: '110px' }}>Stock</th>
-                  <th style={{ padding: '0.65rem 1rem', textAlign: 'right', width: '110px' }}>Precio Base</th>
-                  <th style={{ padding: '0.65rem 1rem', textAlign: 'center', width: '140px' }}>
-                    Cantidad a Incluir
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayedProducts.map((p) => {
-                  const idStr = p.id.toString();
-                  const isSelected = selectedMap[idStr] !== undefined;
-                  const qty = selectedMap[idStr] || 1;
-                  const stock = getStock(p);
-                  const isAlreadyInCombo = existingComponentIds.includes(idStr);
-                  const imgUrl = p.imagenes?.[0]?.url;
-                  const fullImg = imgUrl
-                    ? imgUrl.startsWith('http')
-                      ? imgUrl
-                      : `http://localhost:3001${imgUrl}`
-                    : null;
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr className={styles.theadRow}>
+                    <th className={styles.thCheck}>
+                      <input
+                        type="checkbox"
+                        checked={
+                          displayedProducts.length > 0 &&
+                          displayedProducts.every((p) => selectedMap[p.id.toString()] !== undefined)
+                        }
+                        onChange={handleSelectAllOnPage}
+                        className={styles.checkbox}
+                      />
+                    </th>
+                    <th className={styles.thImg}>Img</th>
+                    <th className={styles.th}>Producto / SKU</th>
+                    <th className={styles.th}>Categoría / Marca</th>
+                    <th className={styles.thStock}>Stock</th>
+                    <th className={styles.thPrice}>Precio Base</th>
+                    <th className={styles.thQty}>Cantidad a Incluir</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedProducts.map((p) => {
+                    const idStr = p.id.toString();
+                    const isSelected = selectedMap[idStr] !== undefined;
+                    const qty = selectedMap[idStr] || 1;
+                    const stock = getStock(p);
+                    const isAlreadyInCombo = existingComponentIds.includes(idStr);
+                    const imgUrl = p.imagenes?.[0]?.url;
+                    const fullImg = imgUrl
+                      ? imgUrl.startsWith('http')
+                        ? imgUrl
+                        : `http://localhost:3001${imgUrl}`
+                      : null;
 
-                  return (
-                    <tr
-                      key={p.id}
-                      onClick={() => toggleSelectProduct(p)}
-                      style={{
-                        borderBottom: '1px solid #f1f5f9',
-                        backgroundColor: isSelected ? '#f8fafc' : '#ffffff',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.15s ease',
-                      }}
-                    >
-                      <td style={{ padding: '0.75rem 1rem' }} onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelectProduct(p)}
-                          style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#0f172a' }}
-                        />
-                      </td>
-                      <td style={{ padding: '0.75rem 0.5rem' }}>
-                        <div
-                          style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '6px',
-                            backgroundColor: '#f1f5f9',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {fullImg ? (
-                            <img
-                              src={fullImg}
-                              alt={p.nombre}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                          ) : (
-                            <BookOpen size={18} color="#94a3b8" />
-                          )}
-                        </div>
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 600, color: '#0f172a' }}>{p.nombre}</span>
-                          {isAlreadyInCombo && (
-                            <span
-                              style={{
-                                fontSize: '0.7rem',
-                                padding: '0.15rem 0.4rem',
-                                borderRadius: '4px',
-                                backgroundColor: '#eff6ff',
-                                color: '#1e40af',
-                                fontWeight: 600,
-                                border: '1px solid #bfdbfe',
-                              }}
-                            >
-                              Ya en combo
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.15rem' }}>
-                          SKU: <span style={{ fontFamily: 'monospace' }}>{p.sku || 'Sin SKU'}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', color: '#475569', fontSize: '0.8rem' }}>
-                        <div>{p.categoria?.nombre || 'General'}</div>
-                        {p.marca?.nombre && (
-                          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.marca.nombre}</div>
-                        )}
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '0.2rem 0.55rem',
-                            borderRadius: '999px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            backgroundColor: stock > 0 ? '#ecfdf5' : '#fef2f2',
-                            color: stock > 0 ? '#065f46' : '#991b1b',
-                            border: `1px solid ${stock > 0 ? '#a7f3d0' : '#fecaca'}`,
-                          }}
-                        >
-                          {stock > 0 ? `${stock} u.` : 'Sin Stock'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
-                        Bs. {Number(p.precio_base || 0).toFixed(2)}
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                        {isSelected ? (
-                          <div
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '6px',
-                              overflow: 'hidden',
-                              backgroundColor: '#ffffff',
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={(e) => updateQuantity(idStr, qty - 1, e)}
-                              style={{
-                                border: 'none',
-                                background: '#f8fafc',
-                                padding: '0.3rem 0.45rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                color: '#475569',
-                              }}
-                            >
-                              <Minus size={14} />
-                            </button>
-                            <input
-                              type="number"
-                              min="1"
-                              value={qty}
-                              onChange={(e) => updateQuantity(idStr, parseInt(e.target.value) || 1, e as any)}
-                              style={{
-                                width: '42px',
-                                border: 'none',
-                                textAlign: 'center',
-                                fontSize: '0.85rem',
-                                fontWeight: 600,
-                                padding: '0.2rem 0',
-                                outline: 'none',
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={(e) => updateQuantity(idStr, qty + 1, e)}
-                              style={{
-                                border: 'none',
-                                background: '#f8fafc',
-                                padding: '0.3rem 0.45rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                color: '#475569',
-                              }}
-                            >
-                              <Plus size={14} />
-                            </button>
+                    return (
+                      <tr
+                        key={p.id}
+                        onClick={() => toggleSelectProduct(p)}
+                        className={isSelected ? styles.rowSelected : styles.row}
+                      >
+                        <td className={styles.tdCheck} onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectProduct(p)}
+                            className={styles.checkbox}
+                          />
+                        </td>
+                        <td className={styles.tdImg}>
+                          <div className={styles.thumb}>
+                            {fullImg ? (
+                              <img src={fullImg} alt={p.nombre} className={styles.thumbImg} />
+                            ) : (
+                              <BookOpen size={18} color="#94a3b8" />
+                            )}
                           </div>
-                        ) : (
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className={styles.td}>
+                          <div className={styles.nameRow}>
+                            <span className={styles.name}>{p.nombre}</span>
+                            {isAlreadyInCombo && <span className={styles.inComboBadge}>Ya en combo</span>}
+                          </div>
+                          <div className={styles.skuText}>
+                            SKU: <span className={styles.mono}>{p.sku || 'Sin SKU'}</span>
+                          </div>
+                        </td>
+                        <td className={styles.tdMeta}>
+                          <div>{p.categoria?.nombre || 'General'}</div>
+                          {p.marca?.nombre && <div className={styles.metaSub}>{p.marca.nombre}</div>}
+                        </td>
+                        <td className={styles.tdStock}>
+                          <span className={stock > 0 ? styles.stockPositive : styles.stockNegative}>
+                            {stock > 0 ? `${stock} u.` : 'Sin Stock'}
+                          </span>
+                        </td>
+                        <td className={styles.tdPrice}>
+                          Bs. {Number(p.precio_base || 0).toFixed(2)}
+                        </td>
+                        <td className={styles.tdQty} onClick={(e) => e.stopPropagation()}>
+                          {isSelected ? (
+                            <div className={styles.qtyControl}>
+                              <button
+                                type="button"
+                                onClick={(e) => updateQuantity(idStr, qty - 1, e)}
+                                className={styles.qtyBtn}
+                              >
+                                <Minus size={14} />
+                              </button>
+                              <input
+                                type="number"
+                                min="1"
+                                value={qty}
+                                onChange={(e) => updateQuantity(idStr, parseInt(e.target.value) || 1, e as any)}
+                                className={styles.qtyInput}
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => updateQuantity(idStr, qty + 1, e)}
+                                className={styles.qtyBtn}
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className={styles.qtyDash}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
         {/* Sticky Footer Action Bar */}
-        <div
-          style={{
-            padding: '1rem 1.5rem',
-            borderTop: '1px solid #e2e8f0',
-            backgroundColor: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ fontSize: '0.85rem', color: '#475569' }}>
+        <div className={styles.footer}>
+          <div className={styles.footerSummary}>
             {totalSelectedItems > 0 ? (
-              <span style={{ fontWeight: 600, color: '#0f172a' }}>
+              <span className={styles.footerSummaryStrong}>
                 {totalSelectedItems} producto{totalSelectedItems > 1 ? 's' : ''} seleccionado{totalSelectedItems > 1 ? 's' : ''} ({totalUnits} unidades en total)
               </span>
             ) : (
@@ -716,21 +464,8 @@ export function CatalogBrowseModal({
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '0.6rem 1.2rem',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                backgroundColor: '#ffffff',
-                color: '#475569',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
+          <div className={styles.footerActions}>
+            <button type="button" onClick={onClose} className={styles.cancelBtn}>
               Cancelar
             </button>
 
@@ -738,20 +473,7 @@ export function CatalogBrowseModal({
               type="button"
               onClick={handleConfirmAdd}
               disabled={totalSelectedItems === 0}
-              style={{
-                padding: '0.6rem 1.25rem',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: totalSelectedItems > 0 ? '#0f172a' : '#94a3b8',
-                color: '#ffffff',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                cursor: totalSelectedItems > 0 ? 'pointer' : 'not-allowed',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                boxShadow: totalSelectedItems > 0 ? '0 4px 6px -1px rgba(15, 23, 42, 0.2)' : 'none',
-              }}
+              className={totalSelectedItems > 0 ? styles.confirmBtn : styles.confirmBtnDisabled}
             >
               <Check size={16} /> Agregar al Combo ({totalSelectedItems})
             </button>

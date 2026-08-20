@@ -131,7 +131,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const naturaleza = realProduct ? (realProduct.naturaleza || realProduct.categoria?.nombre) : fallbackProduct.category;
   const atributos = realProduct?.atributos || {};
 
-  const isBook = true; // En un e-commerce editorial, forzamos que todos los productos utilicen la visualización premium de libros.
+  const isBook = Boolean(
+    !realProduct?.nombre.toLowerCase().match(/(bol[ií]grafo|cuaderno|l[aá]piz|borrador|marcador|mochila)/) &&
+    (
+      realProduct?.naturaleza === 'TEXTO' || 
+      realProduct?.naturaleza === 'PLAN_LECTOR' || 
+      realProduct?.tipo_producto === 'LIBRO' || 
+      realProduct?.categoria?.nombre?.toLowerCase().includes('texto') || 
+      realProduct?.categoria?.nombre?.toLowerCase().includes('lector')
+    )
+  );
   const brandLabel = isBook ? 'Editorial' : 'Marca';
 
   // Combo calculations
@@ -160,14 +169,33 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   // Use real related products if available, otherwise mock
   const displayRelated = realRelatedProducts.length > 0 
-    ? realRelatedProducts.map(p => ({
-        id: p.id,
-        title: p.nombre,
-        category: p.naturaleza || p.categoria?.nombre || 'General',
-        price: Number(p.precio_promocional || p.precio_base),
-        imageUrl: p.imagenes?.[0]?.url ? `http://localhost:3001${p.imagenes[0].url}` : "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600&auto=format&fit=crop",
-        badge: p.precio_promocional ? 'Oferta' : undefined
-      }))
+    ? realRelatedProducts.map(p => {
+        const category = p.naturaleza || p.categoria?.nombre || 'General';
+        return {
+          id: p.id,
+          title: p.nombre,
+          category,
+          price: Number(p.precio_promocional || p.precio_base),
+          imageUrl: p.imagenes?.[0]?.url 
+            ? (p.imagenes[0].url.startsWith('http') 
+                ? p.imagenes[0].url 
+                : `http://localhost:3001${p.imagenes[0].url.startsWith('/') ? '' : '/'}${p.imagenes[0].url}`) 
+            : "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600&auto=format&fit=crop",
+          badge: p.precio_promocional ? 'Oferta' : undefined,
+          tipo_producto: p.tipo_producto,
+          precioOriginal: p.precio_promocional ? Number(p.precio_base) : undefined,
+          isBook: Boolean(
+            !p.nombre.toLowerCase().match(/(bol[ií]grafo|cuaderno|l[aá]piz|borrador|marcador|mochila)/) &&
+            (
+              p.naturaleza === 'TEXTO' || 
+              p.naturaleza === 'PLAN_LECTOR' || 
+              p.tipo_producto === 'LIBRO' || 
+              category.toLowerCase().includes('texto') || 
+              category.toLowerCase().includes('lector')
+            )
+          )
+        };
+      })
     : [];
 
   let categoryPath = '/';
@@ -175,6 +203,41 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   else if (naturaleza?.toLowerCase().includes('lector')) categoryPath = '/plan-lector';
   else if (naturaleza?.toLowerCase().includes('material')) categoryPath = '/material-escolar';
   else categoryPath = '/productos';
+
+  if (loading) {
+    return (
+      <div className={styles.pageWrapper}>
+        <main className={styles.mainContent}>
+          {/* Skeleton Breadcrumb */}
+          <nav className={styles.breadcrumb} style={{ opacity: 0.5 }}>
+            <div style={{ height: '20px', width: '200px', backgroundColor: '#e2e8f0', borderRadius: '4px', animation: 'pulse 1.5s infinite' }}></div>
+          </nav>
+          
+          <div className={styles.productContainer}>
+            {/* Skeleton Image */}
+            <div className={styles.gallerySection}>
+              <div style={{ width: '100%', aspectRatio: '1/1.2', backgroundColor: '#e2e8f0', borderRadius: '8px', animation: 'pulse 1.5s infinite' }}></div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+                <div style={{ width: '80px', height: '80px', backgroundColor: '#e2e8f0', borderRadius: '4px', animation: 'pulse 1.5s infinite' }}></div>
+                <div style={{ width: '80px', height: '80px', backgroundColor: '#e2e8f0', borderRadius: '4px', animation: 'pulse 1.5s infinite' }}></div>
+              </div>
+            </div>
+            
+            {/* Skeleton Info */}
+            <div className={styles.infoSection}>
+              <div style={{ height: '32px', width: '80%', backgroundColor: '#e2e8f0', borderRadius: '4px', marginBottom: '1rem', animation: 'pulse 1.5s infinite' }}></div>
+              <div style={{ height: '40px', width: '40%', backgroundColor: '#e2e8f0', borderRadius: '4px', marginBottom: '2rem', animation: 'pulse 1.5s infinite' }}></div>
+              <div style={{ height: '20px', width: '100%', backgroundColor: '#e2e8f0', borderRadius: '4px', marginBottom: '0.5rem', animation: 'pulse 1.5s infinite' }}></div>
+              <div style={{ height: '20px', width: '90%', backgroundColor: '#e2e8f0', borderRadius: '4px', marginBottom: '2rem', animation: 'pulse 1.5s infinite' }}></div>
+              
+              <div style={{ height: '50px', width: '100%', backgroundColor: '#cbd5e1', borderRadius: '8px', marginTop: 'auto', animation: 'pulse 1.5s infinite' }}></div>
+            </div>
+          </div>
+          <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }`}</style>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.pageWrapper}>
@@ -200,22 +263,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           
           {/* Left: Image Gallery */}
           <div className={styles.gallerySection}>
-            <div className={`${styles.mainImageWrapper} ${isBook ? styles.bookMainImageWrapper : ''}`}>
+            <div className={styles.mainImageWrapper}>
               {(hasPromo || comboAhorro > 0) && (
                 <span className={styles.badge}>
                   -{hasPromo ? discountPercent : comboAhorroPct}%
                 </span>
               )}
-              <div key={currentMainImage} className={`${styles.mainImageInner} ${isBook ? styles.pageTurn : ''}`}>
+              <div key={currentMainImage} className={styles.mainImageInner}>
                 <Image 
                   src={currentMainImage} 
                   alt={title} 
                   fill
                   priority
-                  className={`${styles.mainImage} ${isBook ? styles.bookMainImage : ''}`}
+                  className={styles.mainImage}
                   sizes="(max-width: 768px) 100vw, 500px"
+                  style={{ objectFit: 'contain' }}
                 />
-                {isBook && <div className={styles.glare}></div>}
               </div>
             </div>
             
@@ -527,12 +590,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {displayRelated.map(item => (
               <ProductCard 
                 key={item.id}
+                id={item.id?.toString()}
                 title={item.title}
                 category={item.category}
                 categoryColor={getLevelColor(item.category)}
                 price={item.price}
                 imageUrl={item.imageUrl}
                 badge={item.badge}
+                tipo_producto={item.tipo_producto}
+                precioOriginal={item.precioOriginal}
+                isBook={item.isBook}
               />
             ))}
           </div>

@@ -1,106 +1,95 @@
 import { DescuentosController } from './descuentos.controller';
-import { PrismaService } from '../../../../common/prisma/prisma.service';
 import { DiscountEngineService } from '../../domain/discount-engine.service';
+import { ListarDescuentosUseCase } from '../../application/use-cases/listar-descuentos.use-case';
+import { ObtenerDescuentoUseCase } from '../../application/use-cases/obtener-descuento.use-case';
+import { ObtenerAnaliticaDescuentoUseCase } from '../../application/use-cases/obtener-analitica-descuento.use-case';
+import { CrearDescuentoUseCase } from '../../application/use-cases/crear-descuento.use-case';
+import { ActualizarParcialDescuentoUseCase } from '../../application/use-cases/actualizar-parcial-descuento.use-case';
+import { ActualizarDescuentoUseCase } from '../../application/use-cases/actualizar-descuento.use-case';
+import { EliminarDescuentoUseCase } from '../../application/use-cases/eliminar-descuento.use-case';
+import {
+  ActualizarDescuentoDto,
+  ActualizarParcialDescuentoDto,
+  CrearDescuentoDto,
+} from '../../application/dtos/descuento.dto';
 
-describe('DescuentosController - Scheduling Fields Parse & Round-trip', () => {
+describe('DescuentosController - delegates to use-cases (no Prisma/business logic in the controller)', () => {
   let controller: DescuentosController;
-  let mockPrisma: any;
-  let mockEngine: any;
-
-  const validPayload = {
-    nombre: 'Descuento programado',
-    tipo: 'PORCENTAJE',
-    valor: 10,
-    alcance: 'GLOBAL',
-    canal: 'TODOS',
-    fechaInicio: '2026-08-01T00:00:00.000Z',
-    fechaFin: '2026-08-31T00:00:00.000Z',
+  let useCases: {
+    listar: jest.Mocked<Pick<ListarDescuentosUseCase, 'execute'>>;
+    obtener: jest.Mocked<Pick<ObtenerDescuentoUseCase, 'execute'>>;
+    analitica: jest.Mocked<Pick<ObtenerAnaliticaDescuentoUseCase, 'execute'>>;
+    crear: jest.Mocked<Pick<CrearDescuentoUseCase, 'execute'>>;
+    parcial: jest.Mocked<Pick<ActualizarParcialDescuentoUseCase, 'execute'>>;
+    actualizar: jest.Mocked<Pick<ActualizarDescuentoUseCase, 'execute'>>;
+    eliminar: jest.Mocked<Pick<EliminarDescuentoUseCase, 'execute'>>;
   };
 
   beforeEach(() => {
-    mockPrisma = {
-      descuento: {
-        create: jest.fn().mockResolvedValue({ id: BigInt(999) }),
-        findUnique: jest
-          .fn()
-          .mockResolvedValue({ id: BigInt(5), activo: true }),
-        update: jest.fn().mockResolvedValue({ id: BigInt(5), activo: true }),
+    useCases = {
+      listar: {
+        execute: jest.fn().mockResolvedValue({ success: true, data: [] }),
       },
+      obtener: {
+        execute: jest.fn().mockResolvedValue({ success: true, data: {} }),
+      },
+      analitica: {
+        execute: jest.fn().mockResolvedValue({ success: true, data: {} }),
+      },
+      crear: { execute: jest.fn().mockResolvedValue({ success: true }) },
+      parcial: { execute: jest.fn().mockResolvedValue({ success: true }) },
+      actualizar: { execute: jest.fn().mockResolvedValue({ success: true }) },
+      eliminar: { execute: jest.fn().mockResolvedValue({ success: true }) },
     };
-    mockEngine = { evaluate: jest.fn() };
+
     controller = new DescuentosController(
-      mockPrisma as PrismaService,
-      mockEngine as DiscountEngineService,
+      {} as DiscountEngineService,
+      useCases.listar as unknown as ListarDescuentosUseCase,
+      useCases.obtener as unknown as ObtenerDescuentoUseCase,
+      useCases.analitica as unknown as ObtenerAnaliticaDescuentoUseCase,
+      useCases.crear as unknown as CrearDescuentoUseCase,
+      useCases.parcial as unknown as ActualizarParcialDescuentoUseCase,
+      useCases.actualizar as unknown as ActualizarDescuentoUseCase,
+      useCases.eliminar as unknown as EliminarDescuentoUseCase,
     );
   });
 
-  it('coerces malformed or out-of-range HH:MM to null on create, never a 400 (REQ-DIA-07)', async () => {
-    const result = await controller.crear({
-      ...validPayload,
-      horaInicio: '9am',
-      horaFin: '25:00',
-    });
-
-    expect(result.success).toBe(true);
-    expect(mockPrisma.descuento.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ hora_inicio: null, hora_fin: null }),
-      }),
-    );
-
-    await controller.crear({
-      ...validPayload,
-      horaInicio: '12:60',
-    });
-
-    expect(mockPrisma.descuento.create).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ hora_inicio: null }),
-      }),
-    );
+  it('listar() delegates to ListarDescuentosUseCase', async () => {
+    await controller.listar();
+    expect(useCases.listar.execute).toHaveBeenCalledWith();
   });
 
-  it('persists valid day/time values with array order preserved (REQ-DIA-08 S8.1)', async () => {
-    await controller.crear({
-      ...validPayload,
-      diasSemana: [1, 2, 3],
-      horaInicio: '14:00',
-      horaFin: '18:00',
-    });
-
-    expect(mockPrisma.descuento.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          dias_semana: [1, 2, 3],
-          hora_inicio: '14:00',
-          hora_fin: '18:00',
-        }),
-      }),
-    );
+  it('obtenerPorId() delegates to ObtenerDescuentoUseCase with the id', async () => {
+    await controller.obtenerPorId('5');
+    expect(useCases.obtener.execute).toHaveBeenCalledWith('5');
   });
 
-  it('PATCH with only diasSemana keeps every other field intact (REQ-DIA-08 S8.2)', async () => {
-    await controller.toggleOActualizarParcial('5', { diasSemana: [1] });
-
-    expect(mockPrisma.descuento.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: { dias_semana: [1] },
-      }),
-    );
+  it('obtenerAnalitica() delegates to ObtenerAnaliticaDescuentoUseCase with the id', async () => {
+    await controller.obtenerAnalitica('5');
+    expect(useCases.analitica.execute).toHaveBeenCalledWith('5');
   });
 
-  it('applies [] / null defaults on legacy payloads without the new fields (REQ-DIA-08 S8.3)', async () => {
-    await controller.crear(validPayload);
+  it('crear() delegates to CrearDescuentoUseCase with the dto', async () => {
+    const dto = { nombre: 'x' } as unknown as CrearDescuentoDto;
+    await controller.crear(dto);
+    expect(useCases.crear.execute).toHaveBeenCalledWith(dto);
+  });
 
-    expect(mockPrisma.descuento.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          dias_semana: [],
-          hora_inicio: null,
-          hora_fin: null,
-        }),
-      }),
-    );
+  it('toggleOActualizarParcial() delegates to ActualizarParcialDescuentoUseCase with id and dto', async () => {
+    const dto = { activo: false } as unknown as ActualizarParcialDescuentoDto;
+    await controller.toggleOActualizarParcial('5', dto);
+    expect(useCases.parcial.execute).toHaveBeenCalledWith('5', dto);
+  });
+
+  it('actualizar() delegates to ActualizarDescuentoUseCase with id and dto', async () => {
+    const dto = { nombre: 'y' } as unknown as ActualizarDescuentoDto;
+    await controller.actualizar('5', dto);
+    expect(useCases.actualizar.execute).toHaveBeenCalledWith('5', dto);
+  });
+
+  it('eliminar() delegates to EliminarDescuentoUseCase with the id', async () => {
+    await controller.eliminar('5');
+    expect(useCases.eliminar.execute).toHaveBeenCalledWith('5');
   });
 });
 
@@ -108,11 +97,25 @@ describe('DescuentosController - validarPromocion', () => {
   let controller: DescuentosController;
   let mockEngine: { evaluateWithReason: jest.Mock };
 
+  const noop = { execute: jest.fn() } as unknown as ListarDescuentosUseCase &
+    ObtenerDescuentoUseCase &
+    ObtenerAnaliticaDescuentoUseCase &
+    CrearDescuentoUseCase &
+    ActualizarParcialDescuentoUseCase &
+    ActualizarDescuentoUseCase &
+    EliminarDescuentoUseCase;
+
   beforeEach(() => {
     mockEngine = { evaluateWithReason: jest.fn() };
     controller = new DescuentosController(
-      {} as PrismaService,
       mockEngine as unknown as DiscountEngineService,
+      noop,
+      noop,
+      noop,
+      noop,
+      noop,
+      noop,
+      noop,
     );
   });
 

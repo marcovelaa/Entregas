@@ -14,7 +14,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const { cart, removeFromCart, updateQuantity, totalItems } = useCart();
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
     // Prevent background scrolling when open
     if (isOpen) {
       document.body.style.overflow = 'hidden';

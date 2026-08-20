@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { ProductCard } from '@/components/molecules/ProductCard/ProductCard';
 import { CatalogSidebar } from '@/components/organisms/CatalogSidebar/CatalogSidebar';
+import { ApiProduct } from '@/types/api';
+import { getProducts } from '@/services/productService';
 import styles from './planLector.module.css';
 
 const levels = [
@@ -43,25 +45,22 @@ export default function PlanLectorPage() {
   const [activeLevel, setActiveLevel] = useState<string>('');
   const [activeGrade, setActiveGrade] = useState<string>('');
   const [activeSubject, setActiveSubject] = useState<string>('all');
-  const [products, setProducts] = useState<unknown[]>([]);
+  const [products, setProducts] = useState<ApiProduct[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   React.useEffect(() => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    fetch(`${API_URL}/productos?page=1&limit=50`)
-      .then(res => res.json())
+    getProducts({ page: 1, limit: 50 })
       .then(data => {
         if (data && data.data) {
-          const filtered = data.data.filter((p: unknown) => {
-            const prod = p as Record<string, unknown>;
-            const cat = prod.categoria as { slug?: string } | undefined;
-            const attrs = prod.atributos as { nivel?: string } | undefined;
-            return cat?.slug === 'textos-escolares' && (!attrs || !attrs.nivel);
+          const filtered = data.data.filter(prod => {
+            const cat = prod.categoria;
+            const attrs = prod.atributos;
+            return cat?.slug === 'plan-lector' || (cat?.slug === 'textos-escolares' && (!attrs || !attrs.nivel));
           });
           setProducts(filtered);
         }
       })
-      .catch(err => console.error('Error fetching products', err));
+      .catch(err => console.error('Error fetching plan lector products', err));
   }, []);
 
   const filteredBooks = products;
@@ -134,12 +133,17 @@ export default function PlanLectorPage() {
                 const b = book as Record<string, unknown>;
                 const id = String(b.id || '');
                 const nombre = String(b.nombre || '');
-                const precio = Number(b.precio_base || 0);
+                const precio = Number(b.precio_promocional || b.precio_base || 0);
+                const precioOriginal = b.precio_promocional ? Number(b.precio_base) : undefined;
+                const badge = b.precio_promocional ? 'Oferta' : undefined;
+                const tipo_producto = b.tipo_producto as string | undefined;
                 const categoria = b.categoria as { nombre?: string } | undefined;
                 const imagenes = b.imagenes as { url: string }[] | undefined;
 
                 const imageUrl = imagenes && imagenes.length > 0 
-                  ? `http://localhost:3001${imagenes[0].url}`
+                  ? (imagenes[0].url.startsWith('http') 
+                      ? imagenes[0].url 
+                      : `http://localhost:3001${imagenes[0].url.startsWith('/') ? '' : '/'}${imagenes[0].url}`) 
                   : 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop';
 
                 return (
@@ -150,8 +154,11 @@ export default function PlanLectorPage() {
                       category={categoria?.nombre || 'General'}
                       categoryColor="var(--color-blue)"
                       price={precio}
+                      precioOriginal={precioOriginal}
+                      badge={badge}
+                      tipo_producto={tipo_producto}
                       imageUrl={imageUrl}
-                      isBook={true}
+                      isBook={!nombre.toLowerCase().match(/(bol[ií]grafo|cuaderno|l[aá]piz|borrador|marcador|mochila)/)}
                     />
                   </div>
                 );

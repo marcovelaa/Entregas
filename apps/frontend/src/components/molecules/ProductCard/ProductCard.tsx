@@ -140,13 +140,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     });
   };
 
-  const descriptionStub = componentes.length > 0 
-    ? componentes.map(c => c.nombre).join(', ') 
-    : 'Libro de texto y actividades diseñado para potenciar el aprendizaje continuo.';
-
   return (
     <article 
+      ref={cardRef}
       className={`${styles.productCard} ${isBook ? styles.productCardBook : ''}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
     >
       {id && <Link href={`/producto/${id}`} className={styles.cardLink} aria-label={`Ver detalle de ${title}`} />}
       

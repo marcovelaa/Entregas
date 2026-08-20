@@ -31,6 +31,9 @@ export default function FavoritosPage() {
               category={fav.category}
               price={fav.price}
               imageUrl={fav.imageUrl}
+              precioOriginal={fav.precioOriginal}
+              tipo_producto={fav.tipo_producto}
+              isBook={fav.isBook}
             />
           ))}
         </div>

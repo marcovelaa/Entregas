@@ -3,6 +3,8 @@
 import React, { useState, useRef } from 'react';
 import { ProductCard } from '@/components/molecules/ProductCard/ProductCard';
 import { CatalogSidebar } from '@/components/organisms/CatalogSidebar/CatalogSidebar';
+import { ApiProduct } from '@/types/api';
+import { getProducts } from '@/services/productService';
 import styles from './textosescolares.module.css';
 
 // Levels con colores para el header
@@ -92,7 +94,7 @@ export default function TextosEscolaresPage() {
   const [activeLevel, setActiveLevel] = useState<string>('');
   const [activeGrade, setActiveGrade] = useState<string>('');
   const [activeSubject, setActiveSubject] = useState<string>('all');
-  const [products, setProducts] = useState<unknown[]>([]);
+  const [products, setProducts] = useState<ApiProduct[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Lógica para drag-to-scroll en PC
@@ -119,29 +121,20 @@ export default function TextosEscolaresPage() {
   };
 
   React.useEffect(() => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    
-    // Construir query params según los filtros activos
-    const params = new URLSearchParams();
-    params.append('page', '1');
-    params.append('limit', '50');
-    params.append('categoria_slug', 'textos-escolares');
+    const params: Record<string, any> = {
+      page: 1,
+      limit: 50,
+      categoria_slug: 'textos-escolares'
+    };
     
     if (activeLevel) {
-      // Capitalizar la primera letra para que coincida con el backend ("Secundaria", "Primaria")
-      const nivelStr = activeLevel.charAt(0).toUpperCase() + activeLevel.slice(1);
-      params.append('atributo_nivel', nivelStr);
+      params.atributo_nivel = activeLevel.charAt(0).toUpperCase() + activeLevel.slice(1);
     }
-    // Temporariamente comentados porque el mock de la DB tiene valores inconsistentes (ej. subnivel="2do", materia="we")
-    // if (activeGrade) {
-    //   params.append('atributo_grado', activeGrade);
-    // }
-    // if (activeSubject && activeSubject !== 'all') {
-    //   params.append('atributo_materia', activeSubject);
-    // }
+    
+    // if (activeGrade) params.atributo_grado = activeGrade;
+    // if (activeSubject && activeSubject !== 'all') params.atributo_materia = activeSubject;
 
-    fetch(`${API_URL}/productos?${params.toString()}`)
-      .then(res => res.json())
+    getProducts(params)
       .then(data => {
         if (data && data.data) {
           setProducts(data.data);
@@ -239,12 +232,17 @@ export default function TextosEscolaresPage() {
                 const product = p as Record<string, unknown>;
                 const id = String(product.id || '');
                 const nombre = String(product.nombre || '');
-                const precio = Number(product.precio_base || 0);
+                const precio = Number(product.precio_promocional || product.precio_base || 0);
+                const precioOriginal = product.precio_promocional ? Number(product.precio_base) : undefined;
+                const badge = product.precio_promocional ? 'Oferta' : undefined;
+                const tipo_producto = product.tipo_producto as string | undefined;
                 const categoria = product.categoria as { nombre?: string } | undefined;
                 const imagenes = product.imagenes as { url: string }[] | undefined;
                 
                 const imageUrl = imagenes && imagenes.length > 0 
-                  ? `http://localhost:3001${imagenes[0].url}`
+                  ? (imagenes[0].url.startsWith('http') 
+                      ? imagenes[0].url 
+                      : `http://localhost:3001${imagenes[0].url.startsWith('/') ? '' : '/'}${imagenes[0].url}`) 
                   : 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop';
                 return (
                   <div key={id}>
@@ -254,8 +252,11 @@ export default function TextosEscolaresPage() {
                       category={categoria?.nombre || 'General'}
                       categoryColor="var(--color-blue)"
                       price={precio}
+                      precioOriginal={precioOriginal}
+                      badge={badge}
+                      tipo_producto={tipo_producto}
                       imageUrl={imageUrl}
-                      isBook={true}
+                      isBook={!nombre.toLowerCase().match(/(bol[ií]grafo|cuaderno|l[aá]piz|borrador|marcador|mochila)/)}
                     />
                   </div>
                 )
