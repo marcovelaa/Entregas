@@ -1,24 +1,38 @@
-const ROUTE_PERMISSIONS: Array<{ prefix: string; permiso: string }> = [
-  { prefix: '/configuracion/usuarios', permiso: 'iam:usuarios:ver' },
-  { prefix: '/configuracion/roles', permiso: 'iam:roles:ver' },
-  { prefix: '/catalogo', permiso: 'catalogo:ver' },
-  { prefix: '/ventas', permiso: 'ventas:ver' },
-  { prefix: '/caja', permiso: 'caja:ver' },
-  { prefix: '/compras', permiso: 'compras:ver' },
-  { prefix: '/inventario', permiso: 'inventario:ver' },
-  { prefix: '/clientes', permiso: 'clientes:ver' },
-  { prefix: '/proveedores', permiso: 'proveedores:ver' },
-  { prefix: '/descuentos', permiso: 'descuentos:ver' },
-  { prefix: '/reportes', permiso: 'reportes:ver' },
-].sort((a, b) => b.prefix.length - a.prefix.length);
+import type { PermissionCode } from '@repo/rbac-contract';
 
-function matchesPrefix(pathname: string, prefix: string): boolean {
-  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+interface RoutePermissionRule {
+  pattern: string;
+  permission: PermissionCode;
 }
 
-export function requiredPermissionForPath(pathname: string): string | null {
-  const match = ROUTE_PERMISSIONS.find((route) =>
-    matchesPrefix(pathname, route.prefix),
+// Orden = especificidad: las rutas de acción van antes que el fallback
+// genérico del módulo. Un segmento '*' matchea cualquier valor (ids).
+const ROUTE_PERMISSIONS: RoutePermissionRule[] = [
+  { pattern: '/configuracion/usuarios', permission: 'iam:usuarios:ver' },
+  { pattern: '/configuracion/roles', permission: 'iam:roles:ver' },
+  { pattern: '/descuentos/nuevo', permission: 'descuentos:crear' },
+  { pattern: '/descuentos/*', permission: 'descuentos:editar' },
+  { pattern: '/descuentos', permission: 'descuentos:ver' },
+  { pattern: '/catalogo', permission: 'catalogo:ver' },
+  { pattern: '/ventas', permission: 'ventas:ver' },
+  { pattern: '/caja', permission: 'caja:ver' },
+  { pattern: '/compras', permission: 'compras:ver' },
+  { pattern: '/inventario', permission: 'inventario:ver' },
+  { pattern: '/clientes', permission: 'clientes:ver' },
+  { pattern: '/proveedores', permission: 'proveedores:ver' },
+  { pattern: '/reportes', permission: 'reportes:ver' },
+];
+
+function matchesPattern(pathname: string, pattern: string): boolean {
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const patternSegments = pattern.split('/').filter(Boolean);
+  if (pathSegments.length < patternSegments.length) return false;
+  return patternSegments.every(
+    (segment, i) => segment === '*' || segment === pathSegments[i],
   );
-  return match ? match.permiso : null;
+}
+
+export function requiredPermissionForPath(pathname: string): PermissionCode | null {
+  const match = ROUTE_PERMISSIONS.find((route) => matchesPattern(pathname, route.pattern));
+  return match ? match.permission : null;
 }

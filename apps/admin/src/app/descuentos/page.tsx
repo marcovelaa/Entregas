@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { CampaignAnalyticsModal } from '@/components/organisms/CampaignAnalyticsModal';
 import { ComboAnalyticsModal } from '@/components/organisms/ComboAnalyticsModal';
+import { RequirePermission } from '@/components/atoms/RequirePermission/RequirePermission';
 
 interface Descuento {
   id: string;
@@ -200,18 +201,22 @@ export default function DescuentosDashboardPage() {
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           {mainTab === 'promociones' ? (
-            <button onClick={() => router.push('/descuentos/nuevo')} className={styles.primaryBtn}>
-              <Plus size={18} />
-              <span>Nueva Promoción / Cupón</span>
-            </button>
+            <RequirePermission p="descuentos:crear">
+              <button onClick={() => router.push('/descuentos/nuevo')} className={styles.primaryBtn}>
+                <Plus size={18} />
+                <span>Nueva Promoción / Cupón</span>
+              </button>
+            </RequirePermission>
           ) : (
-            <button
-              onClick={() => router.push('/descuentos/combos/nuevo')}
-              className={styles.primaryBtn}
-            >
-              <Plus size={18} />
-              <span>Nuevo Combo / Kit</span>
-            </button>
+            <RequirePermission p="descuentos:crear">
+              <button
+                onClick={() => router.push('/descuentos/combos/nuevo')}
+                className={styles.primaryBtn}
+              >
+                <Plus size={18} />
+                <span>Nuevo Combo / Kit</span>
+              </button>
+            </RequirePermission>
           )}
         </div>
       </header>
@@ -524,29 +529,35 @@ export default function DescuentosDashboardPage() {
                             >
                               <BarChart2 size={16} />
                             </button>
-                            <button
-                              onClick={() => router.push(`/descuentos/${d.id}`)}
-                              className={styles.deleteBtn}
-                              style={{ color: '#2563eb' }}
-                              title="Editar Descuento"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleToggleDescuento(d.id, d.activo)}
-                              className={styles.deleteBtn}
-                              style={{ color: d.activo ? '#16a34a' : '#94a3b8' }}
-                              title={d.activo ? 'Desactivar' : 'Activar'}
-                            >
-                              {d.activo ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDescuento(d.id)}
-                              className={styles.deleteBtn}
-                              title="Eliminar"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <RequirePermission p="descuentos:editar">
+                              <button
+                                onClick={() => router.push(`/descuentos/${d.id}`)}
+                                className={styles.deleteBtn}
+                                style={{ color: '#2563eb' }}
+                                title="Editar Descuento"
+                              >
+                                <Edit size={16} />
+                              </button>
+                            </RequirePermission>
+                            <RequirePermission p="descuentos:editar">
+                              <button
+                                onClick={() => handleToggleDescuento(d.id, d.activo)}
+                                className={styles.deleteBtn}
+                                style={{ color: d.activo ? '#16a34a' : '#94a3b8' }}
+                                title={d.activo ? 'Desactivar' : 'Activar'}
+                              >
+                                {d.activo ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                              </button>
+                            </RequirePermission>
+                            <RequirePermission p="descuentos:eliminar">
+                              <button
+                                onClick={() => handleDeleteDescuento(d.id)}
+                                className={styles.deleteBtn}
+                                title="Eliminar"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </RequirePermission>
                           </div>
                         </td>
                       </tr>
@@ -706,22 +717,26 @@ export default function DescuentosDashboardPage() {
                           >
                             <BarChart2 size={16} />
                           </button>
-                          <button
-                            onClick={() => router.push(`/descuentos/combos/${c.id}`)}
-                            className={styles.deleteBtn}
-                            style={{ color: '#2563eb' }}
-                            title="Editar Combo"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleToggleCombo(c.id, c.activo)}
-                            className={styles.deleteBtn}
-                            style={{ color: c.activo ? '#16a34a' : '#94a3b8' }}
-                            title={c.activo ? 'Desactivar' : 'Activar'}
-                          >
-                            {c.activo ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-                          </button>
+                          <RequirePermission p="descuentos:editar">
+                            <button
+                              onClick={() => router.push(`/descuentos/combos/${c.id}`)}
+                              className={styles.deleteBtn}
+                              style={{ color: '#2563eb' }}
+                              title="Editar Combo"
+                            >
+                              <Edit size={16} />
+                            </button>
+                          </RequirePermission>
+                          <RequirePermission p="descuentos:editar">
+                            <button
+                              onClick={() => handleToggleCombo(c.id, c.activo)}
+                              className={styles.deleteBtn}
+                              style={{ color: c.activo ? '#16a34a' : '#94a3b8' }}
+                              title={c.activo ? 'Desactivar' : 'Activar'}
+                            >
+                              {c.activo ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                            </button>
+                          </RequirePermission>
                         </div>
                       </td>
                     </tr>

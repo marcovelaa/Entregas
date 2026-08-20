@@ -40,4 +40,10 @@ describe('requiredPermissionForPath', () => {
   it('does not confuse a route with an unrelated prefix (e.g. /ventasx)', () => {
     expect(requiredPermissionForPath('/ventasx')).toBeNull();
   });
+
+  it('resolves action-specific sub-routes to their own permission, not just the module ver', () => {
+    expect(requiredPermissionForPath('/descuentos/nuevo')).toBe('descuentos:crear');
+    expect(requiredPermissionForPath('/descuentos/42')).toBe('descuentos:editar');
+    expect(requiredPermissionForPath('/descuentos')).toBe('descuentos:ver');
+  });
 });

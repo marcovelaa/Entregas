@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@repo/combo-rules": "workspace:*",
+    "@repo/rbac-contract": "workspace:*",
     "axios": "^1.18.1",
     "html2pdf.js": "^0.14.0",
     "lucide-react": "^1.25.0",
