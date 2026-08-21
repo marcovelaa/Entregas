@@ -48,8 +48,8 @@
 
 /* Layout */
 .layoutContainer {
-  margin: 3rem auto 0;
-  padding: 0 5%;
+  padding: 3rem 5% 0;
+  /* padding: 0 5%; */;
   display: flex;
   gap: 3rem;
   align-items: flex-start;

@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import styles from './papel.module.css';
-import { MaterialCard } from '@/components/molecules/MaterialCard/MaterialCard';
+import { ProductCard } from '@/components/molecules/ProductCard/ProductCard';
 
 export default function PapelPage() {
   const [products, setProducts] = React.useState<any[]>([]);
@@ -91,12 +91,12 @@ export default function PapelPage() {
                   : 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop';
                 const numericPrice = Number(product.precio_base) || 0;
                 return (
-                  <MaterialCard
+                  <ProductCard
                     key={product.id}
                     id={product.id.toString()}
                     title={product.nombre}
                     category={product.categoria?.nombre || 'General'}
-                    pricing={{ unidad: numericPrice }}
+                    price={numericPrice}
                     imageUrl={imageUrl}
                   />
                 )

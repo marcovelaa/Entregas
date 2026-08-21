@@ -90,18 +90,46 @@ const catalogData: Record<string, { id: string; name: string; subjects: { id: st
 
 
 
+
+const SUBNIVEL_POR_GRADO_ID: Record<string, string> = {
+  'ini-2': 'Pollito',
+  'ini-3': 'Nidito',
+  'ini-4': 'Prekinder',
+  'ini-5': 'Kinder',
+  'pri-1': '1ro', 'pri-2': '2do', 'pri-3': '3ro', 'pri-4': '4to', 'pri-5': '5to', 'pri-6': '6to',
+  'sec-1': '1ro', 'sec-2': '2do', 'sec-3': '3ro', 'sec-4': '4to', 'sec-5': '5to', 'sec-6': '6to',
+};
+
+const MATERIA_MAP: Record<string, string> = {
+  'mat': 'Matemáticas',
+  'com': 'Comunicación',
+  'len': 'Lenguaje',
+  'cie': 'Ciencias Naturales',
+  'soc': 'Ciencias Sociales',
+  'ing': 'Inglés',
+  'fis': 'Física',
+  'qui': 'Química',
+  'bio': 'Biología',
+  'art': 'Artes',
+  'mus': 'Música',
+  'psi': 'Psicología',
+  'fil': 'Filosofía',
+  'lit': 'Literatura',
+  'planlector': 'Plan Lector'
+};
+
 export default function TextosEscolaresPage() {
   const [activeLevel, setActiveLevel] = useState<string>('');
   const [activeGrade, setActiveGrade] = useState<string>('');
   const [activeSubject, setActiveSubject] = useState<string>('all');
-  const [products, setProducts] = useState<ApiProduct[]>([]);
+  const [rawProducts, setRawProducts] = useState<ApiProduct[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Lógica para drag-to-scroll en PC
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [startX, setStartX] = React.useState(0);
+  const [scrollLeft, setScrollLeft] = React.useState(0);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollContainerRef.current) return;
@@ -120,33 +148,98 @@ export default function TextosEscolaresPage() {
     scrollContainerRef.current.scrollLeft = scrollLeft - walk;
   };
 
-  React.useEffect(() => {
-    const params: Record<string, any> = {
-      page: 1,
-      limit: 50,
-      categoria_slug: 'textos-escolares'
-    };
-    
-    if (activeLevel) {
-      params.atributo_nivel = activeLevel.charAt(0).toUpperCase() + activeLevel.slice(1);
-    }
-    
-    // if (activeGrade) params.atributo_grado = activeGrade;
-    // if (activeSubject && activeSubject !== 'all') params.atributo_materia = activeSubject;
 
-    getProducts(params)
+  React.useEffect(() => {
+    getProducts({ page: 1, limit: 500, categoria_slug: 'textos-escolares' })
       .then(data => {
         if (data && data.data) {
-          setProducts(data.data);
+          setRawProducts(data.data);
         }
       })
       .catch(err => console.error('Error fetching products', err));
-  }, [activeLevel, activeSubject]);
+  }, []);
+
+  const gradeProducts = React.useMemo(() => {
+    return rawProducts.filter(prod => {
+      const attrs = (prod.atributos as Record<string, unknown>) || {};
+      const nivel = typeof attrs.nivel === 'string' ? attrs.nivel : '';
+      const subnivel = typeof attrs.subnivel === 'string' ? attrs.subnivel : '';
+      const grado = typeof attrs.grado === 'string' ? attrs.grado : '';
+
+      if (activeLevel) {
+        const expectedNivel = activeLevel.charAt(0).toUpperCase() + activeLevel.slice(1);
+        if (nivel !== expectedNivel) return false;
+      }
+
+      if (activeGrade) {
+        const subnivelEsperado = SUBNIVEL_POR_GRADO_ID[activeGrade];
+        if (grado !== activeGrade && subnivel !== subnivelEsperado) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [rawProducts, activeLevel, activeGrade]);
+
+  const products = React.useMemo(() => {
+    return gradeProducts.filter(prod => {
+      if (activeSubject && activeSubject !== 'all') {
+        const attrs = (prod.atributos as Record<string, unknown>) || {};
+        // Lógica especial para el botón "Plan Lector"
+        if (activeSubject.toLowerCase() === 'planlector' || activeSubject.toLowerCase() === 'plan lector') {
+          const esPlanLector = attrs.es_plan_lector === true || attrs.es_plan_lector === 'true' || attrs.es_plan_lector === 'True';
+          const materiaPlanLector = typeof attrs.materia === 'string' && attrs.materia.toLowerCase() === 'plan lector';
+          if (!esPlanLector && !materiaPlanLector) {
+            return false;
+          }
+        } else {
+          const materia = typeof attrs.materia === 'string' ? attrs.materia : '';
+          const materiaEsperada = MATERIA_MAP[activeSubject] || activeSubject;
+          if (materia.toLowerCase() !== activeSubject.toLowerCase() && 
+              materia.toLowerCase() !== materiaEsperada.toLowerCase()) {
+            return false;
+          }
+        }
+      }
+      return true;
+    });
+  }, [gradeProducts, activeSubject]);
+
+  const subjectPills = React.useMemo(() => {
+    const uniqueSubjects = Array.from(new Set(gradeProducts.map(p => {
+      const attrs = (p.atributos as Record<string, unknown>) || {};
+      return typeof attrs.materia === 'string' ? attrs.materia : '';
+    }).filter(Boolean)));
+
+    const dynamicSubjects = uniqueSubjects
+      .filter(s => s.toLowerCase() !== 'plan lector' && s.toLowerCase() !== 'planlector')
+      .map(s => {
+        const knownKey = Object.keys(MATERIA_MAP).find(k => MATERIA_MAP[k].toLowerCase() === s.toLowerCase());
+        const name = MATERIA_MAP[s.toLowerCase()] || s.charAt(0).toUpperCase() + s.slice(1);
+        const id = knownKey || s.toLowerCase();
+        return { id, name };
+      });
+
+    const uniqueDynamicSubjects = [];
+    const seenIds = new Set();
+    for (const sub of dynamicSubjects) {
+      if (!seenIds.has(sub.id)) {
+        seenIds.add(sub.id);
+        uniqueDynamicSubjects.push(sub);
+      }
+    }
+
+    return [
+      { id: 'all', name: 'Todas las materias' },
+      ...uniqueDynamicSubjects,
+      { id: 'planlector', name: 'Plan Lector' }
+    ];
+  }, [gradeProducts]);
 
   const currentLevelName = levels.find(l => l.id === activeLevel)?.name || 'Todos los Niveles';
   const currentGradeObj = activeLevel && catalogData[activeLevel] ? catalogData[activeLevel].find(g => g.id === activeGrade) : null;
   const currentGradeName = currentGradeObj?.name || 'Todos los Grados';
-  const currentSubjectName = currentGradeObj?.subjects.find(s => s.id === activeSubject)?.name || 'Todas las materias';
+  const currentSubjectName = subjectPills.find(s => s.id === activeSubject)?.name || 'Todas las materias';
 
   return (
     <div className={styles.pageWrapper}>
@@ -204,7 +297,7 @@ export default function TextosEscolaresPage() {
           </div>
 
           {/* Píldoras de Materias Dinámicas (solo si hay grado activo) */}
-          {activeGrade && currentGradeObj && currentGradeObj.subjects && currentGradeObj.subjects.length > 0 && (
+          {activeGrade && (
             <div 
               className={styles.subjectPills}
               ref={scrollContainerRef}
@@ -214,7 +307,7 @@ export default function TextosEscolaresPage() {
               onMouseMove={handleMouseMove}
               style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
             >
-              {currentGradeObj.subjects.map(sub => (
+              {subjectPills.map(sub => (
                 <button
                   key={sub.id}
                   className={`${styles.pillBtn} ${activeSubject === sub.id ? styles.pillActive : ''}`}
@@ -256,7 +349,7 @@ export default function TextosEscolaresPage() {
                       badge={badge}
                       tipo_producto={tipo_producto}
                       imageUrl={imageUrl}
-                      isBook={!nombre.toLowerCase().match(/(bol[ií]grafo|cuaderno|l[aá]piz|borrador|marcador|mochila)/)}
+                      isBook={true}
                     />
                   </div>
                 )

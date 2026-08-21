@@ -14,6 +14,8 @@ interface CartContextType {
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   totalItems: number;
+  isCartOpen: boolean;
+  setIsCartOpen: (isOpen: boolean) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -21,6 +23,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 0);
@@ -41,6 +44,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [cart, mounted]);
 
   const addToCart = (item: ProductItem, quantity: number = 1) => {
+    
     setCart(prev => {
       const existing = prev.find(c => c.id === item.id);
       if (existing) {
@@ -67,7 +71,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, totalItems }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, totalItems, isCartOpen, setIsCartOpen }}>
       {children}
     </CartContext.Provider>
   );

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import styles from './materialEscolar.module.css';
-import { MaterialCard } from '@/components/molecules/MaterialCard/MaterialCard';
+import { ProductCard } from '@/components/molecules/ProductCard/ProductCard';
 
 // Mock Data
 const categories = [
@@ -133,12 +133,12 @@ export default function CuadernosPage() {
                   : 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop';
                 const numericPrice = Number(product.precio_base) || 0;
                 return (
-                  <MaterialCard
+                  <ProductCard
                     key={product.id}
                     id={product.id.toString()}
                     title={product.nombre}
                     category={product.categoria?.nombre || 'General'}
-                    pricing={{ unidad: numericPrice }}
+                    price={numericPrice}
                     imageUrl={imageUrl}
                   />
                 )

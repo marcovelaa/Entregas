@@ -89,16 +89,6 @@ export default async function RecommendedProducts() {
             }
             
             const categoryName = p.categoria?.nombre || 'General';
-            const isBook = Boolean(
-              !p.nombre.toLowerCase().match(/(bol[ií]grafo|cuaderno|l[aá]piz|borrador|marcador|mochila)/) &&
-              (
-                p.naturaleza === 'TEXTO' || 
-                p.naturaleza === 'PLAN_LECTOR' || 
-                p.tipo_producto === 'LIBRO' || 
-                categoryName.toLowerCase().includes('texto') || 
-                categoryName.toLowerCase().includes('lector')
-              )
-            );
 
             return (
               <ProductCard 
@@ -117,7 +107,6 @@ export default async function RecommendedProducts() {
                 componentes={mappedComponents}
                 componentesImagenes={componentImages}
                 modoImagen={pv?.modo_imagen || 'GRID_AUTO'}
-                isBook={isBook}
               />
             );
           })

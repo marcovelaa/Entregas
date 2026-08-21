@@ -1,6 +1,6 @@
 .main {
+  background-color: var(--bg-subtle, #f8fafc);
   min-height: 100vh;
-  background-color: #f8fafc;
 }
 
 .heroBanner {
@@ -170,7 +170,6 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  background-color: #f8fafc;
 }
 
 .productImg {

@@ -207,6 +207,10 @@ export class ListarProductosDto extends PaginationDto {
 
   @IsString()
   @IsOptional()
+  atributo_subnivel?: string;
+
+  @IsString()
+  @IsOptional()
   atributo_materia?: string;
 
   @IsString()

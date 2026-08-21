@@ -16,6 +16,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [realRelatedProducts, setRealRelatedProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
+  const [isAdded, setIsAdded] = useState(false);
   const [selectedVariante, setSelectedVariante] = useState<any>(null);
   const [selectedEmpaque, setSelectedEmpaque] = useState<any>(null);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
@@ -573,8 +574,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <button className={styles.qtyBtn} onClick={() => setQty(qty + 1)} aria-label="Más">+</button>
               </div>
               <button 
-                className={styles.primaryAddBtn}
-                disabled={compraBloqueada || (realProduct?.variantes?.length > 0 && !selectedVariante) || (selectedVariante && selectedVariante.empaques?.length > 0 && !selectedEmpaque)}
+                className={`${styles.primaryAddBtn} ${isAdded ? styles.addedSuccess : ''}`}
+                disabled={isAdded || compraBloqueada || (realProduct?.variantes?.length > 0 && !selectedVariante) || (selectedVariante && selectedVariante.empaques?.length > 0 && !selectedEmpaque)}
                 onClick={() => {
                   const item = {
                     id: selectedEmpaque ? `${id}-${selectedVariante?.id}-${selectedEmpaque.id}` : (selectedVariante ? `${id}-${selectedVariante.id}` : id),
@@ -584,15 +585,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     imageUrl: currentMainImage
                   };
                   addToCart(item, qty);
-                  alert('¡Producto agregado al carrito!');
+                  setIsAdded(true);
+                  setTimeout(() => setIsAdded(false), 2000);
                 }}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
-                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <path d="M16 10a4 4 0 0 1-8 0"></path>
-                </svg>
-                Añadir al carrito
+                {isAdded ? (
+                  <>
+                    <svg className={styles.checkIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '22px', height: '22px', marginRight: '8px' }}>
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    ¡Agregado!
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px', marginRight: '8px' }}>
+                      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                      <line x1="3" y1="6" x2="21" y2="6"></line>
+                      <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                    Añadir al carrito
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -613,7 +626,25 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <span className={styles.specValue}>{brand}</span>
                   </div>
                 )}
-                {Object.entries(atributos).map(([key, val]) => {
+                {Object.entries(atributos).filter(([_, val]) => val !== '' && val !== null && val !== undefined).sort(([keyA], [keyB]) => {
+                  const PREFERRED_ORDER = [
+                    'nivel',
+                    'subnivel',
+                    'grado',
+                    'materia',
+                    'serie',
+                    'autor',
+                    'isbn',
+                    'es_plan_lector'
+                  ];
+                  const indexA = PREFERRED_ORDER.indexOf(keyA.toLowerCase());
+                  const indexB = PREFERRED_ORDER.indexOf(keyB.toLowerCase());
+                  
+                  if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                  if (indexA !== -1) return -1;
+                  if (indexB !== -1) return 1;
+                  return keyA.localeCompare(keyB);
+                }).map(([key, val]) => {
                   const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
                   return (
                     <div className={styles.specRow} key={key}>

@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import styles from './ofertas.module.css';
+import { ProductCard } from '@/components/molecules/ProductCard/ProductCard';
 import Image from 'next/image';
 
 interface OfferCardProps {
@@ -11,31 +12,6 @@ interface OfferCardProps {
   newPrice: number;
   discountBadge: string;
   imageUrl: string;
-}
-
-function OfferCard({ title, category, oldPrice, newPrice, discountBadge, imageUrl }: OfferCardProps) {
-  return (
-    <article className={styles.offerCard}>
-      <div className={styles.imageContainer}>
-        <span className={styles.discountBadge}>{discountBadge}</span>
-        <Image src={imageUrl} alt={title} fill sizes="(max-width: 768px) 100vw, 250px" className={styles.productImg} />
-      </div>
-      <div className={styles.cardInfo}>
-        <span className={styles.category}>{category}</span>
-        <h3 className={styles.title} title={title}>{title}</h3>
-        
-        <div className={styles.priceRow}>
-          <div className={styles.priceCol}>
-            <span className={styles.oldPrice}>Bs. {oldPrice.toFixed(2)}</span>
-            <span className={styles.newPrice}>Bs. {newPrice.toFixed(2)}</span>
-          </div>
-          <button className={styles.addBtn} aria-label="Agregar al carrito">
-            Añadir
-          </button>
-        </div>
-      </div>
-    </article>
-  );
 }
 
 export default function OfertasPage() {
@@ -212,7 +188,17 @@ export default function OfertasPage() {
             </div>
             <div className={styles.grid}>
               {offers.map(offer => (
-                <OfferCard key={offer.id} {...offer} />
+                <ProductCard 
+                  key={offer.id} 
+                  id={offer.id}
+                  title={offer.title}
+                  category={offer.category}
+                  price={offer.newPrice}
+                  precioOriginal={offer.oldPrice}
+                  badge={offer.discountBadge}
+                  badgeStyle="red"
+                  imageUrl={offer.imageUrl}
+                />
               ))}
             </div>
           </div>

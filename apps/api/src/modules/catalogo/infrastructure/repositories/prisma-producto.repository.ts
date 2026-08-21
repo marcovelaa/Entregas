@@ -155,6 +155,11 @@ export class PrismaProductoRepository implements IProductoRepository {
         atributos: { path: ['nivel'], equals: filtros.atributo_nivel },
       });
     }
+    if (filtros?.atributo_subnivel) {
+      condiciones.push({
+        atributos: { path: ['subnivel'], equals: filtros.atributo_subnivel },
+      });
+    }
     if (filtros?.atributo_grado) {
       condiciones.push({
         atributos: { path: ['grado'], equals: filtros.atributo_grado },

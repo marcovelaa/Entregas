@@ -12,7 +12,7 @@ import { Badge } from '@/components/atoms/Badge/Badge';
 export default function Header() {
   const { favorites } = useFavorites();
   const { totalItems } = useCart();
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { isCartOpen, setIsCartOpen } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
   
   // TODO: Reemplazar esto con tu contexto de autenticación real (ej. useAuth())

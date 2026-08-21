@@ -41,6 +41,18 @@ const catalogData: Record<string, { id: string; name: string; subjects: { id: st
   ]
 };
 
+// Los grados/sub-niveles se guardan en atributos.subnivel con estos valores exactos
+// (definidos en AtributosSection.tsx del admin) — no coinciden con los nombres de
+// catalogData de arriba (ej. "Kínder" acá vs "Kinder" en el form), por eso el mapeo aparte.
+const SUBNIVEL_POR_GRADO_ID: Record<string, string> = {
+  'ini-pollito': 'Pollito',
+  'ini-nidito': 'Nidito',
+  'ini-prekinder': 'Prekinder',
+  'ini-kinder': 'Kinder',
+  'pri-1': '1ro', 'pri-2': '2do', 'pri-3': '3ro', 'pri-4': '4to', 'pri-5': '5to', 'pri-6': '6to',
+  'sec-1': '1ro', 'sec-2': '2do', 'sec-3': '3ro', 'sec-4': '4to', 'sec-5': '5to', 'sec-6': '6to',
+};
+
 export default function PlanLectorPage() {
   const [activeLevel, setActiveLevel] = useState<string>('');
   const [activeGrade, setActiveGrade] = useState<string>('');
@@ -55,28 +67,36 @@ export default function PlanLectorPage() {
         if (data && data.data) {
           const filtered = data.data.filter(prod => {
             const cat = prod.categoria;
-            const attrs = (prod.atributos as Record<string, string>) || {};
-            
+            const attrs = (prod.atributos as Record<string, unknown>) || {};
+
             // Un producto pertenece a la vista "Plan Lector" si:
-            // 1. Su categoría principal es plan-lector
-            // 2. O si es textos-escolares pero tiene la materia 'Plan Lector'
+            // 1. Su categoría principal es plan-lector, o
+            // 2. Tiene tildado el checkbox "Pertenece a Plan Lector" del form de admin
+            //    (atributos.es_plan_lector) — es la señal real que carga el admin;
+            //    "materia" es texto libre y no sirve para esto (confirmado con datos reales).
             const isPlanLectorCat = cat?.slug === 'plan-lector';
-            const isTextoEscolarPlanLector = cat?.slug === 'textos-escolares' && attrs.materia === 'Plan Lector';
-            
-            if (!isPlanLectorCat && !isTextoEscolarPlanLector) return false;
+            const isMarcadoPlanLector = attrs.es_plan_lector === true;
+
+            if (!isPlanLectorCat && !isMarcadoPlanLector) return false;
+
+            const nivel = typeof attrs.nivel === 'string' ? attrs.nivel : '';
+            const subnivel = typeof attrs.subnivel === 'string' ? attrs.subnivel : '';
 
             // Filtros de la UI
             if (activeLevel === 'otros') {
-              return !attrs.nivel; // Solo los que no tienen nivel
+              return !nivel; // Solo los que no tienen nivel
             }
 
             if (activeLevel && activeLevel !== 'otros') {
-              const levelMatch = attrs.nivel?.toLowerCase() === activeLevel.toLowerCase();
+              const levelMatch = nivel.toLowerCase() === activeLevel.toLowerCase();
               if (!levelMatch) return false;
             }
 
-            // Aquí podrías agregar el filtrado por activeGrade (1ro, 2do) si tuvieras atributo_grado
-            
+            if (activeGrade) {
+              const subnivelEsperado = SUBNIVEL_POR_GRADO_ID[activeGrade];
+              if (subnivelEsperado && subnivel !== subnivelEsperado) return false;
+            }
+
             return true;
           });
           setProducts(filtered);
@@ -181,7 +201,7 @@ export default function PlanLectorPage() {
                       badge={badge}
                       tipo_producto={tipo_producto}
                       imageUrl={imageUrl}
-                      isBook={!nombre.toLowerCase().match(/(bol[ií]grafo|cuaderno|l[aá]piz|borrador|marcador|mochila)/)}
+                      isBook={true}
                     />
                   </div>
                 );

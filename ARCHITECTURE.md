@@ -116,7 +116,8 @@ Reglas críticas:
 
 ### 3.3. Rendimiento
 
-- Evitar polling, timers, listeners y refetches sin límites. Definir frecuencia, pausa al ocultar la pestaña y cleanup cuando correspondan.
+- Evitar poll
+ing, timers, listeners y refetches sin límites. Definir frecuencia, pausa al ocultar la pestaña y cleanup cuando correspondan.
 - No enviar al cliente datos, JavaScript o dependencias que no necesita. Preferir Server Components y carga diferida cuando reduzcan costo real.
 - Optimizar imágenes, listas extensas y renders solo después de identificar el cuello de botella; no introducir memoización indiscriminada.
 - Evitar duplicar solicitudes y controlar cancelación, caché y revalidación según la naturaleza de los datos.

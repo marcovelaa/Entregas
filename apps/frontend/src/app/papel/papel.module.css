@@ -1,6 +1,7 @@
 .main {
+  background-color: var(--bg-subtle, #f8fafc);
   min-height: 100vh;
-  background-color: #ffffff;
+  
 }
 
 .container {

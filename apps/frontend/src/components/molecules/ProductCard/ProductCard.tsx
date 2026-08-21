@@ -46,6 +46,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const favoriteId = id || title;
   const favorited = isFavorite(favoriteId);
   const numericPrice = Number(price) || 0;
+  const [isAdded, setIsAdded] = React.useState(false);
 
   const isCombo = tipo_producto === 'COMBO';
   const hasSavings = Boolean(precioOriginal && precioOriginal > numericPrice);
@@ -104,6 +105,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       price: numericPrice,
       imageUrl: finalImageUrl,
     });
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2000);
   };
 
   const cardRef = React.useRef<HTMLElement>(null);
@@ -217,12 +220,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <span className={styles.price}>Bs. {numericPrice.toFixed(2)}</span>
           </div>
 
-          <button className={styles.addToCartBtn} aria-label="Agregar al carrito" onClick={handleAddToCartClick}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <path d="M16 10a4 4 0 0 1-8 0"></path>
-            </svg>
+          <button 
+            className={`${styles.addToCartBtn} ${isAdded ? styles.addedSuccess : ''}`} 
+            aria-label={isAdded ? "¡Agregado!" : "Agregar al carrito"} 
+            onClick={handleAddToCartClick}
+            disabled={isAdded}
+          >
+            {isAdded ? (
+              <svg className={styles.checkIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+            )}
           </button>
         </div>
       </div>

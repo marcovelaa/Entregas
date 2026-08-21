@@ -9,7 +9,7 @@ export function Badge({ count }: BadgeProps) {
   if (count <= 0) return null;
   
   return (
-    <span className={styles.badge}>
+    <span key={count} className={styles.badge}>
       {count > 99 ? '99+' : count}
     </span>
   );
