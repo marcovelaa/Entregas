@@ -34,6 +34,8 @@
   justify-content: center;
   padding: 0;
   overflow: hidden;
+  pointer-events: none; /* Let clicks pass through to the Link */
+  z-index: 2;
 }
 
 .productImg {
@@ -167,6 +169,9 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  pointer-events: none; /* Let clicks pass through */
+  z-index: 2;
+  position: relative;
 }
 
 .metaRow {
@@ -267,6 +272,9 @@
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
 }
 .addToCartBtn svg {
   width: 18px;
@@ -276,11 +284,11 @@
 
 
 .addToCartBtn:hover {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: #0f172a;
+  border-color: #0f172a;
   color: white;
   transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
 }
 
 .favoriteBtn {
@@ -300,6 +308,7 @@
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
   opacity: 0;
+  pointer-events: auto;
 }
 
 .productCard:hover .favoriteBtn,
@@ -354,9 +363,61 @@
   background-color: transparent;
   border: none;
   min-height: 200px;
-  overflow: visible;
-  perspective: 1000px; /* Para el efecto 3D sutil en hover */
+  overflow: visible; /* Para el efecto 3D sutil en hover */
+  perspective: 1000px; 
   margin-bottom: 0.5rem;
+}
+
+/* Listón de favorito para libros */
+.productCardBook .favoriteBtn {
+  top: -2px; /* Más pegado al borde, sin flotar excesivamente */
+  right: 16px;
+  width: 28px;
+  height: 42px;
+  background: transparent;
+  opacity: 0; /* Invisible por defecto */
+  z-index: 20;
+  transition: all 0.2s ease-in-out;
+  transform-origin: top center;
+}
+
+/* Solo aparece si el libro tiene hover o si ya es favorito */
+.productCardBook:hover .favoriteBtn,
+.productCardBook .favoriteBtn.favorited {
+  opacity: 1;
+}
+
+.productCardBook .favoriteBtn:hover {
+  transform: translateY(4px);
+}
+
+.productCardBook .favoriteBtn:active {
+  transform: translateY(2px);
+}
+
+/* Diseño plano e integrado (sin sombras ni bordes) */
+.productCardBook .favoriteBtn svg {
+  width: 100%;
+  height: 100%;
+  filter: none; /* Chau sombras */
+  stroke: none; /* Sin borde/stroke para un look 100% plano */
+  transition: all 0.2s ease;
+  fill: #e2e8f0; /* Gris sólido y sobrio cuando asoma */
+}
+
+.productCardBook .favoriteBtn.favorited {
+  top: 0;
+}
+
+@keyframes ribbonPull {
+  0% { transform: scaleY(1); }
+  50% { transform: scaleY(1.1); }
+  100% { transform: scaleY(1); }
+}
+
+.productCardBook .favoriteBtn.favorited svg {
+  fill: #dc2626; /* Rojo plano y vibrante */
+  animation: ribbonPull 0.4s ease-out;
 }
 
 .bookCoverWrapper {
@@ -370,41 +431,20 @@
     0 1px 3px rgba(0,0,0,0.1);
   transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
   transform-style: preserve-3d;
-  background: white; /* fallback */
+  background: transparent;
   overflow: hidden;
 }
 
-
-/* Glare (Brillo sutil) */
-.glare {
-  position: absolute;
-  top: 0; left: -100%; width: 50%; height: 100%;
-  background: linear-gradient(
-    to right,
-    rgba(255,255,255,0) 0%,
-    rgba(255,255,255,0.4) 50%,
-    rgba(255,255,255,0) 100%
-  );
-  transform: skewX(-20deg);
-  z-index: 3;
-  pointer-events: none;
-  transition: left 0.7s ease;
-}
-
-/* Animaciones combinadas en hover (Inclinado sutil + Zoom + Brillo) */
+/* Animaciones combinadas en hover (Inclinado sutil, sin el gradiente) */
 .productCardBook:hover .bookCoverWrapper {
-  transform: scale(1.1) rotateY(var(--rotateY, -18deg)) rotateX(var(--rotateX, 8deg));
+  transform: scale(1.05) rotateY(var(--rotateY, -12deg)) rotateX(var(--rotateX, 5deg));
   box-shadow: 
-    -15px 25px 35px rgba(0,0,0,0.25),
-    -8px 12px 20px rgba(0,0,0,0.15);
-}
-
-.productCardBook:hover .glare {
-  left: 200%;
+    -12px 20px 30px rgba(0,0,0,0.2),
+    -6px 10px 15px rgba(0,0,0,0.12);
 }
 
 .productCardBook .productImg {
-  object-fit: contain;
+  object-fit: cover;
   background-color: transparent;
   border-radius: 2px 6px 6px 2px;
   width: 100%; height: 100%;

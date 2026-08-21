@@ -260,26 +260,94 @@
   width: 45%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 1.5rem;
+  justify-content: flex-start;
+  padding-top: 1rem;
+}
+
+.headerBlock {
+  margin-bottom: 2rem;
+}
+
+.kickerText {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 1rem;
 }
 
 .title {
-  font-size: 2.4rem;
+  font-size: 2.5rem;
   font-weight: 800;
   color: #0f172a;
   line-height: 1.15;
   letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+}
+
+.bookTitle {
+  font-family: 'Georgia', serif;
+  font-weight: 700;
+  letter-spacing: normal;
+}
+
+.authorLine {
+  font-size: 1.1rem;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.brandName {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.priceAndStockBlock {
+  display: flex;
+  align-items: baseline;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .priceContainer {
-  /* margin removed for flex gap */
+  /* empty */
+}
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
 }
 .price {
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 2.25rem;
+  font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.02em;
+}
+
+.availabilityText {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #059669;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.availabilityTextAlert {
+  color: #dc2626;
+}
+
+.skuLine {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-family: monospace;
+  margin-bottom: 2rem;
 }
 
 /* Options */
@@ -490,67 +558,70 @@
   width: 100%;
 }
 
-/* Specs (Información Adicional) - Premium Table Style */
 .detailsSection {
-  margin-top: 4rem;
+  margin-top: 5rem;
   margin-bottom: 5rem;
+  max-width: 800px;
 }
 .detailsHeader {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #0f172a;
 }
 .detailsTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 800;
   color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .specsContainer {
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
-  overflow: hidden;
-  padding: 1rem 0;
+  background: transparent;
 }
 .specsGrid {
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 .specRow {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  padding: 1.2rem 2.5rem;
-  border-bottom: 1px solid #f1f5f9;
-  background-color: #fff;
-  transition: background-color 0.2s;
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 1.2rem;
 }
-.specRow:hover {
-  background-color: #f8fafc;
-}
-.specRow:last-child {
-  border-bottom: none;
+.specRow:hover .specDots {
+  border-bottom-color: #94a3b8;
 }
 .specLabel {
-  color: #64748b;
-  font-size: 0.95rem;
+  color: #475569;
+  font-size: 1.1rem;
   font-weight: 500;
+}
+.specDots {
+  flex-grow: 1;
+  border-bottom: 2px dotted #cbd5e1;
+  margin: 0 1rem;
+  transition: border-color 0.2s ease;
 }
 .specValue {
   color: #0f172a;
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 
 /* Related */
 .relatedSection {
-  margin-top: 5rem;
-  padding-top: 4rem;
-  border-top: 1px solid #e2e8f0;
+  margin-top: 6rem;
+  padding-top: 2rem;
+}
+.relatedHeader {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #0f172a;
 }
 .sectionTitle {
-  font-size: 1.8rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: #0f172a;
-  margin-bottom: 2.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .relatedGrid {
   display: grid;

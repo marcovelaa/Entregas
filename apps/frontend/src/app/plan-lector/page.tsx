@@ -10,7 +10,7 @@ const levels = [
   { id: 'inicial', name: 'Inicial', colorClass: '', href: null },
   { id: 'primaria', name: 'Primaria', colorClass: '', href: null },
   { id: 'secundaria', name: 'Secundaria', colorClass: '', href: null },
-  { id: 'otros', name: 'Otros', colorClass: '', href: null }
+  { id: 'otros', name: 'Otros / Sin Nivel', colorClass: '', href: null }
 ];
 
 const catalogData: Record<string, { id: string; name: string; subjects: { id: string; name: string }[] }[]> = {
@@ -37,7 +37,7 @@ const catalogData: Record<string, { id: string; name: string; subjects: { id: st
     { id: 'sec-6', name: '6to', subjects: [] },
   ],
   otros: [
-    { id: 'otros-all', name: 'Todas las obras', subjects: [] }
+    { id: 'sin-nivel', name: 'Lectura General', subjects: [] }
   ]
 };
 
@@ -49,28 +49,50 @@ export default function PlanLectorPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   React.useEffect(() => {
-    getProducts({ page: 1, limit: 50 })
+    // Traemos un límite grande para poder hacer el filtro cruzado en el cliente (Modelo A)
+    getProducts({ page: 1, limit: 500 })
       .then(data => {
         if (data && data.data) {
           const filtered = data.data.filter(prod => {
             const cat = prod.categoria;
-            const attrs = prod.atributos;
-            return cat?.slug === 'plan-lector' || (cat?.slug === 'textos-escolares' && (!attrs || !attrs.nivel));
+            const attrs = (prod.atributos as Record<string, string>) || {};
+            
+            // Un producto pertenece a la vista "Plan Lector" si:
+            // 1. Su categoría principal es plan-lector
+            // 2. O si es textos-escolares pero tiene la materia 'Plan Lector'
+            const isPlanLectorCat = cat?.slug === 'plan-lector';
+            const isTextoEscolarPlanLector = cat?.slug === 'textos-escolares' && attrs.materia === 'Plan Lector';
+            
+            if (!isPlanLectorCat && !isTextoEscolarPlanLector) return false;
+
+            // Filtros de la UI
+            if (activeLevel === 'otros') {
+              return !attrs.nivel; // Solo los que no tienen nivel
+            }
+
+            if (activeLevel && activeLevel !== 'otros') {
+              const levelMatch = attrs.nivel?.toLowerCase() === activeLevel.toLowerCase();
+              if (!levelMatch) return false;
+            }
+
+            // Aquí podrías agregar el filtrado por activeGrade (1ro, 2do) si tuvieras atributo_grado
+            
+            return true;
           });
           setProducts(filtered);
         }
       })
       .catch(err => console.error('Error fetching plan lector products', err));
-  }, []);
+  }, [activeLevel, activeGrade]);
 
   const filteredBooks = products;
 
   const getActiveGradeName = () => {
-    if (!activeGrade) return 'Todos los Grados';
+    if (!activeGrade) return 'Todo el Catálogo';
     const levelFound = Object.keys(catalogData).find(lvl => 
       catalogData[lvl].some(g => g.id === activeGrade)
     );
-    if (!levelFound) return 'Todos los Grados';
+    if (!levelFound) return 'Todo el Catálogo';
     const gradeFound = catalogData[levelFound].find(g => g.id === activeGrade);
     const levelName = levels.find(l => l.id === levelFound)?.name;
     return `${levelName} - ${gradeFound?.name}`;
@@ -90,6 +112,7 @@ export default function PlanLectorPage() {
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
           styles={styles}
+          sidebarSubtitle="Nivel educativo"
         />
 
         <main className={styles.mainContent}>

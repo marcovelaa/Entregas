@@ -24,6 +24,7 @@ interface CatalogSidebarProps {
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
   styles: Record<string, string>;
+  sidebarSubtitle?: string;
 }
 
 export function CatalogSidebar({
@@ -36,7 +37,8 @@ export function CatalogSidebar({
   setActiveSubject,
   isMobileMenuOpen,
   setIsMobileMenuOpen,
-  styles
+  styles,
+  sidebarSubtitle
 }: CatalogSidebarProps) {
   return (
     <>
@@ -57,7 +59,7 @@ export function CatalogSidebar({
           <h3 className={styles.sidebarTitle}>Catálogo</h3>
           
           <div className={styles.sidebarSection}>
-            <h4 className={styles.sidebarSubtitle}>Nivel educativo</h4>
+            <h4 className={styles.sidebarSubtitle}>{sidebarSubtitle || 'Nivel educativo'}</h4>
             <nav className={styles.categoryNav}>
               {levels.map(lvl => {
                 const isLevelExpanded = activeLevel === lvl.id;

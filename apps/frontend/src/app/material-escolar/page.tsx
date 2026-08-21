@@ -129,7 +129,7 @@ export default function MaterialEscolarPage() {
             <div className={styles.productsGrid}>
               {filteredProducts.map(product => {
                 const imageUrl = product.imagenes && product.imagenes.length > 0 
-                  ? `http://localhost:3001${product.imagenes[0].url}`
+                  ? (product.imagenes[0].url.startsWith('http') ? product.imagenes[0].url : `http://localhost:3001${product.imagenes[0].url}`)
                   : 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=400&auto=format&fit=crop';
                 const numericPrice = Number(product.precio_base) || 0;
                 return (

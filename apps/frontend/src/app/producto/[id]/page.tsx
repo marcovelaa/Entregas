@@ -84,13 +84,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   // Build images array
   let galleryImages: string[] = [];
   if (realProduct && realProduct.imagenes && realProduct.imagenes.length > 0) {
-    galleryImages = realProduct.imagenes.map((img: any) => img.url.startsWith('http') ? img.url : `http://localhost:3001${img.url}`);
-  } else if (realProduct?.tipo_producto === 'COMBO' && realProduct.componentes_combo && realProduct.componentes_combo.length > 0) {
+    galleryImages = realProduct.imagenes.map((img: any) => img.url.startsWith('http') ? img.url : `http://localhost:3001${img.url.startsWith('/') ? '' : '/'}${img.url}`);
+    
+    // Add component images if combo
     const compImages: string[] = [];
-    realProduct.componentes_combo.forEach((c: any) => {
-      const img = c.componente_producto?.imagenes?.[0]?.url;
-      if (img) compImages.push(img.startsWith('http') ? img : `http://localhost:3001${img}`);
-    });
+    if (realProduct.componentes_combo) {
+      realProduct.componentes_combo.forEach((c: any) => {
+        const img = c.componente_producto?.imagenes?.[0]?.url;
+        if (img) compImages.push(img.startsWith('http') ? img : `http://localhost:3001${img.startsWith('/') ? '' : '/'}${img}`);
+      });
+    }
     if (compImages.length > 0) {
       galleryImages = compImages;
     }
@@ -105,7 +108,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   // When a variant is selected, override the image preview
   useEffect(() => {
     if (selectedVariante && selectedVariante.imagen_url) {
-      setPreviewImageUrl(`http://localhost:3001${selectedVariante.imagen_url}`);
+      setPreviewImageUrl(selectedVariante.imagen_url.startsWith('http') ? selectedVariante.imagen_url : `http://localhost:3001${selectedVariante.imagen_url.startsWith('/') ? '' : '/'}${selectedVariante.imagen_url}`);
     } else {
       setPreviewImageUrl(null);
     }
@@ -128,7 +131,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const title = realProduct ? realProduct.nombre : fallbackProduct.title;
   const brand = realProduct ? realProduct.marca?.nombre : (fallbackProduct.editorial || '');
   const sku = selectedEmpaque ? selectedEmpaque.sku : (selectedVariante ? selectedVariante.sku_base : (realProduct ? realProduct.sku : `PRD-${id}`));
-  const naturaleza = realProduct ? (realProduct.naturaleza || realProduct.categoria?.nombre) : fallbackProduct.category;
   const atributos = realProduct?.atributos || {};
 
   const isBook = Boolean(
@@ -142,6 +144,39 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     )
   );
   const brandLabel = isBook ? 'Editorial' : 'Marca';
+  const categoriaNombre = realProduct?.categoria?.nombre || fallbackProduct.category;
+  const naturalezaReal = realProduct?.naturaleza;
+
+  // Helper to format raw ERP attributes to friendly names
+  const formatAttributeValue = (key: string, val: string) => {
+    const valueMap: Record<string, string> = {
+      // Niveles
+      'inicial': 'Inicial', 'primaria': 'Primaria', 'secundaria': 'Secundaria',
+      // Grados
+      'ini-2': 'Pollito (2 años)', 'ini-pollito': 'Pollito (2 años)',
+      'ini-3': 'Nidito (3 años)', 'ini-nidito': 'Nidito (3 años)',
+      'ini-4': 'Pre-Kínder', 'ini-prekinder': 'Pre-Kínder',
+      'ini-5': 'Kínder', 'ini-kinder': 'Kínder',
+      'pri-1': '1ro de Primaria', 'pri-2': '2do de Primaria', 'pri-3': '3ro de Primaria', 
+      'pri-4': '4to de Primaria', 'pri-5': '5to de Primaria', 'pri-6': '6to de Primaria',
+      'sec-1': '1ro de Secundaria', 'sec-2': '2do de Secundaria', 'sec-3': '3ro de Secundaria', 
+      'sec-4': '4to de Secundaria', 'sec-5': '5to de Secundaria', 'sec-6': '6to de Secundaria',
+      // Materias
+      'mat': 'Matemáticas', 'com': 'Comunicación', 'len': 'Lenguaje', 
+      'cie': 'Ciencias Naturales', 'soc': 'Ciencias Sociales', 'ing': 'Inglés', 
+      'lit': 'Literatura', 'bio': 'Biología', 'fis': 'Física', 'qui': 'Química', 
+      'planlector': 'Plan Lector',
+      // Naturalezas
+      'texto': 'Texto Escolar', 'plan_lector': 'Plan Lector', 'material': 'Material Escolar'
+    };
+    
+    // Si la key es nivel, grado o materia, intentamos mapear. Si no, devolvemos el valor original capitalizado.
+    const lowerVal = String(val).toLowerCase();
+    if (valueMap[lowerVal]) return valueMap[lowerVal];
+    
+    // Capitalize first letter as fallback
+    return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+  };
 
   // Combo calculations
   const isCombo = realProduct?.tipo_producto === 'COMBO';
@@ -199,9 +234,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     : [];
 
   let categoryPath = '/';
-  if (naturaleza?.toLowerCase().includes('texto')) categoryPath = '/textosescolares';
-  else if (naturaleza?.toLowerCase().includes('lector')) categoryPath = '/plan-lector';
-  else if (naturaleza?.toLowerCase().includes('material')) categoryPath = '/material-escolar';
+  if (naturalezaReal?.toLowerCase().includes('texto') || categoriaNombre?.toLowerCase().includes('texto')) categoryPath = '/textosescolares';
+  else if (naturalezaReal?.toLowerCase().includes('lector') || categoriaNombre?.toLowerCase().includes('lector')) categoryPath = '/plan-lector';
+  else if (naturalezaReal?.toLowerCase().includes('material') || categoriaNombre?.toLowerCase().includes('material')) categoryPath = '/material-escolar';
   else categoryPath = '/productos';
 
   if (loading) {
@@ -246,10 +281,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         {/* Breadcrumb */}
         <nav className={styles.breadcrumb} aria-label="Breadcrumb">
           <Link href="/">Inicio</Link>
-          {naturaleza && (
+          {categoriaNombre && (
             <>
               <span className={styles.separator}>/</span>
-              <Link href={categoryPath}>{naturaleza}</Link>
+              <Link href={categoryPath}>{categoriaNombre}</Link>
             </>
           )}
           <span className={styles.separator}>/</span>
@@ -312,37 +347,41 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Right: Product Details */}
           <div className={styles.infoSection}>
-            <h1 className={styles.title}>{title}</h1>
-            
-            {/* Price display with promo or combo savings strikethrough */}
-            <div className={styles.priceContainer}>
-              {hasPromo ? (
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem' }}>
-                  <span className={styles.price} style={{ color: '#ef4444' }}>Bs. {promoPrice?.toFixed(2)}</span>
-                  <span className={styles.oldPrice}>Bs. {basePrice.toFixed(2)}</span>
-                </div>
-              ) : comboAhorro > 0 ? (
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem' }}>
-                  <span className={styles.price}>Bs. {basePrice.toFixed(2)}</span>
-                  <span className={styles.oldPrice}>Bs. {componentesSubtotal.toFixed(2)}</span>
-                </div>
-              ) : (
-                <span className={styles.price}>Bs. {basePrice.toFixed(2)}</span>
+            <div className={styles.headerBlock}>
+              {categoriaNombre && (
+                <span className={styles.kickerText}>{categoriaNombre}</span>
               )}
+              <h1 className={`${styles.title} ${isBook ? styles.bookTitle : ''}`}>{title}</h1>
+              {brand && <div className={styles.authorLine}>por <span className={styles.brandName}>{brand}</span></div>}
             </div>
             
-            <div className={`${styles.availability} ${compraBloqueada ? styles.availabilityAlert : ''}`}>
-              {disponibilidadTexto}
+            <div className={styles.priceAndStockBlock}>
+              {/* Price display with promo or combo savings strikethrough */}
+              <div className={styles.priceContainer}>
+                {hasPromo ? (
+                  <div className={styles.priceRow}>
+                    <span className={styles.price} style={{ color: '#ef4444' }}>Bs. {promoPrice?.toFixed(2)}</span>
+                    <span className={styles.oldPrice}>Bs. {basePrice.toFixed(2)}</span>
+                  </div>
+                ) : comboAhorro > 0 ? (
+                  <div className={styles.priceRow}>
+                    <span className={styles.price}>Bs. {basePrice.toFixed(2)}</span>
+                    <span className={styles.oldPrice}>Bs. {componentesSubtotal.toFixed(2)}</span>
+                  </div>
+                ) : (
+                  <span className={styles.price}>Bs. {basePrice.toFixed(2)}</span>
+                )}
+              </div>
+              
+              <div className={`${styles.availabilityText} ${compraBloqueada ? styles.availabilityTextAlert : ''}`}>
+                {compraBloqueada ? '✗' : '✓'} {disponibilidadTexto}
+              </div>
             </div>
 
-            {realProduct?.descripcion ? (
+            {sku && <div className={styles.skuLine}>SKU: {sku}</div>}
+
+            {realProduct?.descripcion && (
               <p className={styles.productDescription}>{realProduct.descripcion}</p>
-            ) : (
-              <ul className={styles.metaSummaryList}>
-                {brand && <li><strong>{brandLabel}:</strong> {brand}</li>}
-                {naturaleza && <li><strong>Categoría:</strong> {naturaleza}</li>}
-                {sku && <li><strong>SKU:</strong> {sku}</li>}
-              </ul>
             )}
 
             {/* COMBO CONTENTS BREAKDOWN */}
@@ -358,7 +397,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   {comboComponentes.map((c: any) => {
                     const comp = c.componente_producto;
                     const compImg = comp?.imagenes?.[0]?.url;
-                    const fullImgUrl = compImg ? (compImg.startsWith('http') ? compImg : `http://localhost:3001${compImg}`) : null;
+                    const fullImgUrl = compImg ? (compImg.startsWith('http') ? compImg : `http://localhost:3001${compImg.startsWith('/') ? '' : '/'}${compImg}`) : null;
                     const compPrice = Number(comp?.precio_base) || 0;
                     return (
                       <div key={c.id} className={styles.comboItemRow}>
@@ -483,7 +522,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       >
                         <div className={styles.variantImgWrapper}>
                           <Image 
-                            src={v.imagen_url ? `http://localhost:3001${v.imagen_url}` : (galleryImages[0] || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=200&auto=format&fit=crop")}
+                            src={v.imagen_url ? (v.imagen_url.startsWith('http') ? v.imagen_url : `http://localhost:3001${v.imagen_url.startsWith('/') ? '' : '/'}${v.imagen_url}`) : (galleryImages[0] || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=200&auto=format&fit=crop")}
                             alt={v.nombre}
                             fill
                             className={styles.variantImg}
@@ -540,7 +579,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   const item = {
                     id: selectedEmpaque ? `${id}-${selectedVariante?.id}-${selectedEmpaque.id}` : (selectedVariante ? `${id}-${selectedVariante.id}` : id),
                     title: `${title}${selectedVariante ? ` - ${selectedVariante.nombre}` : ''}${selectedEmpaque ? ` (${selectedEmpaque.nombre})` : ''}`,
-                    category: naturaleza,
+                    category: categoriaNombre,
                     price: promoPrice !== null ? promoPrice : basePrice,
                     imageUrl: currentMainImage
                   };
@@ -548,6 +587,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   alert('¡Producto agregado al carrito!');
                 }}
               >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
                 Añadir al carrito
               </button>
             </div>
@@ -565,19 +609,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 {brand && (
                   <div className={styles.specRow}>
                     <span className={styles.specLabel}>{brandLabel}</span>
+                    <span className={styles.specDots}></span>
                     <span className={styles.specValue}>{brand}</span>
                   </div>
                 )}
-                <div className={styles.specRow}>
-                  <span className={styles.specLabel}>Categoría</span>
-                  <span className={styles.specValue}>{naturaleza}</span>
-                </div>
-                {Object.entries(atributos).map(([key, val]) => (
-                  <div className={styles.specRow} key={key}>
-                    <span className={styles.specLabel}>{key.replace(/_/g, ' ')}</span>
-                    <span className={styles.specValue}>{String(val)}</span>
-                  </div>
-                ))}
+                {Object.entries(atributos).map(([key, val]) => {
+                  const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+                  return (
+                    <div className={styles.specRow} key={key}>
+                      <span className={styles.specLabel}>{displayKey}</span>
+                      <span className={styles.specDots}></span>
+                      <span className={styles.specValue}>{formatAttributeValue(key, String(val))}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -585,7 +630,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Related Products */}
         <section className={styles.relatedSection}>
-          <h2 className={styles.sectionTitle}>Completa tu carrito</h2>
+          <div className={styles.relatedHeader}>
+            <h2 className={styles.sectionTitle}>
+              {categoriaNombre?.toLowerCase().includes('texto') 
+                ? 'Textos Escolares Recomendados' 
+                : categoriaNombre?.toLowerCase().includes('lector') 
+                  ? 'Más Títulos de Plan Lector' 
+                  : 'Completa tu carrito'}
+            </h2>
+          </div>
           <div className={styles.relatedGrid}>
             {displayRelated.map(item => (
               <ProductCard 

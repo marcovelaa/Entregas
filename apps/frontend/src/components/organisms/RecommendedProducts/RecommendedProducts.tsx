@@ -60,7 +60,7 @@ export default async function RecommendedProducts() {
                   mappedComponents.push({
                     nombre: comp.nombre,
                     cantidad: c.cantidad || 1,
-                    imagen_url: img ? (img.startsWith('http') ? img : `http://localhost:3001${img}`) : undefined,
+                    imagen_url: img ? (img.startsWith('http') ? img : `http://localhost:3001${img.startsWith('/') ? '' : '/'}${img}`) : undefined,
                   });
                 }
               });
